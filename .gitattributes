@@ -1,0 +1,3 @@
+# Normaliza saltos de línea: LF en el repositorio, el nativo de cada sistema al hacer checkout.
+* text=auto
+*.sh text eol=lf

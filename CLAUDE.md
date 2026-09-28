@@ -1,0 +1,59 @@
+# Core Bancario
+
+Core bancario simplificado (backend) con cuentas en COP y USD, transferencias internas idempotentes y saldos consistentes bajo concurrencia, operado por clientes y un backoffice. Es un proyecto de portafolio: además de funcionar, debe dejar evidencia de las decisiones (spec de producto en `docs/producto/`, specs de feature en `specs/`, ADRs en `docs/adr/`).
+
+## Stack
+
+- .NET 10, C# con nullable activado; versión del SDK fijada en `global.json`.
+- Arquitectura: Clean Architecture (ADR-0002).
+- Persistencia: PostgreSQL (ADR-0003); EF Core para escribir y migrar, Dapper solo para lecturas que lo justifiquen (ADR-0004).
+- Pruebas: xUnit; integración contra PostgreSQL real con Testcontainers.
+- Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API.
+- Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-06 dispatcher (S2), D-07 redondeo (S1), D-08 emisor de tokens (S3), D-11 despliegue (fase 4).
+
+## Estructura
+
+```
+src/
+  CoreBancario.Domain/          entidades, value objects, reglas de negocio; sin dependencias externas
+  CoreBancario.Application/     casos de uso y puertos (interfaces)
+  CoreBancario.Infrastructure/  implementación de los puertos: EF Core, Dapper, servicios externos
+  CoreBancario.Api/             endpoints delgados que delegan a Application
+tests/
+  CoreBancario.<Capa>.Tests/    un proyecto de tests por capa
+docs/
+  producto/                     spec de producto (fuente de verdad de RN y RF) y roadmap
+  adr/                          decisiones de arquitectura
+specs/                          una carpeta por feature del flujo SDD
+```
+
+Las dependencias apuntan hacia dentro: Api e Infrastructure → Application → Domain.
+
+## Comandos
+
+- Compilar: `dotnet build`
+- Tests: `dotnet test`
+- Base de datos local: `docker compose up -d` (PostgreSQL; variables en `.env`, plantilla en `.env.example`).
+
+## Flujo de trabajo (SDD)
+
+- IMPORTANTE: toda feature pasa por `/sdd-spec` → `/sdd-design` → `/sdd-build` → `/sdd-review`. No se escribe código de producción sin `spec.md` y `plan.md` en `Estado: Aprobado`.
+- Carril rápido (bug o cambio pequeño que no cambia contratos públicos): plan mode, un test que reproduzca el problema, el arreglo y `/code-review` antes del commit.
+- Cada feature vive en `specs/NNN-slug/`; cada decisión significativa, en `docs/adr/NNNN-titulo.md`, numerada por orden de creación.
+- Ramas `feature/NNN-slug`; a `main` solo se llega por pull request.
+- Commits: `tipo(NNN): mensaje` con tipo `docs`, `test`, `feat`, `fix`, `refactor` o `chore`.
+- Qué toca cada sprint está en `docs/producto/roadmap.md`.
+
+### IDs de la spec de producto
+
+- Las RN, RF y los escenarios de falla de `docs/producto/spec-fase-1.md` son **globales**. Una feature que los implementa usa el **mismo ID** (por ejemplo RN-01), no crea uno nuevo.
+- Si en la entrevista de `/sdd-spec` aparece una regla o requisito nuevo, se añade primero a la spec de producto con el siguiente número libre y luego se cita en la feature.
+- CL, CA y RNF específicos de una feature son locales a su `spec.md`.
+- Las decisiones abiertas de la spec de producto (D-01…D-11) se resuelven con ADRs; la spec anota qué ADR resolvió cada una.
+
+## Estilo
+
+- Principios de diseño: skill `csharp-clean-code`.
+- Dinero siempre con el value object `Dinero` y `decimal`; nunca `double` ni `float`.
+- Vocabulario del dominio en español, igual que el lenguaje ubicuo de la spec de producto (`Cuenta`, `Dinero`, `Movimiento`…); el resto del código (infraestructura, sufijos técnicos) puede ir en inglés.
+- El autor está aprendiendo arquitectura: explica el porqué de las decisiones no obvias y, al cerrar cada fase, di qué debe revisar él.
