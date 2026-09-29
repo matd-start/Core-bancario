@@ -46,8 +46,9 @@ flowchart TB
 | Base de datos | PostgreSQL | [0003](docs/adr/0003-postgresql-como-base-de-datos.md) |
 | Acceso a datos | EF Core para escribir, Dapper para leer | [0004](docs/adr/0004-ef-core-para-escritura-y-dapper-para-lectura.md) |
 | Repositorios | Backend y frontend separados | [0005](docs/adr/0005-repositorios-separados-backend-y-frontend.md) |
+| Pruebas | xUnit v3 con Microsoft Testing Platform | [0006](docs/adr/0006-xunit-v3-con-microsoft-testing-platform.md) |
 
-.NET 10 · xUnit · Testcontainers · Docker · GitHub Actions.
+.NET 10 · xUnit v3 · Testcontainers · Docker · GitHub Actions.
 
 ## Cómo ejecutarlo
 

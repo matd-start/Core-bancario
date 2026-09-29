@@ -1,0 +1,14 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CoreBancario.Api/CoreBancario.Api.csproj" />
+    <Project Path="src/CoreBancario.Application/CoreBancario.Application.csproj" />
+    <Project Path="src/CoreBancario.Domain/CoreBancario.Domain.csproj" />
+    <Project Path="src/CoreBancario.Infrastructure/CoreBancario.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CoreBancario.Api.Tests/CoreBancario.Api.Tests.csproj" />
+    <Project Path="tests/CoreBancario.Application.Tests/CoreBancario.Application.Tests.csproj" />
+    <Project Path="tests/CoreBancario.Domain.Tests/CoreBancario.Domain.Tests.csproj" />
+    <Project Path="tests/CoreBancario.Infrastructure.Tests/CoreBancario.Infrastructure.Tests.csproj" />
+  </Folder>
+</Solution>

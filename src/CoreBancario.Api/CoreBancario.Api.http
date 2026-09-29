@@ -1,0 +1,6 @@
+@CoreBancario.Api_HostAddress = http://localhost:5096
+
+GET {{CoreBancario.Api_HostAddress}}/health
+Accept: text/plain
+
+###
