@@ -24,3 +24,7 @@ EF Core para todo el lado de escritura (comandos, migraciones, concurrencia) y D
 - Las consultas Dapper viven en Infrastructure detrás de puertos de lectura de Application, igual que los repositorios.
 - Cada consulta Dapper necesita su propia prueba de integración, porque el SQL escrito a mano no lo valida el compilador.
 - Si una lectura es sencilla, se hace con EF Core y `AsNoTracking`: Dapper solo entra cuando una consulta concreta lo justifica (YAGNI).
+
+## Revisión del autor (2026-09-28)
+
+El autor eligió esta opción sin conocer todavía Dapper ni CQRS. Después los estudió y confirmó la decisión, entendiendo que la separación entre escritura y lectura prepara el terreno para CQRS en la fase 2. Antes de la primera consulta con Dapper (Sprint 4) se repasa cómo escribir y probar SQL a mano.
