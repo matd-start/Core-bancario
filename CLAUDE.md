@@ -7,7 +7,7 @@ Core bancario simplificado (backend) con cuentas en COP y USD, transferencias in
 - .NET 10, C# con nullable activado; versión del SDK fijada en `global.json`.
 - Arquitectura: Clean Architecture (ADR-0002).
 - Persistencia: PostgreSQL (ADR-0003); EF Core para escribir y migrar, Dapper solo para lecturas que lo justifiquen (ADR-0004).
-- Pruebas: xUnit; integración contra PostgreSQL real con Testcontainers.
+- Pruebas: xUnit v3 sobre Microsoft Testing Platform (ADR-0006); integración contra PostgreSQL real con Testcontainers. Al añadir la primera prueba a un proyecto de tests, quitar su `--ignore-exit-code 8`.
 - Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API.
 - Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-06 dispatcher (S2), D-07 redondeo (S1), D-08 emisor de tokens (S3), D-11 despliegue (fase 4).
 
@@ -40,7 +40,8 @@ Las dependencias apuntan hacia dentro: Api e Infrastructure → Application → 
 - IMPORTANTE: toda feature pasa por `/sdd-spec` → `/sdd-design` → `/sdd-build` → `/sdd-review`. No se escribe código de producción sin `spec.md` y `plan.md` en `Estado: Aprobado`.
 - Carril rápido (bug o cambio pequeño que no cambia contratos públicos): plan mode, un test que reproduzca el problema, el arreglo y `/code-review` antes del commit.
 - Cada feature vive en `specs/NNN-slug/`; cada decisión significativa, en `docs/adr/NNNN-titulo.md`, numerada por orden de creación.
-- Ramas `feature/NNN-slug`; a `main` solo se llega por pull request.
+- GitHub Flow: `main` es la única rama permanente, está protegida y a ella solo se llega por pull request con el CI en verde. No hay ramas `develop` ni `test`: los ambientes los decide el despliegue, no las ramas.
+- Ramas cortas, una por trabajo, y se borran tras el merge: `feature/NNN-slug` (features SDD), `fix/slug` (carril rápido) y `chore/slug` (configuración, infraestructura, dependencias).
 - Commits: `tipo(NNN): mensaje` con tipo `docs`, `test`, `feat`, `fix`, `refactor` o `chore`.
 - Qué toca cada sprint está en `docs/producto/roadmap.md`.
 
