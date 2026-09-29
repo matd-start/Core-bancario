@@ -6,29 +6,32 @@ Cada sprint se ejecuta como 1-3 features del flujo SDD (`/sdd-spec` → `/sdd-de
 
 ## Fase 1 — Núcleo
 
-| Sprint | Semanas | Contenido | IDs |
-|---|---|---|---|
-| S0 Fundaciones | 1 | Repositorio con kit SDD, ADRs de arquitectura, base de datos, acceso a datos y repositorios; solución vacía; Docker con PostgreSQL; CI; README y C4 nivel 1 | D-01, D-02, D-03, D-10 |
-| S1 Dominio | 1 | `Dinero`, `Moneda`, `Cuenta` y sus estados, con pruebas unitarias; ADR de redondeo | RN-01…07, RN-10, D-07 |
-| S2 Backoffice API | 1 | Clientes y cuentas, persistencia con EF Core, pruebas de integración con Testcontainers; ADR del dispatcher | RF-01…03, D-06 |
-| S3 Auth + front base | 2 | JWT y roles; se crea `core-bancario-web` con el kit adaptado a TypeScript; login, rutas por rol y pantallas del operador | RF-05, D-08, D-09 |
-| S4 Ventanilla y extracto | 1 | Depósitos y retiros idempotentes; extracto paginado con Dapper; ADR del mecanismo que protege el saldo | RF-04, RF-06, RN-11, D-02 (mecanismo) |
-| S5 Transferencias ⭐ | 2 | Transferencia en la misma moneda, reintentos y consulta; escenarios de falla 1-5 | RF-07, RF-09, RF-11, RN-07, RN-08, RN-11, RN-12, D-04, D-05 |
-| S6 Front de transferencias | 1 | Formulario en dos pasos, comprobante, clave de idempotencia de punta a punta | RF-07, RF-09, RF-11 |
-| S7 Multimoneda | 1 | Tasas versionadas y conversión, backend y frontend; escenarios 6-7 | RF-08, RF-10, RN-09, RN-13 |
-| S8 Observabilidad | 1 | OpenTelemetry, correlation id, métricas; escenario 8 (401/403); accesibilidad | RNF Observabilidad y Seguridad |
-| S9 Cierre de fase 1 | 1 | README con trade-offs, C4 nivel 2, registro del uso de IA, prueba de clon limpio, demo | RNF Documentación y Operación |
+Estudia los temas de "Para estudiar" **antes** de empezar cada sprint: son los conceptos que aparecerán en la entrevista de `/sdd-spec` y en las decisiones del planner.
+
+| Sprint | Semanas | Contenido | IDs | Para estudiar |
+|---|---|---|---|---|
+| ✅ S0 Fundaciones | 1 | Repositorio con kit SDD, ADRs de arquitectura, base de datos, acceso a datos y repositorios; solución vacía; Docker con PostgreSQL; CI; README y C4 nivel 1 | D-01, D-02, D-03, D-10 | GitHub Flow y pull requests · Clean Architecture y la regla de dependencias · Docker Compose básico |
+| S1 Dominio | 1 | `Dinero`, `Moneda`, `Cuenta` y sus estados, con pruebas unitarias; ADR de redondeo | RN-01…07, RN-10, D-07 | Entidades y value objects (DDD táctico) · invariantes de dominio · `decimal` frente a `double` · redondeo bancario (`MidpointRounding.ToEven`) frente a hacia arriba · pruebas unitarias con xUnit (Arrange/Act/Assert) |
+| S2 Backoffice API | 1 | Clientes y cuentas, persistencia con EF Core, pruebas de integración con Testcontainers; ADR del dispatcher | RF-01…03, D-06 | EF Core: `DbContext`, configuración de entidades y migraciones · inyección de dependencias en ASP.NET Core · Minimal APIs · patrón Mediator frente a handlers directos · Testcontainers |
+| S3 Auth + front base | 2 | JWT y roles; se crea `core-bancario-web` con el kit adaptado a TypeScript; login, rutas por rol y pantallas del operador | RF-05, D-08, D-09 | Autenticación frente a autorización · JWT (estructura, firma, expiración) · OAuth 2.0 y OpenID Connect básicos · React + TypeScript · estado del servidor con TanStack Query · clientes generados desde OpenAPI |
+| S4 Ventanilla y extracto | 1 | Depósitos y retiros idempotentes; extracto paginado con Dapper; ADR del mecanismo que protege el saldo | RF-04, RF-06, RN-11, D-02 (mecanismo) | Concurrencia optimista frente a pesimista · `xmin` en PostgreSQL · `UPDATE` condicional atómico · idempotencia · Dapper y SQL escrito a mano · paginación por offset frente a keyset |
+| S5 Transferencias ⭐ | 2 | Transferencia en la misma moneda, reintentos y consulta; escenarios de falla 1-5 | RF-07, RF-09, RF-11, RN-07, RN-08, RN-11, RN-12, D-04, D-05 | Transacciones ACID y niveles de aislamiento · agregados y límites de consistencia (DDD) · claves de idempotencia en APIs de pago · deadlocks y orden de bloqueo · cómo probar concurrencia |
+| S6 Front de transferencias | 1 | Formulario en dos pasos, comprobante, clave de idempotencia de punta a punta | RF-07, RF-09, RF-11 | Formularios con React Hook Form y validación con esquemas · errores de API con `ProblemDetails` · UX de confirmación y reintentos seguros |
+| S7 Multimoneda | 1 | Tasas versionadas y conversión, backend y frontend; escenarios 6-7 | RF-08, RF-10, RN-09, RN-13 | Conversión de monedas y dónde se pierde el centavo · datos versionados con fecha de vigencia · formato de moneda por locale (`Intl.NumberFormat`) |
+| S8 Observabilidad | 1 | OpenTelemetry, correlation id, métricas; escenario 8 (401/403); accesibilidad | RNF Observabilidad y Seguridad | Los tres pilares: logs, métricas y trazas · OpenTelemetry · logs estructurados · correlation id · accesibilidad web básica (WCAG) |
+| S9 Cierre de fase 1 | 1 | README con trade-offs, C4 nivel 2, registro del uso de IA, prueba de clon limpio, demo | RNF Documentación y Operación | Modelo C4 (nivel 2, contenedores) · cómo escribir y presentar trade-offs en una entrevista |
 
 ## Fases siguientes
 
-| Fase | Duración estimada | Contenido |
-|---|---|---|
-| 2 | ~3 semanas | Ledger de doble partida y CQRS: saldos como proyección, extractos por lotes, conciliación diaria |
-| 3 | ~4-5 semanas | Interbancario asíncrono: Outbox, broker, antifraude (Strategy, Specification, Chain of Responsibility), Saga, Polly |
-| 4 | ~2 semanas | Despliegue en nube emulada gratuita (D-11), trazas y métricas completas, pruebas de carga |
+| Fase | Duración estimada | Contenido | Para estudiar |
+|---|---|---|---|
+| 2 | ~3 semanas | Ledger de doble partida y CQRS: saldos como proyección, extractos por lotes, conciliación diaria | Contabilidad de doble partida · CQRS completo · proyecciones y modelos de lectura · `BackgroundService` en .NET |
+| 3 | ~4-5 semanas | Interbancario asíncrono: Outbox, broker, antifraude (Strategy, Specification, Chain of Responsibility), Saga, Polly | Mensajería y brokers (RabbitMQ) · patrón Outbox · Sagas y compensación · resiliencia con Polly · patrones Strategy, Specification y Chain of Responsibility |
+| 4 | ~2 semanas | Despliegue en nube emulada gratuita (D-11), trazas y métricas completas, pruebas de carga | Infraestructura en la nube y su emulación local · pruebas de carga (por ejemplo k6) · lectura de métricas bajo carga |
 
 ## Al cerrar cada sprint
 
 - Demo corta de lo construido.
 - Actualizar este roadmap: qué se terminó, qué se movió.
 - Anotar lo aprendido en el `learning.md` de cada feature.
+- Revisar si quedó algún tema de "Para estudiar" pendiente y moverlo al sprint siguiente.
