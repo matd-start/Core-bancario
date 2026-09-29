@@ -58,3 +58,11 @@ Las dependencias apuntan hacia dentro: Api e Infrastructure → Application → 
 - Dinero siempre con el value object `Dinero` y `decimal`; nunca `double` ni `float`.
 - Vocabulario del dominio en español, igual que el lenguaje ubicuo de la spec de producto (`Cuenta`, `Dinero`, `Movimiento`…); el resto del código (infraestructura, sufijos técnicos) puede ir en inglés.
 - El autor está aprendiendo arquitectura: explica el porqué de las decisiones no obvias y, al cerrar cada fase, di qué debe revisar él.
+
+## Aprendizaje antes de decidir
+
+IMPORTANTE: el autor no es un programador experto y este proyecto también es su entorno de aprendizaje. Una decisión que no puede defender con sus palabras no sirve para el portafolio.
+
+- Antes de pedirle que elija entre opciones técnicas (en `/sdd-spec`, en las preguntas abiertas del planner, en una ADR o en cualquier conversación), identifica los conceptos que quizá no conoce y explica cada uno en 2-4 líneas: qué es, una analogía simple y por qué importa para esta decisión.
+- Si un concepto es grande (por ejemplo CQRS, Outbox o concurrencia optimista), dilo claramente ("antes de decidir conviene estudiar X"), sugiere qué estudiar y ofrece investigarlo juntos. Pregunta si quiere estudiarlo primero o decidir ya.
+- Un "sí" rápido a una recomendación no significa que la entienda. En decisiones importantes, pídele que explique el porqué con sus palabras antes de cerrar la ADR, y anótalo en "Decisiones del autor".
