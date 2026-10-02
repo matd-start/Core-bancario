@@ -102,6 +102,9 @@ Cada regla tiene un identificador para citarla en pruebas, ADRs y commits; cada 
 | RN-11 | Toda transferencia, depósito y retiro lleva clave de idempotencia, única por quien la envía (el cliente en transferencias, el operador en depósitos y retiros). La misma clave con el mismo contenido devuelve el resultado original; con otro contenido se rechaza. Dos solicitudes simultáneas con la misma clave ejecutan la operación una sola vez. |
 | RN-12 | Un cliente solo usa como origen sus propias cuentas; el destino puede ser de cualquier cliente del banco. |
 | RN-13 | Solo el operador cambia la tasa de cambio; cada cambio crea una versión nueva y conserva el histórico. |
+| RN-14 | Una cuenta solo cambia de estado por estas transiciones: Activa → Bloqueada, Bloqueada → Activa y Activa → Cerrada. Cualquier otra se rechaza, incluida la que repite el estado actual; una cuenta Bloqueada se desbloquea antes de cerrarla. |
+| RN-15 | El monto de un Dinero nunca es negativo; cero es válido. |
+| RN-16 | Un monto con más decimales de los que admite su moneda se rechaza. Solo el resultado de un cálculo se ajusta a la precisión de su moneda, siempre hacia el valor más cercano, sin favorecer al banco ni al cliente; el caso del punto medio exacto lo fija el ADR de D-07. |
 
 ## Requisitos funcionales
 
@@ -177,7 +180,7 @@ Prácticas que el frontend debe mostrar:
 
 ## Decisiones abiertas para Design
 
-Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-10 → ADR-0005.
+Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-07 → ADR-0007, D-10 → ADR-0005.
 
 | ID | Pregunta | Opciones a comparar |
 | --- | --- | --- |
