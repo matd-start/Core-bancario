@@ -1,11 +1,10 @@
 namespace CoreBancario.Domain.Monetario;
 
-// SDD: esqueleto creado por test-writer
 /// <summary>COP o USD. Conjunto cerrado: el constructor es privado y solo existen estas dos instancias.</summary>
 public sealed record Moneda
 {
-    public static Moneda COP => throw new NotImplementedException();
-    public static Moneda USD => throw new NotImplementedException();
+    public static Moneda COP { get; } = new("COP", 0);
+    public static Moneda USD { get; } = new("USD", 2);
 
     /// <summary>Código ISO 4217.</summary>
     public string Codigo { get; }
@@ -20,5 +19,5 @@ public sealed record Moneda
     }
 
     /// <returns>El código, por ejemplo "COP".</returns>
-    public override string ToString() => throw new NotImplementedException();
+    public override string ToString() => Codigo;
 }
