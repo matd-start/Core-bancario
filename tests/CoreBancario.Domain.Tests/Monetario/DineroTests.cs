@@ -178,7 +178,7 @@ public class DineroTests
     // ---- Argumentos nulos ----
 
     [Fact]
-    public void CL01_CrearConMonedaNula_LanzaArgumentNullException()
+    public void ADR0008_CrearConMonedaNula_LanzaArgumentNullException()
     {
         // Arrange
         Moneda moneda = null!;
@@ -191,7 +191,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CL14_DesdeCalculoConMonedaNula_LanzaArgumentNullException()
+    public void ADR0008_DesdeCalculoConMonedaNula_LanzaArgumentNullException()
     {
         // Arrange
         Moneda moneda = null!;
@@ -204,7 +204,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA06_SumarConNulo_LanzaArgumentNullException()
+    public void ADR0008_SumarConNulo_LanzaArgumentNullException()
     {
         // Arrange
         var dinero = Cop(100m);
@@ -217,7 +217,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA06_RestarConNulo_LanzaArgumentNullException()
+    public void ADR0008_RestarConNulo_LanzaArgumentNullException()
     {
         // Arrange
         var dinero = Cop(100m);

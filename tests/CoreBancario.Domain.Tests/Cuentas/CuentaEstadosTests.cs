@@ -229,4 +229,21 @@ public class CuentaEstadosTests
         // Assert
         Assert.Equal(EstadoCuenta.Cerrada, cuenta.Estado);
     }
+
+    // ---- Prueba explícita por regla de negocio ----
+
+    [Fact]
+    public void RN06_CerrarConSaldoDistintoDeCero_LanzaSaldoDistintoDeCeroSinCambios()
+    {
+        // Arrange
+        var cuenta = CuentaActivaConSaldo(1m);
+
+        // Act
+        var accion = () => cuenta.Cerrar();
+
+        // Assert
+        Assert.Throws<SaldoDistintoDeCeroException>(accion);
+        Assert.Equal(EstadoCuenta.Activa, cuenta.Estado);
+        Assert.Equal(Cop(1m), cuenta.Saldo);
+    }
 }

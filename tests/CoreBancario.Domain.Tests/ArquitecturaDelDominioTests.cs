@@ -10,6 +10,18 @@ public class ArquitecturaDelDominioTests
 
     private static bool EsDoubleOFloat(Type tipo) => tipo == typeof(double) || tipo == typeof(float);
 
+    // Firme porque compara contra una lista exacta y mínima de nombres: cualquier
+    // referencia nueva (p. ej. un paquete NuGet como System.Reactive) hace fallar la
+    // prueba, a diferencia de aceptar todo lo que empiece por "System". Sin leer disco.
+    private static readonly string[] ReferenciasPermitidas =
+    [
+        "System.Runtime",
+        "System.Collections",
+        "System.Linq",
+        "System.Runtime.Extensions",
+        "System.Diagnostics.CodeAnalysis",
+    ];
+
     [Fact]
     public void RNF01_EnsambladoDelDominio_SoloReferenciaElFramework()
     {
@@ -17,15 +29,13 @@ public class ArquitecturaDelDominioTests
         var referencias = typeof(Dinero).Assembly.GetReferencedAssemblies();
 
         // Act
-        var ajenosAlFramework = referencias
+        var noPermitidas = referencias
             .Select(r => r.Name ?? string.Empty)
-            .Where(n => !n.StartsWith("System", StringComparison.Ordinal)
-                        && n != "netstandard"
-                        && n != "mscorlib")
+            .Except(ReferenciasPermitidas)
             .ToList();
 
         // Assert
-        Assert.Empty(ajenosAlFramework);
+        Assert.Empty(noPermitidas);
     }
 
     [Fact]

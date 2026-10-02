@@ -25,6 +25,13 @@ public class CuentaOperacionesTests
         return cuenta;
     }
 
+    private static Cuenta CuentaBloqueadaSinSaldo()
+    {
+        var cuenta = Cuenta.Abrir("001-0003", Guid.NewGuid(), Moneda.COP);
+        cuenta.Bloquear();
+        return cuenta;
+    }
+
     private static Cuenta CuentaCerrada()
     {
         var cuenta = Cuenta.Abrir("001-0002", Guid.NewGuid(), Moneda.COP);
@@ -85,7 +92,7 @@ public class CuentaOperacionesTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void CA10_AbrirSinNumero_LanzaArgumentException(string? numero)
+    public void ADR0008_AbrirSinNumero_LanzaArgumentException(string? numero)
     {
         // Arrange / Act
         var accion = () => Cuenta.Abrir(numero!, Guid.NewGuid(), Moneda.COP);
@@ -95,7 +102,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA10_AbrirSinMoneda_LanzaArgumentNullException()
+    public void ADR0008_AbrirSinMoneda_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cuenta.Abrir("001-0001", Guid.NewGuid(), null!);
@@ -120,7 +127,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA11_AcreditarConMontoNulo_LanzaArgumentNullException()
+    public void ADR0008_AcreditarConMontoNulo_LanzaArgumentNullException()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -148,7 +155,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA12_DebitarConMontoNulo_LanzaArgumentNullException()
+    public void ADR0008_DebitarConMontoNulo_LanzaArgumentNullException()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -275,13 +282,13 @@ public class CuentaOperacionesTests
     public void CA17_AcreditarCuentaBloqueada_AumentaElSaldo()
     {
         // Arrange
-        var cuenta = CuentaBloqueadaConSaldo(1m);
+        var cuenta = CuentaBloqueadaSinSaldo();
 
         // Act
         cuenta.Acreditar(Cop(10_000m), Instante);
 
         // Assert
-        Assert.Equal(Cop(10_001m), cuenta.Saldo);
+        Assert.Equal(Cop(10_000m), cuenta.Saldo);
         Assert.Equal(EstadoCuenta.Bloqueada, cuenta.Estado);
     }
 
@@ -289,7 +296,7 @@ public class CuentaOperacionesTests
     public void CA17_AcreditarCuentaBloqueada_DevuelveMovimientoDeCredito()
     {
         // Arrange
-        var cuenta = CuentaBloqueadaConSaldo(1m);
+        var cuenta = CuentaBloqueadaSinSaldo();
 
         // Act
         var movimiento = cuenta.Acreditar(Cop(10_000m), Instante);
@@ -434,5 +441,82 @@ public class CuentaOperacionesTests
 
         // Assert
         Assert.Throws<MontoNoPositivoException>(accion);
+    }
+
+    // ---- Pruebas explícitas por regla de negocio ----
+
+    [Fact]
+    public void RN02_OperarLaCuenta_NoCambiaSuMoneda()
+    {
+        // Arrange
+        var cuenta = CuentaActivaConSaldo(50_000m);
+
+        // Act
+        cuenta.Acreditar(Cop(10_000m), Instante);
+        cuenta.Debitar(Cop(5_000m), Instante);
+
+        // Assert
+        Assert.Equal(Moneda.COP, cuenta.Moneda);
+        Assert.Equal(Moneda.COP, cuenta.Saldo.Moneda);
+    }
+
+    [Fact]
+    public void RN03_SumarCopYUsd_LanzaMonedasDistintas()
+    {
+        // Arrange
+        var pesos = Cop(1_000m);
+        var dolares = Usd(1m);
+
+        // Act
+        var accion = () => pesos.Sumar(dolares);
+
+        // Assert
+        Assert.Throws<MonedasDistintasException>(accion);
+    }
+
+    [Fact]
+    public void RN05_CuentaBloqueada_AceptaCredito()
+    {
+        // Arrange
+        var cuenta = CuentaBloqueadaConSaldo(50_000m);
+
+        // Act
+        cuenta.Acreditar(Cop(10_000m), Instante);
+
+        // Assert
+        Assert.Equal(Cop(60_000m), cuenta.Saldo);
+    }
+
+    [Fact]
+    public void RN05_CuentaBloqueada_RechazaDebitoSinCambios()
+    {
+        // Arrange
+        var cuenta = CuentaBloqueadaConSaldo(50_000m);
+
+        // Act
+        var accion = () => cuenta.Debitar(Cop(10_000m), Instante);
+
+        // Assert
+        Assert.Throws<OperacionNoPermitidaException>(accion);
+        Assert.Equal(Cop(50_000m), cuenta.Saldo);
+        Assert.Equal(EstadoCuenta.Bloqueada, cuenta.Estado);
+    }
+
+    [Fact]
+    public void RN10_MovimientoEmitido_NoCambiaTrasOperacionesPosteriores()
+    {
+        // Arrange
+        var cuenta = CuentaActivaConSaldo(50_000m);
+        var movimiento = cuenta.Acreditar(Cop(20_000m), Instante);
+
+        // Act
+        cuenta.Debitar(Cop(30_000m), Instante);
+        cuenta.Acreditar(Cop(1_000m), Instante);
+
+        // Assert
+        Assert.Equal(TipoMovimiento.Credito, movimiento.Tipo);
+        Assert.Equal(Cop(20_000m), movimiento.Monto);
+        Assert.Equal(Cop(70_000m), movimiento.SaldoResultante);
+        Assert.Equal(Instante, movimiento.FechaHora);
     }
 }
