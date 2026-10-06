@@ -46,7 +46,7 @@ public sealed class RegistrarClienteHandler(IClienteRepositorio clientes, IUnida
         if (!tipoValido)
             errores["tipoDocumento"] = [TiposDeDocumentoAceptados.MensajeDeError];
 
-        if (string.IsNullOrWhiteSpace(comando.NumeroDocumento))
+        if (TiposDeDocumentoAceptados.EstaVacioAlNormalizar(comando.NumeroDocumento))
         {
             errores["numeroDocumento"] = ["El número de documento es obligatorio."];
             return null;

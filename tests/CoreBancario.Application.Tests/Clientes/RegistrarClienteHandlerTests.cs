@@ -71,6 +71,25 @@ public class RegistrarClienteHandlerTests
     }
 
     [Theory]
+    [InlineData("   ")]
+    [InlineData("...")]
+    [InlineData(" .-. ")]
+    public async Task CL04_NumeroQueQuedaVacioAlNormalizar_DevuelveErrorDeObligatorioComoLaBusqueda(string numero)
+    {
+        // Arrange
+        var handler = CrearHandler();
+        var comando = ComandoValido() with { NumeroDocumento = numero };
+
+        // Act
+        var resultado = await handler.EjecutarAsync(comando, TestContext.Current.CancellationToken);
+
+        // Assert
+        Assert.False(resultado.EsExito);
+        Assert.Equal(["El número de documento es obligatorio."], resultado.Errores["numeroDocumento"]);
+        Assert.Equal(0, _unidad.Llamadas);
+    }
+
+    [Theory]
     [InlineData("XX")]
     [InlineData("1")]
     [InlineData("cc")]
