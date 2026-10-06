@@ -7,9 +7,11 @@ public class CuentaEstadosTests
 {
     private static readonly DateTimeOffset Instante = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
+    private static NumeroDeCuenta Numero() => NumeroDeCuenta.Crear("1234567897");
+
     private static Dinero Cop(decimal monto) => Dinero.Crear(monto, Moneda.COP);
 
-    private static Cuenta CuentaActivaSinSaldo() => Cuenta.Abrir("001-0001", Guid.NewGuid(), Moneda.COP);
+    private static Cuenta CuentaActivaSinSaldo() => Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
 
     private static Cuenta CuentaActivaConSaldo(decimal pesos)
     {
@@ -35,7 +37,7 @@ public class CuentaEstadosTests
     private static Cuenta CuentaCerrada()
     {
         var cuenta = CuentaActivaSinSaldo();
-        cuenta.Cerrar();
+        cuenta.Cerrar(Instante);
         return cuenta;
     }
 
@@ -78,7 +80,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaActivaSinSaldo();
 
         // Act
-        cuenta.Cerrar();
+        cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Equal(EstadoCuenta.Cerrada, cuenta.Estado);
@@ -93,7 +95,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaActivaConSaldo(1m);
 
         // Act
-        var accion = () => cuenta.Cerrar();
+        var accion = () => cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Throws<SaldoDistintoDeCeroException>(accion);
@@ -110,7 +112,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaBloqueadaSinSaldo();
 
         // Act
-        var accion = () => cuenta.Cerrar();
+        var accion = () => cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Throws<TransicionNoPermitidaException>(accion);
@@ -189,7 +191,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaCerrada();
 
         // Act
-        var accion = () => cuenta.Cerrar();
+        var accion = () => cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Throws<TransicionNoPermitidaException>(accion);
@@ -206,7 +208,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaBloqueadaConSaldo(10_000m);
 
         // Act
-        var accion = () => cuenta.Cerrar();
+        var accion = () => cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Throws<TransicionNoPermitidaException>(accion);
@@ -224,7 +226,7 @@ public class CuentaEstadosTests
         cuenta.Desbloquear();
 
         // Act
-        cuenta.Cerrar();
+        cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Equal(EstadoCuenta.Cerrada, cuenta.Estado);
@@ -239,7 +241,7 @@ public class CuentaEstadosTests
         var cuenta = CuentaActivaConSaldo(1m);
 
         // Act
-        var accion = () => cuenta.Cerrar();
+        var accion = () => cuenta.Cerrar(Instante);
 
         // Assert
         Assert.Throws<SaldoDistintoDeCeroException>(accion);

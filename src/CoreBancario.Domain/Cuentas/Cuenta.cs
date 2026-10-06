@@ -5,13 +5,17 @@ namespace CoreBancario.Domain.Cuentas;
 public sealed class Cuenta
 {
     public Guid Id { get; }
-    public string Numero { get; }
+    public NumeroDeCuenta Numero { get; }
     public Guid ClienteId { get; }
     public Moneda Moneda { get; }
     public EstadoCuenta Estado { get; private set; }
     public Dinero Saldo { get; private set; }
 
-    private Cuenta(Guid id, string numero, Guid clienteId, Moneda moneda)
+    // SDD: esqueleto creado por test-writer (propiedades nuevas; el coder las asigna en T03)
+    public DateTimeOffset FechaApertura { get; }
+    public DateTimeOffset? FechaCierre { get; private set; }
+
+    private Cuenta(Guid id, NumeroDeCuenta numero, Guid clienteId, Moneda moneda)
     {
         Id = id;
         Numero = numero;
@@ -22,9 +26,10 @@ public sealed class Cuenta
     }
 
     /// <summary>Abre una cuenta Activa con saldo 0 en la moneda indicada (RN-02).</summary>
-    public static Cuenta Abrir(string numero, Guid clienteId, Moneda moneda)
+    // SDD: esqueleto creado por test-writer (firma nueva del plan; aún no usa fechaApertura)
+    public static Cuenta Abrir(NumeroDeCuenta numero, Guid clienteId, Moneda moneda, DateTimeOffset fechaApertura)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(numero);
+        ArgumentNullException.ThrowIfNull(numero);
         ArgumentNullException.ThrowIfNull(moneda);
 
         return new Cuenta(Guid.CreateVersion7(), numero, clienteId, moneda);
@@ -81,7 +86,8 @@ public sealed class Cuenta
     public void Desbloquear() => CambiarEstado(EstadoCuenta.Activa);
 
     /// <summary>Activa → Cerrada, solo con saldo cero. La transición se comprueba primero (CL-12).</summary>
-    public void Cerrar()
+    // SDD: esqueleto creado por test-writer (firma nueva del plan; aún no fija FechaCierre)
+    public void Cerrar(DateTimeOffset fechaCierre)
     {
         if (!EsTransicionPermitida(Estado, EstadoCuenta.Cerrada))
             throw new TransicionNoPermitidaException(Estado, EstadoCuenta.Cerrada);
