@@ -8,11 +8,13 @@ public class MovimientoTests
 {
     private static readonly DateTimeOffset Instante = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
+    private static NumeroDeCuenta Numero() => NumeroDeCuenta.Crear("1234567897");
+
     private static Dinero Cop(decimal monto) => Dinero.Crear(monto, Moneda.COP);
 
     private static Cuenta CuentaActivaConSaldo(decimal pesos)
     {
-        var cuenta = Cuenta.Abrir("001-0001", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
         cuenta.Acreditar(Cop(pesos), Instante);
         return cuenta;
     }

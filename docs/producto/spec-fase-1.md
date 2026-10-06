@@ -60,7 +60,9 @@ Estos términos se usan igual en la Spec, el código, las pruebas y el frontend;
 | Término | Significado | En código |
 | --- | --- | --- |
 | Cliente | Persona titular de una o más cuentas, identificada por un documento único | `Cliente` |
+| Documento | Tipo (CC, CE o pasaporte) y número que identifican a un cliente | `Documento` |
 | Cuenta | Depósito de dinero en una sola moneda, con número único, estado y saldo | `Cuenta` |
+| Número de cuenta | Identificador de 10 dígitos que el banco asigna a una cuenta; el último es verificador | `NumeroDeCuenta` |
 | Moneda | COP o USD; fija la precisión de los montos | `Moneda` |
 | Dinero | Par monto + moneda; nunca un número suelto | `Dinero` |
 | Movimiento | Registro inmutable de un débito o crédito sobre una cuenta, con el saldo resultante | `Movimiento` |
@@ -105,10 +107,12 @@ Cada regla tiene un identificador para citarla en pruebas, ADRs y commits; cada 
 | RN-14 | Una cuenta solo cambia de estado por estas transiciones: Activa → Bloqueada, Bloqueada → Activa y Activa → Cerrada. Cualquier otra se rechaza, incluida la que repite el estado actual; una cuenta Bloqueada se desbloquea antes de cerrarla. |
 | RN-15 | El monto de un Dinero nunca es negativo; cero es válido. |
 | RN-16 | Un monto con más decimales de los que admite su moneda se rechaza. Solo el resultado de un cálculo se ajusta a la precisión de su moneda, siempre hacia el valor más cercano, sin favorecer al banco ni al cliente; el caso del punto medio exacto lo fija el ADR de D-07. |
+| RN-17 | Un cliente se identifica por su documento: tipo (cédula de ciudadanía, cédula de extranjería o pasaporte) y número. No pueden existir dos clientes con el mismo tipo y número; el número se compara después de quitarle espacios, puntos y guiones y de pasarlo a mayúsculas. El mismo número con otro tipo es otro documento. |
+| RN-18 | El número de cuenta lo asigna el banco al abrirla y no cambia nunca: es único, tiene 10 dígitos, no sigue un orden que permita deducir otros números y su último dígito es verificador. |
 
 ## Requisitos funcionales
 
-Once requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
+Doce requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
 
 | ID | Requisito | Actor | Criterio de aceptación |
 | --- | --- | --- | --- |
@@ -123,6 +127,7 @@ Once requisitos cierran la fase 1; cada criterio de aceptación se convierte en 
 | RF-09 | Reintentar una transferencia | Cliente | Repetir la solicitud con la misma clave devuelve la misma transferencia sin nuevo débito (RN-11). |
 | RF-10 | Configurar tasa COP/USD | Operador | Crea una versión con fecha de vigencia; las transferencias ya hechas conservan su tasa aplicada. |
 | RF-11 | Consultar una transferencia | Cliente, Operador | Devuelve estado, montos, tasa aplicada y movimientos asociados. |
+| RF-12 | Consultar clientes | Operador | Buscar por tipo y número de documento, escrito con o sin puntos ni espacios, devuelve la ficha del cliente con sus cuentas; un documento no registrado responde no encontrado. |
 
 ## Requisitos no funcionales
 
@@ -180,7 +185,7 @@ Prácticas que el frontend debe mostrar:
 
 ## Decisiones abiertas para Design
 
-Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-07 → ADR-0007, D-10 → ADR-0005.
+Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-10 → ADR-0005.
 
 | ID | Pregunta | Opciones a comparar |
 | --- | --- | --- |

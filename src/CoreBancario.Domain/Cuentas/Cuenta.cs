@@ -5,13 +5,18 @@ namespace CoreBancario.Domain.Cuentas;
 public sealed class Cuenta
 {
     public Guid Id { get; }
-    public string Numero { get; }
+    public NumeroDeCuenta Numero { get; }
     public Guid ClienteId { get; }
     public Moneda Moneda { get; }
     public EstadoCuenta Estado { get; private set; }
     public Dinero Saldo { get; private set; }
 
-    private Cuenta(Guid id, string numero, Guid clienteId, Moneda moneda)
+    // Fechas de apertura y cierre. FechaCierre solo tiene valor cuando Estado es Cerrada.
+    public DateTimeOffset FechaApertura { get; }
+    public DateTimeOffset? FechaCierre { get; private set; }
+
+    // EF Core enlaza este constructor por nombre de parámetro: deben seguir iguales que las propiedades.
+    private Cuenta(Guid id, NumeroDeCuenta numero, Guid clienteId, Moneda moneda, DateTimeOffset fechaApertura)
     {
         Id = id;
         Numero = numero;
@@ -19,15 +24,16 @@ public sealed class Cuenta
         Moneda = moneda;
         Estado = EstadoCuenta.Activa;
         Saldo = Dinero.Crear(0m, moneda);
+        FechaApertura = fechaApertura;
     }
 
-    /// <summary>Abre una cuenta Activa con saldo 0 en la moneda indicada (RN-02).</summary>
-    public static Cuenta Abrir(string numero, Guid clienteId, Moneda moneda)
+    /// <summary>Abre una cuenta Activa con saldo 0 (RN-02). Id = UUID v7 de fechaApertura: ordenado en el tiempo y sin leer el reloj.</summary>
+    public static Cuenta Abrir(NumeroDeCuenta numero, Guid clienteId, Moneda moneda, DateTimeOffset fechaApertura)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(numero);
+        ArgumentNullException.ThrowIfNull(numero);
         ArgumentNullException.ThrowIfNull(moneda);
 
-        return new Cuenta(Guid.CreateVersion7(), numero, clienteId, moneda);
+        return new Cuenta(Guid.CreateVersion7(fechaApertura), numero, clienteId, moneda, fechaApertura);
     }
 
     /// <summary>Suma monto al saldo. Orden de validación (CL-12): estado, moneda, monto > 0.</summary>
@@ -80,8 +86,8 @@ public sealed class Cuenta
     /// <summary>Bloqueada → Activa.</summary>
     public void Desbloquear() => CambiarEstado(EstadoCuenta.Activa);
 
-    /// <summary>Activa → Cerrada, solo con saldo cero. La transición se comprueba primero (CL-12).</summary>
-    public void Cerrar()
+    /// <summary>Activa → Cerrada, solo con saldo cero; fija FechaCierre al final, tras validar transición y saldo (CL-12).</summary>
+    public void Cerrar(DateTimeOffset fechaCierre)
     {
         if (!EsTransicionPermitida(Estado, EstadoCuenta.Cerrada))
             throw new TransicionNoPermitidaException(Estado, EstadoCuenta.Cerrada);
@@ -90,6 +96,7 @@ public sealed class Cuenta
             throw new SaldoDistintoDeCeroException(Saldo);
 
         Estado = EstadoCuenta.Cerrada;
+        FechaCierre = fechaCierre;
     }
 
     private void CambiarEstado(EstadoCuenta destino)

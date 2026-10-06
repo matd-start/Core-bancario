@@ -7,13 +7,15 @@ public class CuentaOperacionesTests
 {
     private static readonly DateTimeOffset Instante = new(2026, 10, 1, 12, 0, 0, TimeSpan.Zero);
 
+    private static NumeroDeCuenta Numero() => NumeroDeCuenta.Crear("1234567897");
+
     private static Dinero Cop(decimal monto) => Dinero.Crear(monto, Moneda.COP);
 
     private static Dinero Usd(decimal monto) => Dinero.Crear(monto, Moneda.USD);
 
     private static Cuenta CuentaActivaConSaldo(decimal pesos)
     {
-        var cuenta = Cuenta.Abrir("001-0001", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
         cuenta.Acreditar(Cop(pesos), Instante);
         return cuenta;
     }
@@ -27,15 +29,15 @@ public class CuentaOperacionesTests
 
     private static Cuenta CuentaBloqueadaSinSaldo()
     {
-        var cuenta = Cuenta.Abrir("001-0003", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
         cuenta.Bloquear();
         return cuenta;
     }
 
     private static Cuenta CuentaCerrada()
     {
-        var cuenta = Cuenta.Abrir("001-0002", Guid.NewGuid(), Moneda.COP);
-        cuenta.Cerrar();
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
+        cuenta.Cerrar(Instante);
         return cuenta;
     }
 
@@ -45,7 +47,7 @@ public class CuentaOperacionesTests
     public void CA10_AbrirCuentaCop_NaceActiva()
     {
         // Arrange / Act
-        var cuenta = Cuenta.Abrir("001-0001", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
 
         // Assert
         Assert.Equal(EstadoCuenta.Activa, cuenta.Estado);
@@ -55,7 +57,7 @@ public class CuentaOperacionesTests
     public void CA10_AbrirCuentaCop_NaceConSaldoCeroEnSuMoneda()
     {
         // Arrange / Act
-        var cuenta = Cuenta.Abrir("001-0001", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
 
         // Assert
         Assert.Equal(Cop(0m), cuenta.Saldo);
@@ -66,7 +68,7 @@ public class CuentaOperacionesTests
     public void CA10_AbrirCuentaUsd_NaceConSaldoCeroEnDolares()
     {
         // Arrange / Act
-        var cuenta = Cuenta.Abrir("001-0003", Guid.NewGuid(), Moneda.USD);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.USD, Instante);
 
         // Assert
         Assert.Equal(Usd(0m), cuenta.Saldo);
@@ -80,32 +82,29 @@ public class CuentaOperacionesTests
         var clienteId = Guid.NewGuid();
 
         // Act
-        var cuenta = Cuenta.Abrir("001-0001", clienteId, Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), clienteId, Moneda.COP, Instante);
 
         // Assert
-        Assert.Equal("001-0001", cuenta.Numero);
+        Assert.Equal(Numero(), cuenta.Numero);
         Assert.Equal(clienteId, cuenta.ClienteId);
         Assert.NotEqual(Guid.Empty, cuenta.Id);
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void ADR0008_AbrirSinNumero_LanzaArgumentException(string? numero)
+    [Fact]
+    public void ADR0008_AbrirSinNumero_LanzaArgumentNullException()
     {
         // Arrange / Act
-        var accion = () => Cuenta.Abrir(numero!, Guid.NewGuid(), Moneda.COP);
+        var accion = () => Cuenta.Abrir(null!, Guid.NewGuid(), Moneda.COP, Instante);
 
         // Assert
-        Assert.ThrowsAny<ArgumentException>(accion);
+        Assert.Throws<ArgumentNullException>(accion);
     }
 
     [Fact]
     public void ADR0008_AbrirSinMoneda_LanzaArgumentNullException()
     {
         // Arrange / Act
-        var accion = () => Cuenta.Abrir("001-0001", Guid.NewGuid(), null!);
+        var accion = () => Cuenta.Abrir(Numero(), Guid.NewGuid(), null!, Instante);
 
         // Assert
         Assert.Throws<ArgumentNullException>(accion);
@@ -434,7 +433,7 @@ public class CuentaOperacionesTests
     public void CL12_DebitarCeroMasQueNingunSaldo_LanzaMontoNoPositivo()
     {
         // Arrange: el monto cero se informa antes que el saldo (cuenta en cero).
-        var cuenta = Cuenta.Abrir("001-0004", Guid.NewGuid(), Moneda.COP);
+        var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
 
         // Act
         var accion = () => cuenta.Debitar(Cop(0m), Instante);
