@@ -16,8 +16,29 @@ public sealed class Cliente
     private Cliente() { }
 #pragma warning restore CS8618
 
+    private Cliente(Guid id, Documento documento, NombreDePersona nombres, NombreDePersona apellidos,
+        Correo correo, Telefono telefono, DateTimeOffset fechaRegistro)
+    {
+        Id = id;
+        Documento = documento;
+        Nombres = nombres;
+        Apellidos = apellidos;
+        Correo = correo;
+        Telefono = telefono;
+        FechaRegistro = fechaRegistro;
+    }
+
+    /// <summary>Id = Guid.CreateVersion7(fechaRegistro). La unicidad del documento (RN-17) la garantiza la base.</summary>
     /// <exception cref="ArgumentNullException">Algún value object es null.</exception>
-    // SDD: esqueleto creado por test-writer
     public static Cliente Registrar(Documento documento, NombreDePersona nombres, NombreDePersona apellidos,
-        Correo correo, Telefono telefono, DateTimeOffset fechaRegistro) => throw new NotImplementedException();
+        Correo correo, Telefono telefono, DateTimeOffset fechaRegistro)
+    {
+        ArgumentNullException.ThrowIfNull(documento);
+        ArgumentNullException.ThrowIfNull(nombres);
+        ArgumentNullException.ThrowIfNull(apellidos);
+        ArgumentNullException.ThrowIfNull(correo);
+        ArgumentNullException.ThrowIfNull(telefono);
+
+        return new Cliente(Guid.CreateVersion7(fechaRegistro), documento, nombres, apellidos, correo, telefono, fechaRegistro);
+    }
 }

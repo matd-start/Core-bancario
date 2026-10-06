@@ -14,9 +14,11 @@ public sealed record Dinero
     /// <summary>true si Monto == 0. Propiedad calculada: no forma parte de la igualdad del record.</summary>
     public bool EsCero => Monto == 0m;
 
+    // Aplica la forma canónica porque EF Core materializa el complex type por este constructor:
+    // un monto leído de numeric(19,2) (50000.00 COP) recupera su forma canónica (50000).
     private Dinero(decimal monto, Moneda moneda)
     {
-        Monto = monto;
+        Monto = AFormaCanonica(monto, moneda);
         Moneda = moneda;
     }
 

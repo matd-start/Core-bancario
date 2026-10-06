@@ -22,12 +22,27 @@ public sealed record Moneda
 
     /// <summary>Devuelve COP o USD según el código exacto ("COP", "USD"; sensible a mayúsculas). Lo usa la persistencia.</summary>
     /// <exception cref="ArgumentException">codigo es null, vacío o no es "COP" ni "USD".</exception>
-    // SDD: esqueleto creado por test-writer
-    public static Moneda DesdeCodigo(string codigo) => throw new NotImplementedException();
+    public static Moneda DesdeCodigo(string codigo)
+    {
+        if (!TryDesdeCodigo(codigo, out var moneda))
+            throw new ArgumentException($"Código de moneda desconocido: '{codigo}'.", nameof(codigo));
+
+        return moneda;
+    }
 
     /// <summary>Versión sin excepciones para validar la entrada (CL-10).</summary>
-    // SDD: esqueleto creado por test-writer
-    public static bool TryDesdeCodigo(string? codigo, [NotNullWhen(true)] out Moneda? moneda) => throw new NotImplementedException();
+    public static bool TryDesdeCodigo(string? codigo, [NotNullWhen(true)] out Moneda? moneda)
+    {
+        // Comparación exacta (ordinal): "cop" no es COP.
+        moneda = codigo switch
+        {
+            "COP" => COP,
+            "USD" => USD,
+            _ => null,
+        };
+
+        return moneda is not null;
+    }
 
     /// <returns>El código, por ejemplo "COP".</returns>
     public override string ToString() => Codigo;
