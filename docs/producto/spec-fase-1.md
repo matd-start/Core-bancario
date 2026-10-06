@@ -185,7 +185,7 @@ Prácticas que el frontend debe mostrar:
 
 ## Decisiones abiertas para Design
 
-Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-07 → ADR-0007, D-10 → ADR-0005.
+Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-10 → ADR-0005.
 
 | ID | Pregunta | Opciones a comparar |
 | --- | --- | --- |
