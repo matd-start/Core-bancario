@@ -112,11 +112,13 @@ src/CoreBancario.Domain/
 src/CoreBancario.Application/
   DependencyInjection.cs                               namespace CoreBancario.Application
   Comun/        Resultado.cs, IUnidadDeTrabajo.cs, RecursoNoEncontradoException.cs,
-                ConflictoDeConcurrenciaException.cs, DineroDto.cs
+                ConflictoDeConcurrenciaException.cs, DineroDto.cs,
+                RelojExtensiones.cs (internal; añadido en el Build)
   Clientes/     RegistrarClienteComando.cs, RegistrarClienteHandler.cs, ObtenerClienteConsulta.cs,
                 ObtenerClienteHandler.cs, BuscarClientePorDocumentoConsulta.cs,
                 BuscarClientePorDocumentoHandler.cs, ClienteDto.cs, FichaClienteDto.cs,
-                IClienteRepositorio.cs, DocumentoDuplicadoException.cs
+                IClienteRepositorio.cs, DocumentoDuplicadoException.cs,
+                TiposDeDocumentoAceptados.cs, FichaClienteDtoFabrica.cs (internal; añadidos en el Build)
   Cuentas/      AbrirCuentaComando.cs, AbrirCuentaHandler.cs, CambiarEstadoDeCuentaComando.cs,
                 AccionDeEstado.cs, CambiarEstadoDeCuentaHandler.cs, ObtenerCuentaConsulta.cs,
                 ObtenerCuentaHandler.cs, CuentaDto.cs, ICuentaRepositorio.cs, IGeneradorDeNumeroDeCuenta.cs
@@ -448,13 +450,16 @@ public sealed record CambiarEstadoDeCuentaComando(Guid CuentaId, AccionDeEstado 
 public sealed record ObtenerCuentaConsulta(Guid CuentaId);
 
 // ───────────── Handlers (uno por caso de uso; clases concretas, sin interfaz: ADR-0009) ─────────────
+// Cambio del Build: los handlers que escriben usan reloj.AhoraEnMicrosegundos() (Application/Comun/RelojExtensiones.cs)
+// en vez de reloj.GetUtcNow(). .NET mide en ticks de 100 ns y timestamptz guarda microsegundos; sin truncar, la
+// respuesta del POST no coincidía con lo que devuelve el GET (CA01 y CA17 comparan exacto). Decisión del autor (2026-10-06).
 namespace CoreBancario.Application.Clientes;
 
 public sealed class RegistrarClienteHandler(IClienteRepositorio clientes, IUnidadDeTrabajo unidadDeTrabajo, TimeProvider reloj)
 {
     /// <summary>
     /// 1) Valida TODOS los campos y acumula errores (sección 5, "Validación de registro"); si hay alguno, devuelve
-    ///    Invalido sin tocar repositorio ni unidad de trabajo. 2) Cliente.Registrar(…, reloj.GetUtcNow()).
+    ///    Invalido sin tocar repositorio ni unidad de trabajo. 2) Cliente.Registrar(…, reloj.AhoraEnMicrosegundos()).
     /// 3) Agregar + GuardarCambiosAsync. Sin consulta previa de existencia: el duplicado lo detecta el índice único.
     /// </summary>
     /// <exception cref="DocumentoDuplicadoException">CL-01, CL-03, CL-08.</exception>
@@ -488,7 +493,7 @@ public sealed class AbrirCuentaHandler(IClienteRepositorio clientes, ICuentaRepo
     /// 1) Moneda: Moneda.TryDesdeCodigo; si falla → Invalido con la clave "moneda" (CL-10), sin tocar la base.
     /// 2) Cliente: ObtenerAsync; si no existe → RecursoNoEncontradoException (CL-09).
     /// 3) Número: hasta MaximoDeIntentos veces, generador.Generar() y ExisteNumeroAsync; el primero libre se usa (CL-11).
-    /// 4) Cuenta.Abrir(numero, clienteId, moneda, reloj.GetUtcNow()) + Agregar + GuardarCambiosAsync.
+    /// 4) Cuenta.Abrir(numero, clienteId, moneda, reloj.AhoraEnMicrosegundos()) + Agregar + GuardarCambiosAsync.
     /// </summary>
     /// <exception cref="Comun.RecursoNoEncontradoException">CL-09.</exception>
     /// <exception cref="InvalidOperationException">Los MaximoDeIntentos números generados ya existían (espacio agotado: 500).</exception>
@@ -497,7 +502,7 @@ public sealed class AbrirCuentaHandler(IClienteRepositorio clientes, ICuentaRepo
 
 public sealed class CambiarEstadoDeCuentaHandler(ICuentaRepositorio cuentas, IUnidadDeTrabajo unidadDeTrabajo, TimeProvider reloj)
 {
-    /// <summary>ObtenerAsync → Bloquear() | Desbloquear() | Cerrar(reloj.GetUtcNow()) → GuardarCambiosAsync. Sin reintento automático (ADR-0012).</summary>
+    /// <summary>ObtenerAsync → Bloquear() | Desbloquear() | Cerrar(reloj.AhoraEnMicrosegundos()) → GuardarCambiosAsync. Sin reintento automático (ADR-0012).</summary>
     /// <exception cref="Comun.RecursoNoEncontradoException">CL-16.</exception>
     /// <exception cref="TransicionNoPermitidaException">RN-14, CL-13.</exception>
     /// <exception cref="SaldoDistintoDeCeroException">RN-06, CL-14.</exception>
@@ -758,7 +763,7 @@ Notas para el test-writer sobre las firmas:
 ### Migraciones
 
 - Una migración, `Inicial`, en `src/CoreBancario.Infrastructure/Persistencia/Migraciones/`, generada con `dotnet ef migrations add Inicial --project src/CoreBancario.Infrastructure --output-dir Persistencia/Migraciones` (herramienta local `dotnet-ef` en `.config/dotnet-tools.json`, con la misma versión que EF Core).
-- La migración **no** contiene una columna `xmin` ni `version`. Hay que revisarlo en el código generado (sección 10, riesgo 2).
+- El SQL de la migración **no** crea una columna `xmin` ni `version` (el C# generado sí menciona `xmin`; Npgsql la omite al generar el SQL). Se revisa con `dotnet ef migrations script` (sección 10, riesgo 2).
 - Después de generarla: `dotnet format`, porque el CI ejecuta `dotnet format --verify-no-changes`.
 - **Cómo se aplican (RNF-02):** las pruebas llaman a `Database.MigrateAsync()` sobre un contenedor vacío. La Api las aplica al arrancar **solo en `Development`**. En producción se decidirá con el despliegue (D-11), porque migrar al arrancar con varias instancias es mala práctica. Desde EF Core 9, `Migrate` falla si el modelo tiene cambios sin migración: es una guarda gratuita.
 
@@ -1013,7 +1018,7 @@ El autor eligió las dos recomendaciones: **handlers llamados directamente** (AD
 ### Riesgos
 
 1. **`HasIndex` dentro de `OwnsOne`.** Se usa para el índice de `Documento`, porque EF Core 10 no admite índices sobre complex types. Si al generar la migración no aparece `ux_clientes_documento`, la alternativa es crearlo con `migrationBuilder.Sql(...)` en la migración. CA-02 y CA-05 lo detectarían.
-2. **`xmin` en la migración.** Npgsql reconoce `xmin` como columna de sistema y no debe crearla. Hay que revisar el código generado: si aparece `xmin` o `version`, se corrige la configuración, porque la migración fallaría contra PostgreSQL.
+2. **`xmin` en la migración.** Npgsql reconoce `xmin` como columna de sistema y no debe crearla. Hay que revisar el código generado: si aparece `xmin` o `version`, se corrige la configuración, porque la migración fallaría contra PostgreSQL. **Resultado del Build:** el C# de la migración sí menciona `xmin` (`type: "xid", rowVersion: true`), pero el SQL generado no la crea, porque Npgsql omite las columnas de sistema. Comprobado con `dotnet ef migrations script` y con las pruebas `RNF02_*`, que aplican la migración sobre una base vacía. Lo que se revisa es el SQL, no el C#.
 3. **Materialización de `Dinero` por constructor.** El diseño de `numeric(19,2)` depende de que EF Core use el constructor privado del complex type. Las pruebas `CA06_SaldoCopRecargado_ConservaFormaCanonica` y `CA07_…` lo verifican; si fallaran, se cambia a `numeric` sin escala (sección 4).
 4. **Redacción de la spec de producto.** El RNF de concurrencia dice "reintento acotado y luego 409". ADR-0012 lo concreta: en los cambios de estado no hay reintento automático (lo exige CA-14), y el reintento acotado queda como opción para las operaciones de dinero del S4 (ADR de D-02). Conviene que la spec de producto lo aclare cuando se escriba esa ADR.
 5. **Tiempo del sprint (1 semana).** Es la primera feature con EF Core, Testcontainers y Minimal APIs a la vez. Si el tiempo aprieta, lo primero que se puede recortar sin incumplir la spec son las pruebas de los CHECK por SQL y `CL12_ReintentarApertura_AbreUnaSegundaCuenta`, que solo documenta un límite aceptado.
