@@ -13,7 +13,7 @@ public class ClienteTests
     private static Telefono Tel => Telefono.Crear("+573001234567");
 
     [Fact]
-    public void CA01_Registrar_ConservaTodosLosDatosYLaFechaDeRegistro()
+    public void F002_CA01_Registrar_ConservaTodosLosDatosYLaFechaDeRegistro()
     {
         // Arrange / Act
         var cliente = Cliente.Registrar(Doc, Nombre, Apellido, Mail, Tel, Instante);
@@ -28,7 +28,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_Registrar_AsignaUnIdNoVacio()
+    public void F002_CA01_Registrar_AsignaUnIdNoVacio()
     {
         // Arrange / Act
         var cliente = Cliente.Registrar(Doc, Nombre, Apellido, Mail, Tel, Instante);
@@ -38,7 +38,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_Registrar_IdEsVersion7DeLaFechaDeRegistro()
+    public void F002_CA01_Registrar_IdEsVersion7DeLaFechaDeRegistro()
     {
         // Arrange / Act
         var cliente = Cliente.Registrar(Doc, Nombre, Apellido, Mail, Tel, Instante);
@@ -49,7 +49,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarDosVeces_GeneraIdsDistintos()
+    public void F002_CA01_RegistrarDosVeces_GeneraIdsDistintos()
     {
         // Arrange / Act
         var primero = Cliente.Registrar(Doc, Nombre, Apellido, Mail, Tel, Instante);
@@ -60,7 +60,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarSinDocumento_LanzaArgumentNullException()
+    public void F002_CA01_RegistrarSinDocumento_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cliente.Registrar(null!, Nombre, Apellido, Mail, Tel, Instante);
@@ -70,7 +70,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarSinNombres_LanzaArgumentNullException()
+    public void F002_CA01_RegistrarSinNombres_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cliente.Registrar(Doc, null!, Apellido, Mail, Tel, Instante);
@@ -80,7 +80,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarSinApellidos_LanzaArgumentNullException()
+    public void F002_CA01_RegistrarSinApellidos_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cliente.Registrar(Doc, Nombre, null!, Mail, Tel, Instante);
@@ -90,7 +90,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarSinCorreo_LanzaArgumentNullException()
+    public void F002_CA01_RegistrarSinCorreo_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cliente.Registrar(Doc, Nombre, Apellido, null!, Tel, Instante);
@@ -100,7 +100,7 @@ public class ClienteTests
     }
 
     [Fact]
-    public void CA01_RegistrarSinTelefono_LanzaArgumentNullException()
+    public void F002_CA01_RegistrarSinTelefono_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cliente.Registrar(Doc, Nombre, Apellido, Mail, null!, Instante);

@@ -5,7 +5,7 @@ namespace CoreBancario.Domain.Tests.Monetario;
 public class MonedaTests
 {
     [Fact]
-    public void RN04_MonedaCop_TienePrecisionCero()
+    public void F001_RN04_MonedaCop_TienePrecisionCero()
     {
         // Arrange
         var moneda = Moneda.COP;
@@ -19,7 +19,7 @@ public class MonedaTests
     }
 
     [Fact]
-    public void RN04_MonedaUsd_TienePrecisionDos()
+    public void F001_RN04_MonedaUsd_TienePrecisionDos()
     {
         // Arrange
         var moneda = Moneda.USD;
@@ -33,7 +33,7 @@ public class MonedaTests
     }
 
     [Fact]
-    public void RN04_MonedaToString_DevuelveElCodigo()
+    public void F001_RN04_MonedaToString_DevuelveElCodigo()
     {
         // Arrange
         var moneda = Moneda.USD;
@@ -54,7 +54,7 @@ public class MonedaTests
     [InlineData("")]
     [InlineData(" COP")]
     [InlineData(null)]
-    public void CL10_TryDesdeCodigoDesconocido_DevuelveFalse(string? codigo)
+    public void F002_CL10_TryDesdeCodigoDesconocido_DevuelveFalse(string? codigo)
     {
         // Arrange / Act
         var encontrada = Moneda.TryDesdeCodigo(codigo, out var moneda);
@@ -67,7 +67,7 @@ public class MonedaTests
     [Theory]
     [InlineData("COP")]
     [InlineData("USD")]
-    public void CL10_TryDesdeCodigoValido_DevuelveLaMoneda(string codigo)
+    public void F002_CL10_TryDesdeCodigoValido_DevuelveLaMoneda(string codigo)
     {
         // Arrange / Act
         var encontrada = Moneda.TryDesdeCodigo(codigo, out var moneda);
@@ -78,7 +78,7 @@ public class MonedaTests
     }
 
     [Fact]
-    public void CL10_DesdeCodigoValido_DevuelveLaMismaInstancia()
+    public void F002_CL10_DesdeCodigoValido_DevuelveLaMismaInstancia()
     {
         // Arrange / Act
         var cop = Moneda.DesdeCodigo("COP");
@@ -94,7 +94,7 @@ public class MonedaTests
     [InlineData("cop")]
     [InlineData("")]
     [InlineData(null)]
-    public void CL10_DesdeCodigoDesconocido_LanzaArgumentException(string? codigo)
+    public void F002_CL10_DesdeCodigoDesconocido_LanzaArgumentException(string? codigo)
     {
         // Arrange / Act
         var accion = () => Moneda.DesdeCodigo(codigo!);

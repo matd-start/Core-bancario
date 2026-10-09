@@ -16,7 +16,7 @@ public class ConsultasDeClientesHandlerTests
     // ---- ObtenerClienteHandler ----
 
     [Fact]
-    public async Task CL18_ObtenerClienteInexistente_LanzaRecursoNoEncontrado()
+    public async Task F002_CL18_ObtenerClienteInexistente_LanzaRecursoNoEncontrado()
     {
         // Arrange
         var handler = CrearObtener();
@@ -29,7 +29,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CL19_ClienteSinCuentas_DevuelveListaVacia()
+    public async Task F002_CL19_ClienteSinCuentas_DevuelveListaVacia()
     {
         // Arrange
         var cliente = Datos.Cliente();
@@ -45,7 +45,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CA15_ClienteConCuentas_LasOrdenaPorFechaDeAperturaYLuegoPorId()
+    public async Task F002_CA15_ClienteConCuentas_LasOrdenaPorFechaDeAperturaYLuegoPorId()
     {
         // Arrange
         var cliente = Datos.Cliente();
@@ -64,7 +64,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CA15_CuentasConLaMismaFechaDeApertura_SeOrdenanPorId()
+    public async Task F002_CA15_CuentasConLaMismaFechaDeApertura_SeOrdenanPorId()
     {
         // Arrange
         var cliente = Datos.Cliente();
@@ -84,7 +84,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CA15_FichaDeUnCliente_NoIncluyeCuentasDeOtroCliente()
+    public async Task F002_CA15_FichaDeUnCliente_NoIncluyeCuentasDeOtroCliente()
     {
         // Arrange
         var cliente = Datos.Cliente("1234567");
@@ -104,7 +104,7 @@ public class ConsultasDeClientesHandlerTests
     // ---- BuscarClientePorDocumentoHandler ----
 
     [Fact]
-    public async Task CL17_BuscarConElNumeroConPuntos_EncuentraAlCliente()
+    public async Task F002_CL17_BuscarConElNumeroConPuntos_EncuentraAlCliente()
     {
         // Arrange
         var cliente = Datos.Cliente("1234567");
@@ -123,7 +123,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CL02_MismoNumeroConOtroTipo_NoEncuentraAlCliente()
+    public async Task F002_CL02_MismoNumeroConOtroTipo_NoEncuentraAlCliente()
     {
         // Arrange
         _clientes.Agregar(Datos.Cliente("1234567"));
@@ -138,7 +138,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CA16_BuscarDocumentoNoRegistrado_LanzaRecursoNoEncontrado()
+    public async Task F002_CA16_BuscarDocumentoNoRegistrado_LanzaRecursoNoEncontrado()
     {
         // Arrange
         var handler = CrearBuscar();
@@ -152,7 +152,7 @@ public class ConsultasDeClientesHandlerTests
     }
 
     [Fact]
-    public async Task CL18_BuscarNumeroConFormatoInvalidoParaSuTipo_LanzaRecursoNoEncontrado()
+    public async Task F002_CL18_BuscarNumeroConFormatoInvalidoParaSuTipo_LanzaRecursoNoEncontrado()
     {
         // Arrange
         var handler = CrearBuscar();
@@ -170,7 +170,7 @@ public class ConsultasDeClientesHandlerTests
     [InlineData("")]
     [InlineData("XX")]
     [InlineData("cc")]
-    public async Task CL18_BuscarConTipoInvalido_DevuelveInvalidoConLaClaveTipoDocumento(string? tipo)
+    public async Task F002_CL18_BuscarConTipoInvalido_DevuelveInvalidoConLaClaveTipoDocumento(string? tipo)
     {
         // Arrange
         var handler = CrearBuscar();
@@ -189,7 +189,7 @@ public class ConsultasDeClientesHandlerTests
     [InlineData("")]
     [InlineData("  ")]
     [InlineData(".-.")]
-    public async Task CL18_BuscarSinNumeroOVacioAlNormalizar_DevuelveInvalidoConLaClaveNumeroDocumento(string? numero)
+    public async Task F002_CL18_BuscarSinNumeroOVacioAlNormalizar_DevuelveInvalidoConLaClaveNumeroDocumento(string? numero)
     {
         // Arrange
         var handler = CrearBuscar();

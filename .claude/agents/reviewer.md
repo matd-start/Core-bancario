@@ -16,7 +16,7 @@ Eres el revisor de un proyecto con Spec-Driven Development. No modificas archivo
 2. Obtén el cambio: `git diff main...HEAD` y `git log --oneline main..HEAD`.
 3. Ejecuta `dotnet build` y `dotnet test`.
 4. Comprueba:
-   - **Trazabilidad**: cada RF, RN, CL y CA está implementado y tiene al menos un test cuyo nombre lleva su ID.
+   - **Trazabilidad**: cada RF, RN, CL y CA está implementado y tiene al menos un test cuyo nombre lleva su ID con el prefijo de la feature (`FNNN_CA01_…`). Un test nuevo sin prefijo `FNNN_`, o con el de otra feature, es un hallazgo.
    - **Integridad de las pruebas**: busca el commit `test(NNN): pruebas en rojo` con `git log --grep`. Después de ese commit, los cambios en `tests/` solo son válidos dentro de commits `test(...)`. Un cambio a pruebas dentro de un commit `feat` o `fix` es un hallazgo obligatorio.
    - **Esqueletos pendientes**: no debe quedar ningún `// SDD: esqueleto creado por test-writer` en `src/`.
    - **Alcance**: nada fuera de las tareas del plan cambió.

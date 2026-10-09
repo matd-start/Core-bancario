@@ -13,7 +13,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     // ---- Forma canonica del saldo al recargar (riesgo 3 del plan) ----
 
     [Fact]
-    public async Task CA06_SaldoCopRecargado_ConservaFormaCanonica()
+    public async Task F002_CA06_SaldoCopRecargado_ConservaFormaCanonica()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd, Moneda.COP, Dinero.Crear(50_000m, Moneda.COP));
@@ -28,7 +28,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA06_CuentaGuardada_SeRecuperaConNumeroEstadoYFechas()
+    public async Task F002_CA06_CuentaGuardada_SeRecuperaConNumeroEstadoYFechas()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd);
@@ -47,7 +47,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA07_SaldoUsdRecargado_ConservaDosDecimales()
+    public async Task F002_CA07_SaldoUsdRecargado_ConservaDosDecimales()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd, Moneda.USD, Dinero.Crear(10.5m, Moneda.USD));
@@ -63,7 +63,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA07_SaldoCeroEnUsdRecargado_ConservaDosDecimales()
+    public async Task F002_CA07_SaldoCeroEnUsdRecargado_ConservaDosDecimales()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd, Moneda.USD);
@@ -80,7 +80,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     // ---- RN-18: el indice unico es la garantia final ----
 
     [Fact]
-    public async Task RN18_NumeroRepetido_LoRechazaElIndiceUnico()
+    public async Task F002_RN18_NumeroRepetido_LoRechazaElIndiceUnico()
     {
         // Arrange
         var existente = await Ayudas.GuardarCuentaAsync(bd);
@@ -97,7 +97,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task RN18_ExisteNumero_DistingueEntreNumeroGuardadoYLibre()
+    public async Task F002_RN18_ExisteNumero_DistingueEntreNumeroGuardadoYLibre()
     {
         // Arrange
         var existente = await Ayudas.GuardarCuentaAsync(bd);
@@ -117,7 +117,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     // ---- CL-09: la FK es la segunda defensa ----
 
     [Fact]
-    public async Task CL09_CuentaDeClienteInexistente_LaClaveForaneaLaRechaza()
+    public async Task F002_CL09_CuentaDeClienteInexistente_LaClaveForaneaLaRechaza()
     {
         // Arrange
         await using var db = bd.CrearContexto();
@@ -133,7 +133,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     // ---- Repositorio ----
 
     [Fact]
-    public async Task CL19_ListarPorClienteSinCuentas_DevuelveListaVacia()
+    public async Task F002_CL19_ListarPorClienteSinCuentas_DevuelveListaVacia()
     {
         // Arrange
         var cliente = Ayudas.NuevoCliente();
@@ -154,7 +154,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA15_ListarPorCliente_OrdenaPorFechaDeAperturaYDevuelveSoloLasDelCliente()
+    public async Task F002_CA15_ListarPorCliente_OrdenaPorFechaDeAperturaYDevuelveSoloLasDelCliente()
     {
         // Arrange
         var cliente = Ayudas.NuevoCliente();
@@ -181,7 +181,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     // ---- Concurrencia por fila con xmin (ADR-0012) ----
 
     [Fact]
-    public async Task CA14_BloquearYCerrarIntercalados_ElSegundoRecibeConflicto()
+    public async Task F002_CA14_BloquearYCerrarIntercalados_ElSegundoRecibeConflicto()
     {
         // Arrange: dos contextos leen la misma version de la cuenta.
         var guardada = await Ayudas.GuardarCuentaAsync(bd);
@@ -201,7 +201,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA14_TrasElConflicto_LaBaseConservaLaOperacionAplicada()
+    public async Task F002_CA14_TrasElConflicto_LaBaseConservaLaOperacionAplicada()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd);
@@ -226,7 +226,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL15_ReintentoTrasConflicto_EvaluaLaReglaSobreElEstadoNuevo()
+    public async Task F002_CL15_ReintentoTrasConflicto_EvaluaLaReglaSobreElEstadoNuevo()
     {
         // Arrange: tras el conflicto, la cuenta esta Bloqueada en la base.
         var guardada = await Ayudas.GuardarCuentaAsync(bd);
@@ -248,7 +248,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL15_CerrarConVersionViejaTrasCambioDeSaldo_LanzaConflicto()
+    public async Task F002_CL15_CerrarConVersionViejaTrasCambioDeSaldo_LanzaConflicto()
     {
         // Arrange: write skew del S4. El segundo contexto ve saldo 0 y cerraria una cuenta que ya tiene saldo.
         var guardada = await Ayudas.GuardarCuentaAsync(bd);
@@ -268,7 +268,7 @@ public class CuentasPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA12_CierreGuardado_SeRecuperaConEstadoYFechaDeCierre()
+    public async Task F002_CA12_CierreGuardado_SeRecuperaConEstadoYFechaDeCierre()
     {
         // Arrange
         var guardada = await Ayudas.GuardarCuentaAsync(bd);

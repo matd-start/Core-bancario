@@ -23,7 +23,7 @@ public class ArquitecturaDelDominioTests
     ];
 
     [Fact]
-    public void RNF01_EnsambladoDelDominio_SoloReferenciaElFramework()
+    public void F001_RNF01_EnsambladoDelDominio_SoloReferenciaElFramework()
     {
         // Arrange
         var referencias = typeof(Dinero).Assembly.GetReferencedAssemblies();
@@ -39,7 +39,7 @@ public class ArquitecturaDelDominioTests
     }
 
     [Fact]
-    public void RNF04_MiembrosPublicosDelDominio_NoUsanDoubleNiFloat()
+    public void F001_RNF04_MiembrosPublicosDelDominio_NoUsanDoubleNiFloat()
     {
         // Arrange
         var tipos = typeof(Dinero).Assembly.GetExportedTypes();

@@ -34,7 +34,7 @@ public class CuentasApiTests(ApiFixture api)
     // ---- RF-02 Abrir cuenta ----
 
     [Fact]
-    public async Task CA06_AbrirCuentaCop_QuedaActivaConSaldoCeroFechaDeAperturaYNumeroValido()
+    public async Task F002_CA06_AbrirCuentaCop_QuedaActivaConSaldoCeroFechaDeAperturaYNumeroValido()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -58,7 +58,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA07_AbrirCuentaUsd_QuedaEnUsdConSaldoCero()
+    public async Task F002_CA07_AbrirCuentaUsd_QuedaEnUsdConSaldoCero()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -76,7 +76,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA08_AbrirCuentaClienteInexistente_Responde404YNoCreaCuenta()
+    public async Task F002_CA08_AbrirCuentaClienteInexistente_Responde404YNoCreaCuenta()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -90,7 +90,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA09_AbrirCincuentaCuentas_NumerosDistintosValidosYNoConsecutivos()
+    public async Task F002_CA09_AbrirCincuentaCuentas_NumerosDistintosValidosYNoConsecutivos()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -113,7 +113,7 @@ public class CuentasApiTests(ApiFixture api)
     [InlineData("EUR")]
     [InlineData("cop")]
     [InlineData("")]
-    public async Task CL10_AbrirCuentaEnMonedaDesconocida_Responde400(string moneda)
+    public async Task F002_CL10_AbrirCuentaEnMonedaDesconocida_Responde400(string moneda)
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -130,7 +130,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL10_AbrirCuentaSinMoneda_Responde400()
+    public async Task F002_CL10_AbrirCuentaSinMoneda_Responde400()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -145,7 +145,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL11_GeneradorDevuelveUnNumeroExistente_AbreConOtroNumero()
+    public async Task F002_CL11_GeneradorDevuelveUnNumeroExistente_AbreConOtroNumero()
     {
         // Arrange: secuencia A, A, B. La primera cuenta toma A; la segunda recibe A (ya existe) y luego B.
         var numeroA = NumeroDeCuenta.Crear(NumeroDeCuentaUnico());
@@ -169,7 +169,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL12_ReintentarApertura_AbreUnaSegundaCuenta()
+    public async Task F002_CL12_ReintentarApertura_AbreUnaSegundaCuenta()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -187,7 +187,7 @@ public class CuentasApiTests(ApiFixture api)
     // ---- RF-03 Cambiar estado ----
 
     [Fact]
-    public async Task CA10_BloquearYDesbloquear_CambiaElEstadoYSePersiste()
+    public async Task F002_CA10_BloquearYDesbloquear_CambiaElEstadoYSePersiste()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -211,7 +211,7 @@ public class CuentasApiTests(ApiFixture api)
     [Theory]
     [InlineData("cerrar")]
     [InlineData("bloquear")]
-    public async Task CA11_CerrarOBloquearCuentaBloqueada_Responde422YSigueBloqueada(string accion)
+    public async Task F002_CA11_CerrarOBloquearCuentaBloqueada_Responde422YSigueBloqueada(string accion)
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -229,7 +229,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA12_CerrarCuentaActivaSinSaldo_QuedaCerradaConFechaDeCierre()
+    public async Task F002_CA12_CerrarCuentaActivaSinSaldo_QuedaCerradaConFechaDeCierre()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -254,7 +254,7 @@ public class CuentasApiTests(ApiFixture api)
     [InlineData("bloquear")]
     [InlineData("desbloquear")]
     [InlineData("cerrar")]
-    public async Task CA12_CambiarEstadoDeCuentaCerrada_Responde422(string accion)
+    public async Task F002_CA12_CambiarEstadoDeCuentaCerrada_Responde422(string accion)
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -271,7 +271,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA13_CerrarCuentaConSaldo_Responde422YSigueActivaSinFechaDeCierre()
+    public async Task F002_CA13_CerrarCuentaConSaldo_Responde422YSigueActivaSinFechaDeCierre()
     {
         // Arrange: sin RF-04 todavia, la cuenta con saldo se prepara con el dominio y se guarda directamente.
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -301,7 +301,7 @@ public class CuentasApiTests(ApiFixture api)
     [InlineData("bloquear")]
     [InlineData("desbloquear")]
     [InlineData("cerrar")]
-    public async Task CL16_CambiarEstadoDeCuentaInexistente_Responde404(string accion)
+    public async Task F002_CL16_CambiarEstadoDeCuentaInexistente_Responde404(string accion)
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -317,7 +317,7 @@ public class CuentasApiTests(ApiFixture api)
     // ---- RF-05 Consultar cuenta ----
 
     [Fact]
-    public async Task CA17_ObtenerCuentaExistente_DevuelveNumeroMonedaEstadoSaldoYFechas()
+    public async Task F002_CA17_ObtenerCuentaExistente_DevuelveNumeroMonedaEstadoSaldoYFechas()
     {
         // Arrange
         var (http, clienteId) = await ClienteNuevoAsync();
@@ -340,7 +340,7 @@ public class CuentasApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA17_ObtenerCuentaInexistente_Responde404()
+    public async Task F002_CA17_ObtenerCuentaInexistente_Responde404()
     {
         // Arrange
         using var http = api.CrearCliente();

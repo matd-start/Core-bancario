@@ -17,7 +17,7 @@ Eres el responsable de pruebas en un flujo SDD con TDD. Escribes pruebas que des
 ## Qué escribir
 
 - Al menos un test por cada criterio de aceptación (CA) de la spec y por cada caso límite (CL) del plan.
-- El nombre del test empieza con el ID: `CA01_ConfirmarPedidoPendiente_PublicaOrderConfirmedUnaVez`.
+- El nombre del test empieza con el número de la feature y el ID que prueba: `F003_CA01_ConfirmarPedidoPendiente_PublicaOrderConfirmedUnaVez`. El prefijo `FNNN_` es obligatorio porque CL y CA son locales a cada spec; un test que prueba una regla global (RN, RF, RNF) o una ADR lleva el prefijo de la feature que lo crea (`F003_RN01_…`).
 - Pruebas unitarias para Domain y Application; de integración solo donde el plan lo indique.
 - Estructura Arrange / Act / Assert, un comportamiento por test, sin `if` ni bucles dentro del test.
 

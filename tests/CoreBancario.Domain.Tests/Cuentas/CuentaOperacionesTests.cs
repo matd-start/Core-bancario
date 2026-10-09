@@ -44,7 +44,7 @@ public class CuentaOperacionesTests
     // ---- CA-10 ----
 
     [Fact]
-    public void CA10_AbrirCuentaCop_NaceActiva()
+    public void F001_CA10_AbrirCuentaCop_NaceActiva()
     {
         // Arrange / Act
         var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
@@ -54,7 +54,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA10_AbrirCuentaCop_NaceConSaldoCeroEnSuMoneda()
+    public void F001_CA10_AbrirCuentaCop_NaceConSaldoCeroEnSuMoneda()
     {
         // Arrange / Act
         var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
@@ -65,7 +65,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA10_AbrirCuentaUsd_NaceConSaldoCeroEnDolares()
+    public void F001_CA10_AbrirCuentaUsd_NaceConSaldoCeroEnDolares()
     {
         // Arrange / Act
         var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.USD, Instante);
@@ -76,7 +76,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA10_AbrirCuenta_ConservaNumeroYCliente()
+    public void F001_CA10_AbrirCuenta_ConservaNumeroYCliente()
     {
         // Arrange
         var clienteId = Guid.NewGuid();
@@ -91,7 +91,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void ADR0008_AbrirSinNumero_LanzaArgumentNullException()
+    public void F002_ADR0008_AbrirSinNumero_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cuenta.Abrir(null!, Guid.NewGuid(), Moneda.COP, Instante);
@@ -101,7 +101,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void ADR0008_AbrirSinMoneda_LanzaArgumentNullException()
+    public void F001_ADR0008_AbrirSinMoneda_LanzaArgumentNullException()
     {
         // Arrange / Act
         var accion = () => Cuenta.Abrir(Numero(), Guid.NewGuid(), null!, Instante);
@@ -113,7 +113,7 @@ public class CuentaOperacionesTests
     // ---- CA-11 ----
 
     [Fact]
-    public void CA11_AcreditarCuentaActiva_SumaAlSaldo()
+    public void F001_CA11_AcreditarCuentaActiva_SumaAlSaldo()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -126,7 +126,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void ADR0008_AcreditarConMontoNulo_LanzaArgumentNullException()
+    public void F001_ADR0008_AcreditarConMontoNulo_LanzaArgumentNullException()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -141,7 +141,7 @@ public class CuentaOperacionesTests
     // ---- CA-12 ----
 
     [Fact]
-    public void CA12_DebitarCuentaActiva_RestaDelSaldo()
+    public void F001_CA12_DebitarCuentaActiva_RestaDelSaldo()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -154,7 +154,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void ADR0008_DebitarConMontoNulo_LanzaArgumentNullException()
+    public void F001_ADR0008_DebitarConMontoNulo_LanzaArgumentNullException()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -169,7 +169,7 @@ public class CuentaOperacionesTests
     // ---- CA-13 / CL-07 ----
 
     [Fact]
-    public void CA13_DebitarTodoElSaldo_DejaSaldoCero()
+    public void F001_CA13_DebitarTodoElSaldo_DejaSaldoCero()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -184,7 +184,7 @@ public class CuentaOperacionesTests
     // ---- CA-14 / CL-08 ----
 
     [Fact]
-    public void CA14_DebitarMasQueElSaldo_LanzaSaldoInsuficienteSinCambios()
+    public void F001_CA14_DebitarMasQueElSaldo_LanzaSaldoInsuficienteSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -199,7 +199,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException()
+    public void F001_RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(1m);
@@ -214,7 +214,7 @@ public class CuentaOperacionesTests
     // ---- CA-15 / CL-06 ----
 
     [Fact]
-    public void CA15_AcreditarCero_LanzaMontoNoPositivoSinCambios()
+    public void F001_CA15_AcreditarCero_LanzaMontoNoPositivoSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -229,7 +229,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA15_DebitarCero_LanzaMontoNoPositivoSinCambios()
+    public void F001_CA15_DebitarCero_LanzaMontoNoPositivoSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -246,7 +246,7 @@ public class CuentaOperacionesTests
     // ---- CA-16 / CL-04 ----
 
     [Fact]
-    public void CA16_AcreditarEnOtraMoneda_LanzaMonedasDistintasSinCambios()
+    public void F001_CA16_AcreditarEnOtraMoneda_LanzaMonedasDistintasSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -261,7 +261,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA16_DebitarEnOtraMoneda_LanzaMonedasDistintasSinCambios()
+    public void F001_CA16_DebitarEnOtraMoneda_LanzaMonedasDistintasSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -278,7 +278,7 @@ public class CuentaOperacionesTests
     // ---- CA-17 / CL-09 ----
 
     [Fact]
-    public void CA17_AcreditarCuentaBloqueada_AumentaElSaldo()
+    public void F001_CA17_AcreditarCuentaBloqueada_AumentaElSaldo()
     {
         // Arrange
         var cuenta = CuentaBloqueadaSinSaldo();
@@ -292,7 +292,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA17_AcreditarCuentaBloqueada_DevuelveMovimientoDeCredito()
+    public void F001_CA17_AcreditarCuentaBloqueada_DevuelveMovimientoDeCredito()
     {
         // Arrange
         var cuenta = CuentaBloqueadaSinSaldo();
@@ -308,7 +308,7 @@ public class CuentaOperacionesTests
     // ---- CA-18 / CL-09 ----
 
     [Fact]
-    public void CA18_DebitarCuentaBloqueada_LanzaOperacionNoPermitidaSinCambios()
+    public void F001_CA18_DebitarCuentaBloqueada_LanzaOperacionNoPermitidaSinCambios()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -325,7 +325,7 @@ public class CuentaOperacionesTests
     // ---- CA-19 / CL-10 ----
 
     [Fact]
-    public void CA19_AcreditarCuentaCerrada_LanzaOperacionNoPermitidaSinCambios()
+    public void F001_CA19_AcreditarCuentaCerrada_LanzaOperacionNoPermitidaSinCambios()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -340,7 +340,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CA19_DebitarCuentaCerrada_LanzaOperacionNoPermitidaSinCambios()
+    public void F001_CA19_DebitarCuentaCerrada_LanzaOperacionNoPermitidaSinCambios()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -357,7 +357,7 @@ public class CuentaOperacionesTests
     // ---- CA-27 / CL-12 ----
 
     [Fact]
-    public void CA27_DebitarBloqueadaMasQueElSaldo_LanzaOperacionNoPermitida()
+    public void F001_CA27_DebitarBloqueadaMasQueElSaldo_LanzaOperacionNoPermitida()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -372,7 +372,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CL12_AcreditarCerradaEnOtraMoneda_LanzaOperacionNoPermitida()
+    public void F001_CL12_AcreditarCerradaEnOtraMoneda_LanzaOperacionNoPermitida()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -387,7 +387,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CL12_DebitarCeroEnOtraMoneda_LanzaMonedasDistintas()
+    public void F001_CL12_DebitarCeroEnOtraMoneda_LanzaMonedasDistintas()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -402,7 +402,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CL12_DebitarEnOtraMonedaMasQueElSaldo_LanzaMonedasDistintas()
+    public void F001_CL12_DebitarEnOtraMonedaMasQueElSaldo_LanzaMonedasDistintas()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -417,7 +417,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CL12_DebitarCeroConCuentaBloqueada_LanzaOperacionNoPermitida()
+    public void F001_CL12_DebitarCeroConCuentaBloqueada_LanzaOperacionNoPermitida()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -430,7 +430,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void CL12_DebitarCeroMasQueNingunSaldo_LanzaMontoNoPositivo()
+    public void F001_CL12_DebitarCeroMasQueNingunSaldo_LanzaMontoNoPositivo()
     {
         // Arrange: el monto cero se informa antes que el saldo (cuenta en cero).
         var cuenta = Cuenta.Abrir(Numero(), Guid.NewGuid(), Moneda.COP, Instante);
@@ -445,7 +445,7 @@ public class CuentaOperacionesTests
     // ---- Pruebas explícitas por regla de negocio ----
 
     [Fact]
-    public void RN02_OperarLaCuenta_NoCambiaSuMoneda()
+    public void F001_RN02_OperarLaCuenta_NoCambiaSuMoneda()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -460,7 +460,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void RN03_SumarCopYUsd_LanzaMonedasDistintas()
+    public void F001_RN03_SumarCopYUsd_LanzaMonedasDistintas()
     {
         // Arrange
         var pesos = Cop(1_000m);
@@ -474,7 +474,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void RN05_CuentaBloqueada_AceptaCredito()
+    public void F001_RN05_CuentaBloqueada_AceptaCredito()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -487,7 +487,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void RN05_CuentaBloqueada_RechazaDebitoSinCambios()
+    public void F001_RN05_CuentaBloqueada_RechazaDebitoSinCambios()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -502,7 +502,7 @@ public class CuentaOperacionesTests
     }
 
     [Fact]
-    public void RN10_MovimientoEmitido_NoCambiaTrasOperacionesPosteriores()
+    public void F001_RN10_MovimientoEmitido_NoCambiaTrasOperacionesPosteriores()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);

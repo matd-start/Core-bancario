@@ -13,7 +13,7 @@ public class CuentaFechasTests
         Cuenta.Abrir(NumeroDeCuenta.Crear("1234567897"), Guid.NewGuid(), Moneda.COP, Apertura);
 
     [Fact]
-    public void CA06_Abrir_FijaFechaDeAperturaYSinFechaDeCierre()
+    public void F002_CA06_Abrir_FijaFechaDeAperturaYSinFechaDeCierre()
     {
         // Arrange / Act
         var cuenta = CuentaActivaSinSaldo();
@@ -24,7 +24,7 @@ public class CuentaFechasTests
     }
 
     [Fact]
-    public void CA06_Abrir_IdEsVersion7DeLaFechaDeApertura()
+    public void F002_CA06_Abrir_IdEsVersion7DeLaFechaDeApertura()
     {
         // Arrange / Act
         var cuenta = CuentaActivaSinSaldo();
@@ -35,7 +35,7 @@ public class CuentaFechasTests
     }
 
     [Fact]
-    public void CA12_Cerrar_FijaLaFechaDeCierre()
+    public void F002_CA12_Cerrar_FijaLaFechaDeCierre()
     {
         // Arrange
         var cuenta = CuentaActivaSinSaldo();
@@ -49,7 +49,7 @@ public class CuentaFechasTests
     }
 
     [Fact]
-    public void CA11_CerrarBloqueada_NoFijaFechaDeCierre()
+    public void F002_CA11_CerrarBloqueada_NoFijaFechaDeCierre()
     {
         // Arrange
         var cuenta = CuentaActivaSinSaldo();
@@ -64,7 +64,7 @@ public class CuentaFechasTests
     }
 
     [Fact]
-    public void CA13_CerrarConSaldo_NoFijaFechaDeCierre()
+    public void F002_CA13_CerrarConSaldo_NoFijaFechaDeCierre()
     {
         // Arrange
         var cuenta = CuentaActivaSinSaldo();
@@ -80,7 +80,7 @@ public class CuentaFechasTests
     }
 
     [Fact]
-    public void CA12_CerrarCuentaYaCerrada_NoCambiaLaFechaDeCierre()
+    public void F002_CA12_CerrarCuentaYaCerrada_NoCambiaLaFechaDeCierre()
     {
         // Arrange
         var cuenta = CuentaActivaSinSaldo();

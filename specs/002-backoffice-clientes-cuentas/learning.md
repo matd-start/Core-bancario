@@ -118,7 +118,7 @@ Observa lo que **no** pasa: el endpoint no valida, el handler no sabe de HTTP ni
 
 ### Ejercicio 2: leer el error que la base devuelve
 
-- **Copiar:** mira `CoreBancarioDbContext.GuardarCambiosAsync` y la prueba `RN18_NumeroRepetido_LoRechazaElIndiceUnico` en Infrastructure.Tests.
+- **Copiar:** mira `CoreBancarioDbContext.GuardarCambiosAsync` y la prueba `F002_RN18_NumeroRepetido_LoRechazaElIndiceUnico` en Infrastructure.Tests.
 - **Modificar:** con `docker compose up -d`, intenta insertar a mano en `psql` dos cuentas con el mismo `numero` y mira el mensaje y el `constraint name`. Luego cambia temporalmente el nombre `ux_cuentas_numero` en `CoreBancarioDbContext` y observa qué prueba falla (y por qué).
 - **Recrear:** explica con tus palabras por qué el nombre del índice es parte del contrato entre la migración y el `DbContext`.
 

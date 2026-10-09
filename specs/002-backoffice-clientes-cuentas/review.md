@@ -13,34 +13,34 @@ La implementación cumple la spec, el plan y las ADR 0009–0013. Hay 395 prueba
 | RF-03 | Sí (`CambiarEstadoDeCuentaHandler`, 3 rutas POST) | Vía CA-10…CA-14 | Ídem |
 | RF-05 (parcial) | Sí (GET /cuentas/{id}) | Vía CA-17 | Ídem |
 | RF-12 | Sí (GET /clientes/{id}, /clientes/por-documento) | Vía CA-15, CA-16 | Ídem |
-| RN-01 | Sí (dominio 001 + CHECK) | `RN01_SaldoNegativoPorSql_LoRechazaElCheck` | |
-| RN-02 | Sí (CHECK `saldo_moneda = moneda`) | `RN02_SaldoEnOtraMonedaPorSql_LoRechazaElCheck` | |
-| RN-06 | Sí (`Cuenta.Cerrar(fecha)`) | `CA13_*` (Api, App, Domain) | `RN06_` es de la 001 |
-| RN-14 | Sí (dominio 001) | `CA11_*`, `CA12_*` | `RN14_` es de la 001 |
-| RN-17 | Sí (`Documento` + `ux_clientes_documento`) | `RN17_ToString…`, `CL01_*`, `CL02_*`, `CA02_*`, `CA05_*` | |
-| RN-18 | Sí (`NumeroDeCuenta` Luhn, generador criptográfico, `ux_cuentas_numero`) | `RN18_*` (9), `CA09_*` | |
-| RNF-01…06 | Ver sección de resultados | `RNF02_*`, `RNF03_*`, `RNF04_*`, `RNF05_*` | RNF-01 y RNF-06 no tienen un test con su ID; ver nota abajo |
-| CL-01 | Sí | `CL01_NumeroEscritoDistinto…`, `CL01_LaBaseRechaza…`, `CL01_RegistrarSinConsultaPrevia…` | |
-| CL-02 | Sí | `CL02_*` (Domain, App, Infra) | |
-| CL-03 | Sí (solo el índice, sin consulta previa) | `CA05_DosContextos…`, `CA05_DosRegistrosSimultaneos…` | Los `CL03_*` que hay son de la 001 (Dinero) |
-| CL-04 | Sí | `CL04_TodosLosCamposAusentes…`, `CA04_*` | |
-| CL-05 | Sí | `CL05_*` (12) | |
-| CL-06 | Sí | `CL06_*` (10) | |
-| CL-07 | Sí | `CL07_*` (6) | |
-| CL-08 | Sí | `CL08_ReintentarRegistroGuardado…` | |
-| CL-09 | Sí | `CL09_*` (App + FK en Infra), `CA08_*` | |
-| CL-10 | Sí | `CL10_*` (8) | |
-| CL-11 | Sí | `CL11_*` (App + Api con generador falso) | |
-| CL-12 | Sí (límite aceptado) | `CL12_ReintentarApertura_AbreUnaSegundaCuenta` | |
-| CL-13 | Sí | `CA11_*`, `CA12_CambiarEstadoDeCuentaCerrada…` | No hay `CL13_` |
-| CL-14 | Sí | `CA13_*` | Los `CL14_*` que hay son de la 001 (Dinero) |
-| CL-15 | Sí (xmin, sin reintento) | `CL15_*` (3), `CA14_*` | |
-| CL-16 | Sí | `CL16_*` (App, Api) | |
-| CL-17 | Sí | `CL17_*`, `CA15_BuscarConPuntos…` | |
-| CL-18 | Sí | `CL18_*` (9) | |
-| CL-19 | Sí | `CL19_*` | |
+| RN-01 | Sí (dominio 001 + CHECK) | `F002_RN01_SaldoNegativoPorSql_LoRechazaElCheck` | |
+| RN-02 | Sí (CHECK `saldo_moneda = moneda`) | `F002_RN02_SaldoEnOtraMonedaPorSql_LoRechazaElCheck` | |
+| RN-06 | Sí (`Cuenta.Cerrar(fecha)`) | `F002_CA13_*` (Api, App, Domain) | `RN06_` es de la 001 |
+| RN-14 | Sí (dominio 001) | `F002_CA11_*`, `F002_CA12_*` | `RN14_` es de la 001 |
+| RN-17 | Sí (`Documento` + `ux_clientes_documento`) | `F002_RN17_ToString…`, `F002_CL01_*`, `F002_CL02_*`, `F002_CA02_*`, `F002_CA05_*` | |
+| RN-18 | Sí (`NumeroDeCuenta` Luhn, generador criptográfico, `ux_cuentas_numero`) | `F002_RN18_*` (9), `F002_CA09_*` | |
+| RNF-01…06 | Ver sección de resultados | `F002_RNF02_*`, `F002_RNF03_*`, `F002_RNF04_*`, `F002_RNF05_*` | RNF-01 y RNF-06 no tienen un test con su ID; ver nota abajo |
+| CL-01 | Sí | `F002_CL01_NumeroEscritoDistinto…`, `F002_CL01_LaBaseRechaza…`, `F002_CL01_RegistrarSinConsultaPrevia…` | |
+| CL-02 | Sí | `F002_CL02_*` (Domain, App, Infra) | |
+| CL-03 | Sí (solo el índice, sin consulta previa) | `F002_CA05_DosContextos…`, `F002_CA05_DosRegistrosSimultaneos…` | Los `F001_CL03_*` que hay son de la 001 (Dinero) |
+| CL-04 | Sí | `F002_CL04_TodosLosCamposAusentes…`, `F002_CA04_*` | |
+| CL-05 | Sí | `F002_CL05_*` (12) | |
+| CL-06 | Sí | `F002_CL06_*` (10) | |
+| CL-07 | Sí | `F002_CL07_*` (6) | |
+| CL-08 | Sí | `F002_CL08_ReintentarRegistroGuardado…` | |
+| CL-09 | Sí | `F002_CL09_*` (App + FK en Infra), `F002_CA08_*` | |
+| CL-10 | Sí | `F002_CL10_*` (8) | |
+| CL-11 | Sí | `F002_CL11_*` (App + Api con generador falso) | |
+| CL-12 | Sí (límite aceptado) | `F002_CL12_ReintentarApertura_AbreUnaSegundaCuenta` | |
+| CL-13 | Sí | `F002_CA11_*`, `F002_CA12_CambiarEstadoDeCuentaCerrada…` | No hay `CL13_` |
+| CL-14 | Sí | `F002_CA13_*` | Los `F001_CL14_*` que hay son de la 001 (Dinero) |
+| CL-15 | Sí (xmin, sin reintento) | `F002_CL15_*` (3), `F002_CA14_*` | |
+| CL-16 | Sí | `F002_CL16_*` (App, Api) | |
+| CL-17 | Sí | `F002_CL17_*`, `F002_CA15_BuscarConPuntos…` | |
+| CL-18 | Sí | `F002_CL18_*` (9) | |
+| CL-19 | Sí | `F002_CL19_*` | |
 | CA-01…CA-13, CA-15…CA-17 | Sí | Al menos un test de Api (integración) por CA | |
-| CA-14 | Sí | `CA14_BloquearYCerrarIntercalados…` y `CA14_TrasElConflicto…` (Infra) + `RNF03_ConflictoDeConcurrencia_SeClasificaComo409` (Api) | Prueba intercalada a propósito (plan, sección 7) |
+| CA-14 | Sí | `F002_CA14_BloquearYCerrarIntercalados…` y `F002_CA14_TrasElConflicto…` (Infra) + `F002_RNF03_ConflictoDeConcurrencia_SeClasificaComo409` (Api) | Prueba intercalada a propósito (plan, sección 7) |
 
 **Nota sobre los nombres:** todas las reglas están probadas. Lo que falla es solo que el ID aparezca en el nombre:
 
@@ -89,7 +89,7 @@ Comprobaciones hechas:
 ## Desviaciones entre spec/plan y código
 
 1. **La hora se trunca a microsegundos.** El plan dice `reloj.GetUtcNow()` en los tres handlers que escriben. El código usa `RelojExtensiones.AhoraEnMicrosegundos()` (`C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Application\Comun\RelojExtensiones.cs`), para que la respuesta del POST coincida con lo que guarda `timestamptz`. Está justificado y explicado en learning.md. Hay que actualizar las firmas de la sección 3 del plan.
-2. **La migración menciona `xmin`.** `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Infrastructure\Persistencia\Migraciones\20261006185225_Inicial.cs:43` declara `xmin = table.Column<uint>(type: "xid", rowVersion: true, …)`, y T13 y el riesgo 2 del plan decían que la migración "no crea la columna xmin". En la práctica Npgsql omite las columnas de sistema al generar el SQL. Las pruebas `RNF02_*` aplican esa migración sobre un PostgreSQL vacío y pasan, así que la base no intenta crear `xmin`. Conviene corregir el texto del riesgo 2 para que diga "el C# la menciona; el SQL generado no la crea".
+2. **La migración menciona `xmin`.** `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Infrastructure\Persistencia\Migraciones\20261006185225_Inicial.cs:43` declara `xmin = table.Column<uint>(type: "xid", rowVersion: true, …)`, y T13 y el riesgo 2 del plan decían que la migración "no crea la columna xmin". En la práctica Npgsql omite las columnas de sistema al generar el SQL. Las pruebas `F002_RNF02_*` aplican esa migración sobre un PostgreSQL vacío y pasan, así que la base no intenta crear `xmin`. Conviene corregir el texto del riesgo 2 para que diga "el C# la menciona; el SQL generado no la crea".
 3. **Tres ayudantes `internal` que no estaban en el plan:** `FichaClienteDtoFabrica` (DRY entre las dos consultas de ficha), `TiposDeDocumentoAceptados` (el `switch` explícito que pedía T07, compartido con la búsqueda) y `RelojExtensiones`. No cambian ningún contrato público; basta con añadirlos a la estructura de carpetas de la sección 3.
 4. **Lugar de los cambios de documentación.** T21 pedía tocar `CLAUDE.md` y `spec-fase-1.md` (D-06 → ADR-0009) y esos cambios llegaron en el commit `docs(002): plan y ADRs aprobados`, no en el de implementación. El contenido es correcto; solo cambia el commit en que entró.
 5. **Datos únicos en las pruebas de integración:** sustituyen CC 1234567 por números aleatorios con las mismas transformaciones. El plan (sección 7) lo declara como desviación consciente, y la acepto.
@@ -107,10 +107,10 @@ Domain.Tests 6,6 s · Application.Tests 5,3 s · Infrastructure.Tests 57,2 s · 
 
 Estado de cada RNF:
 - **RNF-01:** cada CA tiene al menos una prueba de integración: Api para todos menos CA-14, que va en Infrastructure (como acordó el plan). Que se vieran en rojo lo confirma la estructura de `875831b` (esqueletos y sin migración). **No volví a ejecutar ese commit**, así que no lo comprobé ejecutándolo.
-- **RNF-02:** verificado. El esquema se crea solo con la migración y las pruebas `RNF02_BaseVacia…` y `RNF02_Modelo_NoTieneCambiosSinMigracion` pasan.
+- **RNF-02:** verificado. El esquema se crea solo con la migración y las pruebas `F002_RNF02_BaseVacia…` y `F002_RNF02_Modelo_NoTieneCambiosSinMigracion` pasan.
 - **RNF-03:** verificado por el catálogo, por la reflexión sobre las subclases de `ReglaDeNegocioException`, por la prueba de JSON mal formado y por el `codigo` que comprueba cada prueba de CA.
-- **RNF-04:** verificado por `RNF04_ErrorInesperado_Responde500SinDetallesInternos`.
-- **RNF-05:** verificado por `RNF05_ContratoOpenApi…` en Development. Fuera de Development no se puede comprobar (ver sugerencia 3).
+- **RNF-04:** verificado por `F002_RNF04_ErrorInesperado_Responde500SinDetallesInternos`.
+- **RNF-05:** verificado por `F002_RNF05_ContratoOpenApi…` en Development. Fuera de Development no se puede comprobar (ver sugerencia 3).
 - **RNF-06:** cada comando hace un solo `GuardarCambiosAsync`, y las pruebas "…SinGuardar", CA-08, CA-11 y CA-13 confirman que no queda nada a medias.
 
 ## Preguntas de comprensión para el autor

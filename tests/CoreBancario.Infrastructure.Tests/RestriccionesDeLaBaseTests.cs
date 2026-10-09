@@ -46,7 +46,7 @@ public class RestriccionesDeLaBaseTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task RN01_SaldoNegativoPorSql_LoRechazaElCheck()
+    public async Task F002_RN01_SaldoNegativoPorSql_LoRechazaElCheck()
     {
         // Arrange / Act
         var accion = () => InsertarCuentaPorSqlAsync("COP", "Activa", -1m, "COP", null);
@@ -58,7 +58,7 @@ public class RestriccionesDeLaBaseTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task RN02_SaldoEnOtraMonedaPorSql_LoRechazaElCheck()
+    public async Task F002_RN02_SaldoEnOtraMonedaPorSql_LoRechazaElCheck()
     {
         // Arrange / Act
         var accion = () => InsertarCuentaPorSqlAsync("COP", "Activa", 0m, "USD", null);
@@ -70,7 +70,7 @@ public class RestriccionesDeLaBaseTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA12_FechaDeCierreEnCuentaActivaPorSql_LoRechazaElCheck()
+    public async Task F002_CA12_FechaDeCierreEnCuentaActivaPorSql_LoRechazaElCheck()
     {
         // Arrange / Act
         var accion = () => InsertarCuentaPorSqlAsync("COP", "Activa", 0m, "COP", Ayudas.Instante);
@@ -82,7 +82,7 @@ public class RestriccionesDeLaBaseTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA12_CuentaCerradaSinFechaDeCierrePorSql_LoRechazaElCheck()
+    public async Task F002_CA12_CuentaCerradaSinFechaDeCierrePorSql_LoRechazaElCheck()
     {
         // Arrange / Act
         var accion = () => InsertarCuentaPorSqlAsync("COP", "Cerrada", 0m, "COP", null);
@@ -94,7 +94,7 @@ public class RestriccionesDeLaBaseTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA12_CuentaCerradaConFechaDeCierrePorSql_SeInsertaSinError()
+    public async Task F002_CA12_CuentaCerradaConFechaDeCierrePorSql_SeInsertaSinError()
     {
         // Arrange / Act: control positivo, para que los cuatro rechazos anteriores no sean un fallo del propio SQL.
         var accion = () => InsertarCuentaPorSqlAsync("USD", "Cerrada", 0m, "USD", Ayudas.Instante);

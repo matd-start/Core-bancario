@@ -8,7 +8,7 @@ public class NumeroDeCuentaTests
     [InlineData("123456789", "1234567897")]
     [InlineData("100000000", "1000000008")]
     [InlineData("987654321", "9876543217")]
-    public void RN18_DesdeCuerpo_AnadeElDigitoVerificadorLuhn(string cuerpo, string esperado)
+    public void F002_RN18_DesdeCuerpo_AnadeElDigitoVerificadorLuhn(string cuerpo, string esperado)
     {
         // Arrange / Act
         var numero = NumeroDeCuenta.DesdeCuerpo(cuerpo);
@@ -23,7 +23,7 @@ public class NumeroDeCuentaTests
     [InlineData("")]
     [InlineData("12345678a")]
     [InlineData("012345678")]
-    public void RN18_DesdeCuerpoInvalido_LanzaArgumentException(string cuerpo)
+    public void F002_RN18_DesdeCuerpoInvalido_LanzaArgumentException(string cuerpo)
     {
         // Arrange / Act
         var accion = () => NumeroDeCuenta.DesdeCuerpo(cuerpo);
@@ -36,7 +36,7 @@ public class NumeroDeCuentaTests
     [InlineData("1234567897")]
     [InlineData("1000000008")]
     [InlineData("9876543217")]
-    public void RN18_CrearConNumeroValido_ConservaElValor(string valor)
+    public void F002_RN18_CrearConNumeroValido_ConservaElValor(string valor)
     {
         // Arrange / Act
         var numero = NumeroDeCuenta.Crear(valor);
@@ -53,7 +53,7 @@ public class NumeroDeCuentaTests
     [InlineData("12345678a7")]   // no es dígito
     [InlineData("12345678971")]  // 11 dígitos
     [InlineData("")]
-    public void RN18_CrearConNumeroInvalido_LanzaArgumentException(string valor)
+    public void F002_RN18_CrearConNumeroInvalido_LanzaArgumentException(string valor)
     {
         // Arrange / Act
         var accion = () => NumeroDeCuenta.Crear(valor);
@@ -63,7 +63,7 @@ public class NumeroDeCuentaTests
     }
 
     [Fact]
-    public void RN18_CrearConNull_LanzaArgumentException()
+    public void F002_RN18_CrearConNull_LanzaArgumentException()
     {
         // Arrange / Act
         var accion = () => NumeroDeCuenta.Crear(null!);
@@ -73,7 +73,7 @@ public class NumeroDeCuentaTests
     }
 
     [Fact]
-    public void RN18_DosNumerosConElMismoValor_SonIguales()
+    public void F002_RN18_DosNumerosConElMismoValor_SonIguales()
     {
         // Arrange
         var primero = NumeroDeCuenta.Crear("1234567897");
@@ -87,7 +87,7 @@ public class NumeroDeCuentaTests
     }
 
     [Fact]
-    public void RN18_ToString_DevuelveElValor()
+    public void F002_RN18_ToString_DevuelveElValor()
     {
         // Arrange
         var numero = NumeroDeCuenta.Crear("1234567897");

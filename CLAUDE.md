@@ -56,6 +56,7 @@ Las dependencias apuntan hacia dentro: Api e Infrastructure → Application → 
 
 - Principios de diseño: skill `csharp-clean-code`.
 - Dinero siempre con el value object `Dinero` y `decimal`; nunca `double` ni `float`.
+- Nombres de pruebas: `FNNN_ID_Escenario_Resultado` (por ejemplo `F002_CA05_DosRegistrosSimultaneos_UnoCreaYOtroRespondeDuplicado`). `FNNN` es la feature que crea la prueba y es obligatorio, porque CL y CA son locales a cada spec y sin él `CL03` de la 001 y de la 002 se confunden; las pruebas de reglas globales (RN, RF, RNF) o de una ADR también lo llevan.
 - Vocabulario del dominio en español, igual que el lenguaje ubicuo de la spec de producto (`Cuenta`, `Dinero`, `Movimiento`…); el resto del código (infraestructura, sufijos técnicos) puede ir en inglés.
 - El autor está aprendiendo arquitectura: explica el porqué de las decisiones no obvias y, al cerrar cada fase, di qué debe revisar él.
 

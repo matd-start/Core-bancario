@@ -35,7 +35,7 @@ public class DineroTests
     // ---- CA-01 / CL-01 ----
 
     [Fact]
-    public void CA01_CrearConMontoNegativo_LanzaMontoNegativoException()
+    public void F001_CA01_CrearConMontoNegativo_LanzaMontoNegativoException()
     {
         // Arrange
         var monto = -1m;
@@ -48,7 +48,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA01_CrearUsdConMontoNegativo_LanzaMontoNegativoException()
+    public void F001_CA01_CrearUsdConMontoNegativo_LanzaMontoNegativoException()
     {
         // Arrange
         var monto = -0.01m;
@@ -63,7 +63,7 @@ public class DineroTests
     // ---- CA-02 ----
 
     [Fact]
-    public void CA02_CrearConMontoCero_SeCreaConMontoCero()
+    public void F001_CA02_CrearConMontoCero_SeCreaConMontoCero()
     {
         // Arrange
         var monto = 0m;
@@ -77,7 +77,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA02_CrearConMontoPositivo_NoEsCero()
+    public void F001_CA02_CrearConMontoPositivo_NoEsCero()
     {
         // Arrange
         var monto = 1m;
@@ -92,7 +92,7 @@ public class DineroTests
     // ---- CA-03 / CL-02 ----
 
     [Fact]
-    public void CA03_CrearUsdConMasDecimalesQueLaMoneda_LanzaPrecisionExcedidaException()
+    public void F001_CA03_CrearUsdConMasDecimalesQueLaMoneda_LanzaPrecisionExcedidaException()
     {
         // Arrange
         var monto = 10.555m;
@@ -105,7 +105,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA03_CrearCopConDecimales_LanzaPrecisionExcedidaException()
+    public void F001_CA03_CrearCopConDecimales_LanzaPrecisionExcedidaException()
     {
         // Arrange
         var monto = 1000.50m;
@@ -120,7 +120,7 @@ public class DineroTests
     // ---- CA-04 / CL-03 ----
 
     [Fact]
-    public void CA04_CrearCopConCerosSobrantes_SeCrea()
+    public void F001_CA04_CrearCopConCerosSobrantes_SeCrea()
     {
         // Arrange
         var monto = 1000.00m;
@@ -134,7 +134,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA04_CrearUsdConDosDecimales_SeCrea()
+    public void F001_CA04_CrearUsdConDosDecimales_SeCrea()
     {
         // Arrange
         var monto = 10.50m;
@@ -148,7 +148,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CL03_CrearConCerosSobrantes_GuardaLaEscalaDeSuMoneda()
+    public void F001_CL03_CrearConCerosSobrantes_GuardaLaEscalaDeSuMoneda()
     {
         // Arrange
         var monto = 1000.00m;
@@ -162,7 +162,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CL03_CrearUsdConUnDecimal_GuardaDosDecimales()
+    public void F001_CL03_CrearUsdConUnDecimal_GuardaDosDecimales()
     {
         // Arrange
         var monto = 10.5m;
@@ -178,7 +178,7 @@ public class DineroTests
     // ---- Argumentos nulos ----
 
     [Fact]
-    public void ADR0008_CrearConMonedaNula_LanzaArgumentNullException()
+    public void F001_ADR0008_CrearConMonedaNula_LanzaArgumentNullException()
     {
         // Arrange
         Moneda moneda = null!;
@@ -191,7 +191,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void ADR0008_DesdeCalculoConMonedaNula_LanzaArgumentNullException()
+    public void F001_ADR0008_DesdeCalculoConMonedaNula_LanzaArgumentNullException()
     {
         // Arrange
         Moneda moneda = null!;
@@ -204,7 +204,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void ADR0008_SumarConNulo_LanzaArgumentNullException()
+    public void F001_ADR0008_SumarConNulo_LanzaArgumentNullException()
     {
         // Arrange
         var dinero = Cop(100m);
@@ -217,7 +217,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void ADR0008_RestarConNulo_LanzaArgumentNullException()
+    public void F001_ADR0008_RestarConNulo_LanzaArgumentNullException()
     {
         // Arrange
         var dinero = Cop(100m);
@@ -232,7 +232,7 @@ public class DineroTests
     // ---- CA-05 / CL-04 ----
 
     [Fact]
-    public void CA05_SumarMonedasDistintas_LanzaMonedasDistintasException()
+    public void F001_CA05_SumarMonedasDistintas_LanzaMonedasDistintasException()
     {
         // Arrange
         var pesos = Cop(100m);
@@ -246,7 +246,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA05_RestarMonedasDistintas_LanzaMonedasDistintasException()
+    public void F001_CA05_RestarMonedasDistintas_LanzaMonedasDistintasException()
     {
         // Arrange
         var pesos = Cop(100m);
@@ -260,7 +260,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA05_RestarMonedasDistintasQueTambienDaNegativo_LanzaMonedasDistintasException()
+    public void F001_CA05_RestarMonedasDistintasQueTambienDaNegativo_LanzaMonedasDistintasException()
     {
         // Arrange: la moneda se comprueba antes que el signo del resultado.
         var pesos = Cop(50m);
@@ -276,7 +276,7 @@ public class DineroTests
     // ---- CA-06 ----
 
     [Fact]
-    public void CA06_SumarMismaMoneda_DevuelveLaSuma()
+    public void F001_CA06_SumarMismaMoneda_DevuelveLaSuma()
     {
         // Arrange
         var cien = Cop(100m);
@@ -290,7 +290,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA06_RestarMismaMoneda_DevuelveLaDiferencia()
+    public void F001_CA06_RestarMismaMoneda_DevuelveLaDiferencia()
     {
         // Arrange
         var cien = Cop(100m);
@@ -304,7 +304,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA06_SumarUsd_ConservaDosDecimales()
+    public void F001_CA06_SumarUsd_ConservaDosDecimales()
     {
         // Arrange
         var a = Usd(10.50m);
@@ -321,7 +321,7 @@ public class DineroTests
     // ---- CA-07 / CL-05 ----
 
     [Fact]
-    public void CA07_RestarMasDeLoQueHay_LanzaMontoNegativoException()
+    public void F001_CA07_RestarMasDeLoQueHay_LanzaMontoNegativoException()
     {
         // Arrange
         var cincuenta = Cop(50m);
@@ -335,7 +335,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA07_RestarElMismoMonto_DaCero()
+    public void F001_CA07_RestarElMismoMonto_DaCero()
     {
         // Arrange
         var cincuenta = Cop(50m);
@@ -350,7 +350,7 @@ public class DineroTests
     // ---- CA-08 ----
 
     [Fact]
-    public void CA08_MismoMontoYMismaMoneda_SonIguales()
+    public void F001_CA08_MismoMontoYMismaMoneda_SonIguales()
     {
         // Arrange
         var a = Cop(1000m);
@@ -364,7 +364,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA08_MismoMontoYDistintaMoneda_NoSonIguales()
+    public void F001_CA08_MismoMontoYDistintaMoneda_NoSonIguales()
     {
         // Arrange
         var pesos = Cop(100m);
@@ -378,7 +378,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA08_MismoValorEscritoDistinto_SonIgualesConElMismoHash()
+    public void F001_CA08_MismoValorEscritoDistinto_SonIgualesConElMismoHash()
     {
         // Arrange
         var a = Cop(1000m);
@@ -396,7 +396,7 @@ public class DineroTests
     // ---- CA-09 / CL-14 ----
 
     [Fact]
-    public void CA09_DesdeCalculoUsd_AjustaAlValorMasCercano()
+    public void F001_CA09_DesdeCalculoUsd_AjustaAlValorMasCercano()
     {
         // Arrange
         var resultado = 24.2515m;
@@ -410,7 +410,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CA09_DesdeCalculoCop_AjustaAlValorMasCercano()
+    public void F001_CA09_DesdeCalculoCop_AjustaAlValorMasCercano()
     {
         // Arrange
         var resultado = 42595.2385m;
@@ -425,7 +425,7 @@ public class DineroTests
 
     [Theory]
     [MemberData(nameof(SobreLaMitadUsd))]
-    public void CL14_DesdeCalculoUsdPorEncimaDeLaMitad_SubeAlSiguiente(decimal entrada, decimal esperado)
+    public void F001_CL14_DesdeCalculoUsdPorEncimaDeLaMitad_SubeAlSiguiente(decimal entrada, decimal esperado)
     {
         // Arrange / Act
         var dinero = Dinero.DesdeCalculo(entrada, Moneda.USD);
@@ -436,7 +436,7 @@ public class DineroTests
 
     [Theory]
     [MemberData(nameof(SobreLaMitadCop))]
-    public void CL14_DesdeCalculoCopPorEncimaDeLaMitad_SubeAlSiguiente(decimal entrada, decimal esperado)
+    public void F001_CL14_DesdeCalculoCopPorEncimaDeLaMitad_SubeAlSiguiente(decimal entrada, decimal esperado)
     {
         // Arrange / Act
         var dinero = Dinero.DesdeCalculo(entrada, Moneda.COP);
@@ -447,7 +447,7 @@ public class DineroTests
 
     [Theory]
     [MemberData(nameof(PuntosMediosCop))]
-    public void RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar(decimal entrada, decimal esperado)
+    public void F001_RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar(decimal entrada, decimal esperado)
     {
         // Arrange / Act
         var dinero = Dinero.DesdeCalculo(entrada, Moneda.COP);
@@ -458,7 +458,7 @@ public class DineroTests
 
     [Theory]
     [MemberData(nameof(PuntosMediosUsd))]
-    public void RN16_DesdeCalculoUsdEnPuntoMedioExacto_RedondeaAlPar(decimal entrada, decimal esperado)
+    public void F001_RN16_DesdeCalculoUsdEnPuntoMedioExacto_RedondeaAlPar(decimal entrada, decimal esperado)
     {
         // Arrange / Act
         var dinero = Dinero.DesdeCalculo(entrada, Moneda.USD);
@@ -468,7 +468,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void RN15_DesdeCalculoCopConResultadoNegativo_LanzaMontoNegativoException()
+    public void F001_RN15_DesdeCalculoCopConResultadoNegativo_LanzaMontoNegativoException()
     {
         // Arrange
         var resultado = -1m;
@@ -481,7 +481,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void RN15_DesdeCalculoNegativoQueRedondeaACero_LanzaMontoNegativoException()
+    public void F001_RN15_DesdeCalculoNegativoQueRedondeaACero_LanzaMontoNegativoException()
     {
         // Arrange: el signo se comprueba antes de redondear (-0,004 USD redondearía a 0,00).
         var resultado = -0.004m;
@@ -494,7 +494,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CL14_DesdeCalculoCop_GuardaLaEscalaDeSuMoneda()
+    public void F001_CL14_DesdeCalculoCop_GuardaLaEscalaDeSuMoneda()
     {
         // Arrange
         var resultado = 1000.4m;
@@ -508,7 +508,7 @@ public class DineroTests
     }
 
     [Fact]
-    public void CL14_DesdeCalculoUsd_GuardaLaEscalaDeSuMoneda()
+    public void F001_CL14_DesdeCalculoUsd_GuardaLaEscalaDeSuMoneda()
     {
         // Arrange
         var resultado = 5.1m;

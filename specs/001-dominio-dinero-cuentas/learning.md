@@ -49,6 +49,6 @@ Aún no hay endpoint; esto es lo que haría un futuro caso de uso de "depositar 
 
 ## 4. Para practicar (Copiar, Modificar, Recrear)
 
-1. **Copiar.** Sigue con el depurador la prueba `RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar` hasta `AFormaCanonica` y anota la escala del `decimal` en cada paso.
+1. **Copiar.** Sigue con el depurador la prueba `F001_RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar` hasta `AFormaCanonica` y anota la escala del `decimal` en cada paso.
 2. **Modificar.** En una rama de prueba, cambia `ToEven` por `AwayFromZero` en `Dinero.cs`. Ejecuta `dotnet test`: ¿qué pruebas fallan y por qué? Revierte el cambio.
 3. **Recrear.** Borra el cuerpo de `Cerrar` y vuelve a escribirlo mirando solo las pruebas de `CuentaEstadosTests.cs`. Después compara con la versión original: ¿pusiste la transición antes que el saldo?

@@ -15,7 +15,7 @@ public class RegistrarClienteHandlerTests
         "CC", "1.234.567", "María José", "Núñez", "maria@example.com", "+57 300 123 4567");
 
     [Fact]
-    public async Task CA01_RegistrarClienteValido_GuardaUnaVezYDevuelveDatosNormalizadosConLaFechaDelReloj()
+    public async Task F002_CA01_RegistrarClienteValido_GuardaUnaVezYDevuelveDatosNormalizadosConLaFechaDelReloj()
     {
         // Arrange
         var handler = CrearHandler();
@@ -36,7 +36,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CA04_DocumentoCorreoYTelefonoInvalidos_DevuelveLosTresErroresSinGuardar()
+    public async Task F002_CA04_DocumentoCorreoYTelefonoInvalidos_DevuelveLosTresErroresSinGuardar()
     {
         // Arrange
         var handler = CrearHandler();
@@ -53,7 +53,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL04_TodosLosCamposAusentes_DevuelveUnErrorPorCampo()
+    public async Task F002_CL04_TodosLosCamposAusentes_DevuelveUnErrorPorCampo()
     {
         // Arrange
         var handler = CrearHandler();
@@ -74,7 +74,7 @@ public class RegistrarClienteHandlerTests
     [InlineData("   ")]
     [InlineData("...")]
     [InlineData(" .-. ")]
-    public async Task CL04_NumeroQueQuedaVacioAlNormalizar_DevuelveErrorDeObligatorioComoLaBusqueda(string numero)
+    public async Task F002_CL04_NumeroQueQuedaVacioAlNormalizar_DevuelveErrorDeObligatorioComoLaBusqueda(string numero)
     {
         // Arrange
         var handler = CrearHandler();
@@ -94,7 +94,7 @@ public class RegistrarClienteHandlerTests
     [InlineData("1")]
     [InlineData("cc")]
     [InlineData("CC,PA")]
-    public async Task CL05_TipoDocumentoDesconocido_DevuelveErrorDeTipoYNoEvaluaElNumero(string tipo)
+    public async Task F002_CL05_TipoDocumentoDesconocido_DevuelveErrorDeTipoYNoEvaluaElNumero(string tipo)
     {
         // Arrange
         var handler = CrearHandler();
@@ -109,7 +109,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL05_NumeroConFormatoInvalidoParaSuTipo_DevuelveErrorDeNumero()
+    public async Task F002_CL05_NumeroConFormatoInvalidoParaSuTipo_DevuelveErrorDeNumero()
     {
         // Arrange
         var handler = CrearHandler();
@@ -124,7 +124,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL06_NombresYApellidosConSoloEspacios_DevuelveErrorEnAmbosCampos()
+    public async Task F002_CL06_NombresYApellidosConSoloEspacios_DevuelveErrorEnAmbosCampos()
     {
         // Arrange
         var handler = CrearHandler();
@@ -140,7 +140,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL07_TelefonoSinCodigoDePais_DevuelveErrorDeTelefono()
+    public async Task F002_CL07_TelefonoSinCodigoDePais_DevuelveErrorDeTelefono()
     {
         // Arrange
         var handler = CrearHandler();
@@ -155,7 +155,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL01_LaBaseRechazaElDocumentoDuplicado_PropagaDocumentoDuplicadoException()
+    public async Task F002_CL01_LaBaseRechazaElDocumentoDuplicado_PropagaDocumentoDuplicadoException()
     {
         // Arrange
         var unidad = new UnidadDeTrabajoEspia { ExcepcionAlGuardar = new DocumentoDuplicadoException() };
@@ -169,7 +169,7 @@ public class RegistrarClienteHandlerTests
     }
 
     [Fact]
-    public async Task CL01_RegistrarSinConsultaPrevia_NoBuscaElDocumentoAntesDeGuardar()
+    public async Task F002_CL01_RegistrarSinConsultaPrevia_NoBuscaElDocumentoAntesDeGuardar()
     {
         // Arrange: ya existe un cliente con el mismo documento en el repositorio en memoria.
         _clientes.Agregar(Datos.Cliente("1234567"));

@@ -8,7 +8,7 @@ public class CorreoTests
     [InlineData("maria@example.com")]
     [InlineData("a@b")]
     [InlineData("nombre.apellido+etiqueta@dominio.co")]
-    public void CA04_CorreoConFormaUsuarioArrobaDominio_EsValido(string valor)
+    public void F002_CA04_CorreoConFormaUsuarioArrobaDominio_EsValido(string valor)
     {
         // Arrange / Act
         var creado = Correo.TryCrear(valor, out var correo);
@@ -29,7 +29,7 @@ public class CorreoTests
     [InlineData("usuario@")]
     [InlineData("us uario@example.com")]
     [InlineData("usuario@exam ple.com")]
-    public void CA04_CorreoMalFormado_NoEsValido(string? valor)
+    public void F002_CA04_CorreoMalFormado_NoEsValido(string? valor)
     {
         // Arrange / Act
         var creado = Correo.TryCrear(valor, out var correo);
@@ -40,7 +40,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA04_CorreoConControlDentro_NoEsValido()
+    public void F002_CA04_CorreoConControlDentro_NoEsValido()
     {
         // Arrange
         var valor = "usu\u0007ario@example.com";
@@ -53,7 +53,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA04_CorreoDe254Caracteres_EsValido()
+    public void F002_CA04_CorreoDe254Caracteres_EsValido()
     {
         // Arrange
         var valor = new string('a', 254 - "@b.co".Length) + "@b.co";
@@ -67,7 +67,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA04_CorreoDe255Caracteres_NoEsValido()
+    public void F002_CA04_CorreoDe255Caracteres_NoEsValido()
     {
         // Arrange
         var valor = new string('a', 255 - "@b.co".Length) + "@b.co";
@@ -81,7 +81,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA01_CorreoConEspaciosAlInicioYAlFinal_SeRecorta()
+    public void F002_CA01_CorreoConEspaciosAlInicioYAlFinal_SeRecorta()
     {
         // Arrange / Act
         var creado = Correo.TryCrear("  maria@example.com  ", out var correo);
@@ -92,7 +92,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA04_CrearConValorInvalido_LanzaArgumentException()
+    public void F002_CA04_CrearConValorInvalido_LanzaArgumentException()
     {
         // Arrange / Act
         var accion = () => Correo.Crear("no-es-correo");
@@ -102,7 +102,7 @@ public class CorreoTests
     }
 
     [Fact]
-    public void CA01_ToString_DevuelveElValor()
+    public void F002_CA01_ToString_DevuelveElValor()
     {
         // Arrange
         var correo = Correo.Crear("maria@example.com");

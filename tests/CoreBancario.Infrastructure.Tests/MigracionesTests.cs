@@ -5,7 +5,7 @@ namespace CoreBancario.Infrastructure.Tests;
 public class MigracionesTests(PostgresFixture bd)
 {
     [Fact]
-    public async Task RNF02_BaseVacia_QuedaConTodasLasMigracionesAplicadas()
+    public async Task F002_RNF02_BaseVacia_QuedaConTodasLasMigracionesAplicadas()
     {
         // Arrange: el fixture ya aplico MigrateAsync sobre un contenedor vacio.
         await using var db = bd.CrearContexto();
@@ -20,7 +20,7 @@ public class MigracionesTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task RNF02_Modelo_NoTieneCambiosSinMigracion()
+    public async Task F002_RNF02_Modelo_NoTieneCambiosSinMigracion()
     {
         // Arrange
         await using var db = bd.CrearContexto();
