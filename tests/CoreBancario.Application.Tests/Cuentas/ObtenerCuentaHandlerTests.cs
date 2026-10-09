@@ -9,7 +9,7 @@ public class ObtenerCuentaHandlerTests
     private readonly CuentaRepositorioEnMemoria _cuentas = new();
 
     [Fact]
-    public async Task CA17_CuentaExistente_DevuelveNumeroMonedaEstadoSaldoYFechas()
+    public async Task F002_CA17_CuentaExistente_DevuelveNumeroMonedaEstadoSaldoYFechas()
     {
         // Arrange
         var clienteId = Guid.NewGuid();
@@ -32,7 +32,7 @@ public class ObtenerCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL18_CuentaInexistente_LanzaRecursoNoEncontrado()
+    public async Task F002_CL18_CuentaInexistente_LanzaRecursoNoEncontrado()
     {
         // Arrange
         var handler = new ObtenerCuentaHandler(_cuentas);

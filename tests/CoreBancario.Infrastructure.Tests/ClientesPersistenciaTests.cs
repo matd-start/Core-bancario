@@ -8,7 +8,7 @@ namespace CoreBancario.Infrastructure.Tests;
 public class ClientesPersistenciaTests(PostgresFixture bd)
 {
     [Fact]
-    public async Task CA01_ClienteGuardado_SeRecuperaConTodosSusDatos()
+    public async Task F002_CA01_ClienteGuardado_SeRecuperaConTodosSusDatos()
     {
         // Arrange
         var cliente = Ayudas.NuevoCliente();
@@ -32,7 +32,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA05_DosContextosRegistranElMismoDocumento_ElSegundoLanzaDocumentoDuplicado()
+    public async Task F002_CA05_DosContextosRegistranElMismoDocumento_ElSegundoLanzaDocumentoDuplicado()
     {
         // Arrange
         var numero = Ayudas.NumeroDeDocumentoUnico();
@@ -50,7 +50,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CA05_DocumentoDuplicado_DejaUnSoloClienteConEseDocumento()
+    public async Task F002_CA05_DocumentoDuplicado_DejaUnSoloClienteConEseDocumento()
     {
         // Arrange
         var numero = Ayudas.NumeroDeDocumentoUnico();
@@ -77,7 +77,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL02_MismoNumeroConOtroTipo_SeGuardanLosDos()
+    public async Task F002_CL02_MismoNumeroConOtroTipo_SeGuardanLosDos()
     {
         // Arrange
         var numero = Ayudas.NumeroDeDocumentoUnico();
@@ -97,7 +97,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL17_ObtenerPorDocumento_EncuentraAlClienteGuardado()
+    public async Task F002_CL17_ObtenerPorDocumento_EncuentraAlClienteGuardado()
     {
         // Arrange
         var cliente = Ayudas.NuevoCliente();
@@ -120,7 +120,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL18_ObtenerPorDocumentoNoRegistrado_DevuelveNull()
+    public async Task F002_CL18_ObtenerPorDocumentoNoRegistrado_DevuelveNull()
     {
         // Arrange
         await using var lectura = bd.CrearContexto();
@@ -135,7 +135,7 @@ public class ClientesPersistenciaTests(PostgresFixture bd)
     }
 
     [Fact]
-    public async Task CL18_ObtenerPorIdInexistente_DevuelveNull()
+    public async Task F002_CL18_ObtenerPorIdInexistente_DevuelveNull()
     {
         // Arrange
         await using var lectura = bd.CrearContexto();

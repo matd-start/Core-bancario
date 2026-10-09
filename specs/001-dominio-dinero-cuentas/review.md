@@ -11,37 +11,37 @@ La spec no completa ningún RF (sección 3), así que la trazabilidad va por RN,
 | ID | Implementado | Test | Nota |
 |---|---|---|---|
 | RF | n/a | n/a | La spec no completa ningún RF |
-| RN-01 | Sí (`Cuenta.Debitar`, comprobación de saldo antes de `Restar`) | `RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException`, CA13, CA14 | |
-| RN-02 | Sí (`Cuenta.Moneda` sin setter, `Abrir`) | Indirecta: CA10_*, CA16_* | Ninguna prueba se llama `RN02_` |
-| RN-03 | Sí (`Sumar`, `Restar`, `Acreditar`, `Debitar`) | Indirecta: CA05_*, CA16_*, CL12_* | Ninguna prueba se llama `RN03_` |
-| RN-04 | Sí (`Moneda.Precision`, comprobación `EsCero`) | `RN04_MonedaCop_*`, `RN04_MonedaUsd_*`, CA15_* | |
+| RN-01 | Sí (`Cuenta.Debitar`, comprobación de saldo antes de `Restar`) | `F001_RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException`, CA13, CA14 | |
+| RN-02 | Sí (`Cuenta.Moneda` sin setter, `Abrir`) | Indirecta: F001_CA10_*, F001_CA16_* | Ninguna prueba se llama `RN02_` |
+| RN-03 | Sí (`Sumar`, `Restar`, `Acreditar`, `Debitar`) | Indirecta: F001_CA05_*, F001_CA16_*, F001_CL12_* | Ninguna prueba se llama `RN03_` |
+| RN-04 | Sí (`Moneda.Precision`, comprobación `EsCero`) | `F001_RN04_MonedaCop_*`, `F001_RN04_MonedaUsd_*`, F001_CA15_* | |
 | RN-05 | Sí (lista blanca de estados por operación) | Indirecta: CA17, CA18, CA19, CA27 | Ninguna prueba se llama `RN05_` |
 | RN-06 | Sí (`Cerrar`) | Indirecta: CA21, CA22, CA25 | Ninguna prueba se llama `RN06_` |
-| RN-10 | Sí (`Movimiento` con `{ get; }` y constructor `internal`) | Indirecta: CA28_* (4 pruebas) | Ninguna prueba se llama `RN10_` |
-| RN-14 | Sí (`EsTransicionPermitida` con `switch` sobre la tupla y `_ => false`) | `RN14_BloquearDesbloquearYCerrarConSaldoCero_QuedaCerrada`, CA20, CA23, CA24, CA25 | |
-| RN-15 | Sí (`Crear`, `Restar`, `DesdeCalculo`) | `RN15_DesdeCalculoCopConResultadoNegativo_*`, `RN15_DesdeCalculoNegativoQueRedondeaACero_*`, CA01, CA07 | |
-| RN-16 | Sí (`Crear` rechaza, `DesdeCalculo` ajusta con ToEven) | `RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar`, `RN16_DesdeCalculoUsdEnPuntoMedioExacto_RedondeaAlPar` | Usa la tabla de ADR-0007 |
-| CL-01 | Sí | CA01_* (2 pruebas) | La prueba `CL01_CrearConMonedaNula_*` no prueba CL-01 (ver sugerencias) |
-| CL-02 | Sí | Indirecta: CA03_* (10,555 USD; 1.000,50 COP) | |
-| CL-03 | Sí, con forma canónica | `CL03_CrearConCerosSobrantes_GuardaLaEscalaDeSuMoneda`, `CL03_CrearUsdConUnDecimal_GuardaDosDecimales` | |
-| CL-04 | Sí | Indirecta: CA05_*, CA16_* | |
-| CL-05 | Sí | Indirecta: CA07_RestarMasDeLoQueHay_* | |
-| CL-06 | Sí | Indirecta: CA15_* | |
-| CL-07 | Sí (comparación `>` estricta) | Indirecta: CA13_DebitarTodoElSaldo_DejaSaldoCero | |
+| RN-10 | Sí (`Movimiento` con `{ get; }` y constructor `internal`) | Indirecta: F001_CA28_* (4 pruebas) | Ninguna prueba se llama `RN10_` |
+| RN-14 | Sí (`EsTransicionPermitida` con `switch` sobre la tupla y `_ => false`) | `F001_RN14_BloquearDesbloquearYCerrarConSaldoCero_QuedaCerrada`, CA20, CA23, CA24, CA25 | |
+| RN-15 | Sí (`Crear`, `Restar`, `DesdeCalculo`) | `F001_RN15_DesdeCalculoCopConResultadoNegativo_*`, `F001_RN15_DesdeCalculoNegativoQueRedondeaACero_*`, CA01, CA07 | |
+| RN-16 | Sí (`Crear` rechaza, `DesdeCalculo` ajusta con ToEven) | `F001_RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar`, `F001_RN16_DesdeCalculoUsdEnPuntoMedioExacto_RedondeaAlPar` | Usa la tabla de ADR-0007 |
+| CL-01 | Sí | F001_CA01_* (2 pruebas) | La prueba `CL01_CrearConMonedaNula_*` no prueba CL-01 (ver sugerencias) |
+| CL-02 | Sí | Indirecta: F001_CA03_* (10,555 USD; 1.000,50 COP) | |
+| CL-03 | Sí, con forma canónica | `F001_CL03_CrearConCerosSobrantes_GuardaLaEscalaDeSuMoneda`, `F001_CL03_CrearUsdConUnDecimal_GuardaDosDecimales` | |
+| CL-04 | Sí | Indirecta: F001_CA05_*, F001_CA16_* | |
+| CL-05 | Sí | Indirecta: F001_CA07_RestarMasDeLoQueHay_* | |
+| CL-06 | Sí | Indirecta: F001_CA15_* | |
+| CL-07 | Sí (comparación `>` estricta) | Indirecta: F001_CA13_DebitarTodoElSaldo_DejaSaldoCero | |
 | CL-08 | Sí | Indirecta: CA14, RN01 | |
 | CL-09 | Sí | Indirecta: CA17, CA18 | |
 | CL-10 | Sí | Indirecta: CA19, CA25 | |
 | CL-11 | Sí | Indirecta: CA23, CA24 | |
-| CL-12 | Sí (orden estado → moneda → monto > 0 → saldo) | `CL12_*` (5 pruebas), CA26, CA27 | |
+| CL-12 | Sí (orden estado → moneda → monto > 0 → saldo) | `F001_CL12_*` (5 pruebas), CA26, CA27 | |
 | CL-13 | Sí (se valida todo antes de modificar) | Indirecta: cada prueba de rechazo comprueba `Saldo` y `Estado` | Ninguna prueba se llama `CL13_`; el plan lo previó así |
-| CL-14 | Sí | `CL14_DesdeCalculo*PorEncimaDeLaMitad_*`, `CL14_DesdeCalculo*_GuardaLaEscalaDeSuMoneda`, CA09_* | |
+| CL-14 | Sí | `F001_CL14_DesdeCalculo*PorEncimaDeLaMitad_*`, `F001_CL14_DesdeCalculo*_GuardaLaEscalaDeSuMoneda`, F001_CA09_* | |
 | CA-01 … CA-16 | Sí | `CA01_` … `CA16_` | CA-08 incluye la prueba de mismo hash |
-| CA-17 | Sí | `CA17_AcreditarCuentaBloqueada_*` (2 pruebas) | Parte de 1 COP, no de 0 COP como dice la spec (ver desviaciones) |
+| CA-17 | Sí | `F001_CA17_AcreditarCuentaBloqueada_*` (2 pruebas) | Parte de 1 COP, no de 0 COP como dice la spec (ver desviaciones) |
 | CA-18 … CA-28 | Sí | `CA18_` … `CA28_` | CA-28: prueba estructural (reflexión) y de comportamiento |
-| RNF-01 | Sí (el `.csproj` de Domain no tiene `PackageReference` ni `ProjectReference`) | `RNF01_EnsambladoDelDominio_SoloReferenciaElFramework` | |
+| RNF-01 | Sí (el `.csproj` de Domain no tiene `PackageReference` ni `ProjectReference`) | `F001_RNF01_EnsambladoDelDominio_SoloReferenciaElFramework` | |
 | RNF-02 | Sí | Proceso | Lo comprobé ejecutando `05c98d6`: 90 en rojo y 5 en verde, justo lo que el plan anunció |
 | RNF-03 | Sí, con la excepción documentada | Proceso | 2,2 s para Domain.Tests (ver sección RNF) |
-| RNF-04 | Sí | `RNF04_MiembrosPublicosDelDominio_NoUsanDoubleNiFloat` | |
+| RNF-04 | Sí | `F001_RNF04_MiembrosPublicosDelDominio_NoUsanDoubleNiFloat` | |
 
 **Integridad de las pruebas.** El commit `05c98d6 test(001): pruebas en rojo` existe. El único commit posterior, `0968eed feat(001): implementación`, solo toca `src/`, `tasks.md` y `learning.md`. `git diff 05c98d6 0968eed -- tests/` sale vacío.
 
@@ -71,7 +71,7 @@ Ninguno.
 
 ## Sugerencias opcionales
 
-1. **[tests/CoreBancario.Domain.Tests/Monetario/DineroTests.cs:181] Prefijos de ID que no corresponden a lo que se prueba.** Ocho pruebas de argumentos nulos o vacíos llevan un ID que no prueban: `CL01_CrearConMonedaNula`, `CL14_DesdeCalculoConMonedaNula`, `CA06_SumarConNulo`, `CA06_RestarConNulo`, `CA10_AbrirSinNumero`, `CA10_AbrirSinMoneda`, `CA11_AcreditarConMontoNulo` y `CA12_DebitarConMontoNulo`. CL-01 trata del monto negativo, no de la moneda nula, así que estos prefijos dan una trazabilidad falsa. Como ADR-0008 los define como errores de programación, `ADR0008_…` sería un prefijo honesto. Responsable: test-writer.
+1. **[tests/CoreBancario.Domain.Tests/Monetario/DineroTests.cs:181] Prefijos de ID que no corresponden a lo que se prueba.** Ocho pruebas de argumentos nulos o vacíos llevan un ID que no prueban: `CL01_CrearConMonedaNula`, `CL14_DesdeCalculoConMonedaNula`, `CA06_SumarConNulo`, `CA06_RestarConNulo`, `CA10_AbrirSinNumero`, `CA10_AbrirSinMoneda`, `CA11_AcreditarConMontoNulo` y `CA12_DebitarConMontoNulo`. CL-01 trata del monto negativo, no de la moneda nula, así que estos prefijos dan una trazabilidad falsa. Como ADR-0008 los define como errores de programación, `F001_ADR0008_…` sería un prefijo honesto. Responsable: test-writer.
 
 2. **[tests/CoreBancario.Domain.Tests/Cuentas/CuentaOperacionesTests.cs:275 y 289] CA-17 con otros datos.** La spec dice "Bloqueada con 0 COP → acreditar 10.000 → saldo 10.000", pero la prueba parte de 1 COP y espera 10.001. El comportamiento queda cubierto. Aun así, se puede reproducir el dato literal con `Abrir` + `Bloquear`; `CuentaEstadosTests` ya tiene ese ayudante, `CuentaBloqueadaSinSaldo`. Responsable: test-writer.
 
@@ -79,7 +79,7 @@ Ninguno.
 
 4. **[tests/CoreBancario.Domain.Tests/ArquitecturaDelDominioTests.cs:22] La guarda de RNF-01 es permisiva.** `StartsWith("System")` dejaría pasar paquetes NuGet como `System.Reactive`. Sería más firme comprobar también el `.csproj` sin `PackageReference`, o comparar contra una lista exacta. Responsable: test-writer.
 
-5. **[specs/001-dominio-dinero-cuentas/learning.md:52] Referencia a una prueba que no existe.** El ejercicio "Copiar" cita `RN16_DesdeCalculoEnPuntoMedioExacto_RedondeaAlPar`, pero las pruebas reales son `RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar` y `…Usd…`. Responsable: coder.
+5. **[specs/001-dominio-dinero-cuentas/learning.md:52] Referencia a una prueba que no existe.** El ejercicio "Copiar" cita `RN16_DesdeCalculoEnPuntoMedioExacto_RedondeaAlPar`, pero las pruebas reales son `F001_RN16_DesdeCalculoCopEnPuntoMedioExacto_RedondeaAlPar` y `…Usd…`. Responsable: coder.
 
 6. **[src/CoreBancario.Domain/Monetario/Dinero.cs:82] Forma canónica cerca del máximo de `decimal`.** Con montos cercanos a 7,9 × 10²⁸ USD, sumar `0.00m` no puede conservar la escala 2 y la invariante `Scale == Precision` se rompería. Ese rango queda fuera de alcance (plan, sección 10, riesgo de desbordamiento). Basta con recordarlo cuando S2 fije el máximo de entrada.
 
@@ -88,7 +88,7 @@ Ninguno.
 ## Desviaciones entre spec/plan y código
 
 - **CA-17:** el dato inicial de la prueba es 1 COP en vez de 0 COP (sugerencia 2).
-- **Nombres de pruebas distintos de la tabla de la sección 5 del plan.** Hay divisiones sin impacto: `CA04_CrearConDecimalesValidosPorValor_SeCrea` pasó a ser `CA04_CrearCopConCerosSobrantes_SeCrea` + `CA04_CrearUsdConDosDecimales_SeCrea`, y `RN16_…` se partió en una teoría por moneda, como pide la sección 7 del propio plan. CA15, CA17 y CA24 también están divididas. La equivalencia sí se pierde en un caso: la tabla del plan menciona `RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException` y existe, pero usa 1 COP frente a 2 COP en lugar del caso de CA-14.
+- **Nombres de pruebas distintos de la tabla de la sección 5 del plan.** Hay divisiones sin impacto: `CA04_CrearConDecimalesValidosPorValor_SeCrea` pasó a ser `F001_CA04_CrearCopConCerosSobrantes_SeCrea` + `F001_CA04_CrearUsdConDosDecimales_SeCrea`, y `F001_RN16_…` se partió en una teoría por moneda, como pide la sección 7 del propio plan. CA15, CA17 y CA24 también están divididas. La equivalencia sí se pierde en un caso: la tabla del plan menciona `F001_RN01_DebitarMasQueElSaldo_LanzaSaldoInsuficienteException` y existe, pero usa 1 COP frente a 2 COP en lugar del caso de CA-14.
 - **Comentarios XML más cortos que en el plan:** la sección 3 del plan documenta `<exception>` por método, y el código solo tiene `<summary>`. El contrato de comportamiento sí coincide.
 - No encontré ninguna otra divergencia de comportamiento. El orden de validación, la lista blanca de estados, las transiciones, la forma canónica, `DesdeCalculo` (comprueba el negativo antes de redondear) y la fecha recibida por parámetro coinciden con el plan.
 

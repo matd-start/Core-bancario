@@ -5,10 +5,11 @@
 useDefault = true
 
 [allowlist]
-description = "Nombres de pruebas citados en specs y planes (p. ej. Api: `CL10_MonedaNoSoportada_Responde400SinGuardar`)"
+description = "Nombres de pruebas citados en specs y planes (p. ej. Api: `F002_CL10_MonedaNoSoportada_Responde400SinGuardar`)"
 # La regla generic-api-key confunde "Api:" seguido de un nombre de prueba largo con una clave.
-# Solo se excluyen textos con la forma exacta de nuestros nombres de prueba: ID de la spec + guion bajo + palabras.
+# Solo se excluyen textos con la forma exacta de nuestros nombres de prueba:
+# prefijo de feature (opcional, para las citas de antes de la convención) + ID de la spec + guion bajo + palabras.
 regexTarget = "secret"
 regexes = [
-  '''^(CA|CL|RN|RNF|RF|ADR)\d{2,4}_[A-Za-z0-9_]+$''',
+  '''^(F\d{3}_)?(CA|CL|RN|RNF|RF|ADR)\d{2,4}_[A-Za-z0-9_]+$''',
 ]

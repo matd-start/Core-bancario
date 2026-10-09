@@ -25,7 +25,7 @@ public class MovimientoTests
     // ---- CA-11 ----
 
     [Fact]
-    public void CA11_AcreditarCuentaActiva_ProduceMovimientoDeCredito()
+    public void F001_CA11_AcreditarCuentaActiva_ProduceMovimientoDeCredito()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -42,7 +42,7 @@ public class MovimientoTests
     // ---- CA-12 ----
 
     [Fact]
-    public void CA12_DebitarCuentaActiva_ProduceMovimientoDeDebito()
+    public void F001_CA12_DebitarCuentaActiva_ProduceMovimientoDeDebito()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -59,7 +59,7 @@ public class MovimientoTests
     // ---- Datos del Movimiento ----
 
     [Fact]
-    public void CA11_MovimientoDeCredito_GuardaCuentaIdYFechaHora()
+    public void F001_CA11_MovimientoDeCredito_GuardaCuentaIdYFechaHora()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -73,7 +73,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA12_MovimientoDeDebito_GuardaCuentaIdYFechaHora()
+    public void F001_CA12_MovimientoDeDebito_GuardaCuentaIdYFechaHora()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -87,7 +87,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA11_DosMovimientos_TienenIdsDistintosYNoVacios()
+    public void F001_CA11_DosMovimientos_TienenIdsDistintosYNoVacios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -102,7 +102,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA11_SaldoResultante_ReflejaElSaldoDeLaCuentaTrasCadaOperacion()
+    public void F001_CA11_SaldoResultante_ReflejaElSaldoDeLaCuentaTrasCadaOperacion()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -120,7 +120,7 @@ public class MovimientoTests
     // ---- CA-28 / RN-10 ----
 
     [Fact]
-    public void CA28_PropiedadesPublicasDeMovimiento_NoTienenSetterPublico()
+    public void F001_CA28_PropiedadesPublicasDeMovimiento_NoTienenSetterPublico()
     {
         // Arrange
         var propiedades = typeof(Movimiento).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -134,7 +134,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA28_PropiedadesPublicasDeDinero_NoTienenSetterPublico()
+    public void F001_CA28_PropiedadesPublicasDeDinero_NoTienenSetterPublico()
     {
         // Arrange
         var propiedades = typeof(Dinero).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -148,7 +148,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA28_MovimientoNoTieneConstructorPublico_SoloLoCreaCuenta()
+    public void F001_CA28_MovimientoNoTieneConstructorPublico_SoloLoCreaCuenta()
     {
         // Arrange / Act
         var constructoresPublicos = typeof(Movimiento).GetConstructors(BindingFlags.Public | BindingFlags.Instance);
@@ -158,7 +158,7 @@ public class MovimientoTests
     }
 
     [Fact]
-    public void CA28_OperarDespuesDeUnMovimiento_NoCambiaElMovimientoAnterior()
+    public void F001_CA28_OperarDespuesDeUnMovimiento_NoCambiaElMovimientoAnterior()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);

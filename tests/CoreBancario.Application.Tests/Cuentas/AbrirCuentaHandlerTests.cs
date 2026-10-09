@@ -18,7 +18,7 @@ public class AbrirCuentaHandlerTests
         new(_clientes, _cuentas, generador, _unidad, Datos.Reloj);
 
     [Fact]
-    public async Task CA06_ClienteRegistrado_AbreCuentaCopActivaConSaldoCeroYFechaDelReloj()
+    public async Task F002_CA06_ClienteRegistrado_AbreCuentaCopActivaConSaldoCeroYFechaDelReloj()
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA));
@@ -41,7 +41,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CA07_ClienteRegistrado_AbreCuentaUsdConSaldoCeroUsd()
+    public async Task F002_CA07_ClienteRegistrado_AbreCuentaUsdConSaldoCeroUsd()
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA));
@@ -56,7 +56,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL09_ClienteInexistente_LanzaNoEncontradoSinGuardar()
+    public async Task F002_CL09_ClienteInexistente_LanzaNoEncontradoSinGuardar()
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA));
@@ -75,7 +75,7 @@ public class AbrirCuentaHandlerTests
     [InlineData("cop")]
     [InlineData("")]
     [InlineData(null)]
-    public async Task CL10_MonedaDesconocida_DevuelveErrorDeMonedaSinGuardar(string? moneda)
+    public async Task F002_CL10_MonedaDesconocida_DevuelveErrorDeMonedaSinGuardar(string? moneda)
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA));
@@ -91,7 +91,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL10_MonedaInvalidaYClienteInexistente_ResponderPrimeroElErrorDeMoneda()
+    public async Task F002_CL10_MonedaInvalidaYClienteInexistente_ResponderPrimeroElErrorDeMoneda()
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA));
@@ -105,7 +105,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL11_NumeroRepetido_GeneraOtroSinError()
+    public async Task F002_CL11_NumeroRepetido_GeneraOtroSinError()
     {
         // Arrange: el numero A ya existe; el generador devuelve A y luego B.
         _cuentas.Agregar(Datos.Cuenta(_cliente.Id, Datos.NumeroA));
@@ -123,7 +123,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL11_CincoNumerosRepetidos_LanzaInvalidOperationSinGuardar()
+    public async Task F002_CL11_CincoNumerosRepetidos_LanzaInvalidOperationSinGuardar()
     {
         // Arrange
         _cuentas.Agregar(Datos.Cuenta(_cliente.Id, Datos.NumeroA));
@@ -141,7 +141,7 @@ public class AbrirCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL12_ReintentarApertura_AbreUnaSegundaCuenta()
+    public async Task F002_CL12_ReintentarApertura_AbreUnaSegundaCuenta()
     {
         // Arrange
         var handler = CrearHandler(new GeneradorDeSecuencia(Datos.NumeroA, Datos.NumeroB));

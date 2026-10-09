@@ -13,7 +13,7 @@ public class DtosYResultadoTests
     [InlineData(0, "0")]
     [InlineData(50000, "50000")]
     [InlineData(1234567, "1234567")]
-    public void CA06_DineroDtoEnCop_NoLlevaDecimales(int pesos, string esperado)
+    public void F002_CA06_DineroDtoEnCop_NoLlevaDecimales(int pesos, string esperado)
     {
         // Arrange
         var dinero = Dinero.Crear(pesos, Moneda.COP);
@@ -29,7 +29,7 @@ public class DtosYResultadoTests
     [InlineData("0", "0.00")]
     [InlineData("10.5", "10.50")]
     [InlineData("1234.56", "1234.56")]
-    public void CA07_DineroDtoEnUsd_LlevaSiempreDosDecimalesConPunto(string monto, string esperado)
+    public void F002_CA07_DineroDtoEnUsd_LlevaSiempreDosDecimalesConPunto(string monto, string esperado)
     {
         // Arrange
         var dinero = Dinero.Crear(decimal.Parse(monto, System.Globalization.CultureInfo.InvariantCulture), Moneda.USD);
@@ -44,7 +44,7 @@ public class DtosYResultadoTests
     // ---- ClienteDto y CuentaDto ----
 
     [Fact]
-    public void CA01_ClienteDto_CopiaLosDatosNormalizadosDelCliente()
+    public void F002_CA01_ClienteDto_CopiaLosDatosNormalizadosDelCliente()
     {
         // Arrange
         var cliente = Datos.Cliente("1234567");
@@ -64,7 +64,7 @@ public class DtosYResultadoTests
     }
 
     [Fact]
-    public void CA17_CuentaDto_CopiaLosDatosDeLaCuentaConElSaldoComoTexto()
+    public void F002_CA17_CuentaDto_CopiaLosDatosDeLaCuentaConElSaldoComoTexto()
     {
         // Arrange
         var cuenta = Datos.Cuenta(Guid.NewGuid(), moneda: Moneda.USD);
@@ -86,7 +86,7 @@ public class DtosYResultadoTests
     // ---- Resultado<T> ----
 
     [Fact]
-    public void RNF03_ResultadoExito_ExponeElValorYNoTieneErrores()
+    public void F002_RNF03_ResultadoExito_ExponeElValorYNoTieneErrores()
     {
         // Arrange / Act
         var resultado = Resultado<int>.Exito(42);
@@ -98,7 +98,7 @@ public class DtosYResultadoTests
     }
 
     [Fact]
-    public void RNF03_ResultadoInvalido_ExponeTodosLosErroresYNoEsExito()
+    public void F002_RNF03_ResultadoInvalido_ExponeTodosLosErroresYNoEsExito()
     {
         // Arrange
         var errores = new Dictionary<string, string[]>
@@ -116,7 +116,7 @@ public class DtosYResultadoTests
     }
 
     [Fact]
-    public void RNF03_LeerElValorDeUnResultadoInvalido_LanzaInvalidOperationException()
+    public void F002_RNF03_LeerElValorDeUnResultadoInvalido_LanzaInvalidOperationException()
     {
         // Arrange
         var resultado = Resultado<int>.Invalido(new Dictionary<string, string[]> { ["correo"] = ["inválido"] });
@@ -129,7 +129,7 @@ public class DtosYResultadoTests
     }
 
     [Fact]
-    public void RNF03_ResultadoInvalidoSinErrores_LanzaArgumentException()
+    public void F002_RNF03_ResultadoInvalidoSinErrores_LanzaArgumentException()
     {
         // Arrange / Act
         var accion = () => Resultado<int>.Invalido(new Dictionary<string, string[]>());

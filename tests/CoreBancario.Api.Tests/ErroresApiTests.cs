@@ -39,7 +39,7 @@ public class ErroresApiTests(ApiFixture api)
 
     [Theory]
     [MemberData(nameof(ExcepcionesConocidas))]
-    public void RNF03_CatalogoDeErrores_ClasificaCadaExcepcion(Exception excepcion, int estado, string codigo)
+    public void F002_RNF03_CatalogoDeErrores_ClasificaCadaExcepcion(Exception excepcion, int estado, string codigo)
     {
         // Arrange / Act
         var error = CatalogoDeErrores.Clasificar(excepcion);
@@ -50,7 +50,7 @@ public class ErroresApiTests(ApiFixture api)
     }
 
     [Fact]
-    public void RNF03_ConflictoDeConcurrencia_SeClasificaComo409()
+    public void F002_RNF03_ConflictoDeConcurrencia_SeClasificaComo409()
     {
         // Arrange
         var excepcion = new ConflictoDeConcurrenciaException();
@@ -64,7 +64,7 @@ public class ErroresApiTests(ApiFixture api)
     }
 
     [Fact]
-    public void RNF03_CadaReglaDeNegocioDelDominio_TieneCodigoPropio()
+    public void F002_RNF03_CadaReglaDeNegocioDelDominio_TieneCodigoPropio()
     {
         // Arrange
         var reglas = typeof(ReglaDeNegocioException).Assembly.GetTypes()
@@ -84,7 +84,7 @@ public class ErroresApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task RNF03_JsonMalFormado_Responde400DatosInvalidos()
+    public async Task F002_RNF03_JsonMalFormado_Responde400DatosInvalidos()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -99,7 +99,7 @@ public class ErroresApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task RNF04_ErrorInesperado_Responde500SinDetallesInternos()
+    public async Task F002_RNF04_ErrorInesperado_Responde500SinDetallesInternos()
     {
         // Arrange: el reloj lanza una excepcion con texto que parece SQL; nada de eso debe llegar al cliente.
         const string mensajeInterno = "SELECT * FROM clientes WHERE secreto = 1";
@@ -132,7 +132,7 @@ public class ErroresApiTests(ApiFixture api)
     [InlineData("BloquearCuenta", "200,404,409,422")]
     [InlineData("DesbloquearCuenta", "200,404,409,422")]
     [InlineData("CerrarCuenta", "200,404,409,422")]
-    public async Task RNF05_ContratoOpenApi_DescribeCadaOperacionYSusErrores(string operationId, string codigosEsperados)
+    public async Task F002_RNF05_ContratoOpenApi_DescribeCadaOperacionYSusErrores(string operationId, string codigosEsperados)
     {
         // Arrange
         using var http = api.CrearCliente();

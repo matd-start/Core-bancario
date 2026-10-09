@@ -44,7 +44,7 @@ public class CuentaEstadosTests
     // ---- CA-20 ----
 
     [Fact]
-    public void CA20_BloquearCuentaActiva_QuedaBloqueada()
+    public void F001_CA20_BloquearCuentaActiva_QuedaBloqueada()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -58,7 +58,7 @@ public class CuentaEstadosTests
     }
 
     [Fact]
-    public void CA20_DesbloquearCuentaBloqueada_QuedaActiva()
+    public void F001_CA20_DesbloquearCuentaBloqueada_QuedaActiva()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -74,7 +74,7 @@ public class CuentaEstadosTests
     // ---- CA-21 ----
 
     [Fact]
-    public void CA21_CerrarCuentaActivaConSaldoCero_QuedaCerrada()
+    public void F001_CA21_CerrarCuentaActivaConSaldoCero_QuedaCerrada()
     {
         // Arrange
         var cuenta = CuentaActivaSinSaldo();
@@ -89,7 +89,7 @@ public class CuentaEstadosTests
     // ---- CA-22 ----
 
     [Fact]
-    public void CA22_CerrarCuentaActivaConUnPeso_LanzaSaldoDistintoDeCeroYSigueActiva()
+    public void F001_CA22_CerrarCuentaActivaConUnPeso_LanzaSaldoDistintoDeCeroYSigueActiva()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(1m);
@@ -106,7 +106,7 @@ public class CuentaEstadosTests
     // ---- CA-23 / CL-11 ----
 
     [Fact]
-    public void CA23_CerrarCuentaBloqueada_LanzaTransicionNoPermitidaYSigueBloqueada()
+    public void F001_CA23_CerrarCuentaBloqueada_LanzaTransicionNoPermitidaYSigueBloqueada()
     {
         // Arrange
         var cuenta = CuentaBloqueadaSinSaldo();
@@ -123,7 +123,7 @@ public class CuentaEstadosTests
     // ---- CA-24 / CL-11 ----
 
     [Fact]
-    public void CA24_BloquearBloqueada_LanzaTransicionNoPermitidaSinCambios()
+    public void F001_CA24_BloquearBloqueada_LanzaTransicionNoPermitidaSinCambios()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(50_000m);
@@ -138,7 +138,7 @@ public class CuentaEstadosTests
     }
 
     [Fact]
-    public void CA24_DesbloquearActiva_LanzaTransicionNoPermitidaSinCambios()
+    public void F001_CA24_DesbloquearActiva_LanzaTransicionNoPermitidaSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(50_000m);
@@ -155,7 +155,7 @@ public class CuentaEstadosTests
     // ---- CA-25 / CL-10 ----
 
     [Fact]
-    public void CA25_BloquearCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
+    public void F001_CA25_BloquearCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -170,7 +170,7 @@ public class CuentaEstadosTests
     }
 
     [Fact]
-    public void CA25_DesbloquearCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
+    public void F001_CA25_DesbloquearCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -185,7 +185,7 @@ public class CuentaEstadosTests
     }
 
     [Fact]
-    public void CA25_CerrarCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
+    public void F001_CA25_CerrarCuentaCerrada_LanzaTransicionNoPermitidaYSigueCerrada()
     {
         // Arrange
         var cuenta = CuentaCerrada();
@@ -202,7 +202,7 @@ public class CuentaEstadosTests
     // ---- CA-26 / CL-12 ----
 
     [Fact]
-    public void CA26_CerrarBloqueadaConSaldo_LanzaTransicionNoPermitida()
+    public void F001_CA26_CerrarBloqueadaConSaldo_LanzaTransicionNoPermitida()
     {
         // Arrange
         var cuenta = CuentaBloqueadaConSaldo(10_000m);
@@ -219,7 +219,7 @@ public class CuentaEstadosTests
     // ---- RN-14: la cuenta desbloqueada puede cerrarse (camino completo) ----
 
     [Fact]
-    public void RN14_BloquearDesbloquearYCerrarConSaldoCero_QuedaCerrada()
+    public void F001_RN14_BloquearDesbloquearYCerrarConSaldoCero_QuedaCerrada()
     {
         // Arrange
         var cuenta = CuentaBloqueadaSinSaldo();
@@ -235,7 +235,7 @@ public class CuentaEstadosTests
     // ---- Prueba explícita por regla de negocio ----
 
     [Fact]
-    public void RN06_CerrarConSaldoDistintoDeCero_LanzaSaldoDistintoDeCeroSinCambios()
+    public void F001_RN06_CerrarConSaldoDistintoDeCero_LanzaSaldoDistintoDeCeroSinCambios()
     {
         // Arrange
         var cuenta = CuentaActivaConSaldo(1m);

@@ -9,7 +9,7 @@ public class TelefonoTests
     [InlineData("+57 300 123 4567", "+573001234567")]
     [InlineData("+573001234567", "+573001234567")]
     [InlineData(" +1 (415) 555-2671 ", "+14155552671")]
-    public void CA01_TelefonoConEspaciosGuionesYParentesis_SeNormaliza(string escrito, string esperado)
+    public void F002_CA01_TelefonoConEspaciosGuionesYParentesis_SeNormaliza(string escrito, string esperado)
     {
         // Arrange / Act
         var creado = Telefono.TryCrear(escrito, out var telefono);
@@ -23,7 +23,7 @@ public class TelefonoTests
     [InlineData("3001234567")]
     [InlineData("573001234567")]
     [InlineData("300 123 4567")]
-    public void CL07_SinCodigoDePais_NoEsValido(string valor)
+    public void F002_CL07_SinCodigoDePais_NoEsValido(string valor)
     {
         // Arrange / Act
         var creado = Telefono.TryCrear(valor, out var telefono);
@@ -37,7 +37,7 @@ public class TelefonoTests
     [InlineData("+1234567")]
     [InlineData("+")]
     [InlineData("+1234567890123456")]
-    public void CL07_FueraDeRango_NoEsValido(string valor)
+    public void F002_CL07_FueraDeRango_NoEsValido(string valor)
     {
         // Arrange / Act
         var creado = Telefono.TryCrear(valor, out _);
@@ -49,7 +49,7 @@ public class TelefonoTests
     [Theory]
     [InlineData("+12345678")]
     [InlineData("+123456789012345")]
-    public void CL07_EnLosLimitesDeRango_EsValido(string valor)
+    public void F002_CL07_EnLosLimitesDeRango_EsValido(string valor)
     {
         // Arrange / Act
         var creado = Telefono.TryCrear(valor, out _);
@@ -65,7 +65,7 @@ public class TelefonoTests
     [InlineData("+57300abc4567")]
     [InlineData("+57.300.123.4567")]
     [InlineData("++573001234567")]
-    public void CL07_AusenteOConCaracteresInvalidos_NoEsValido(string? valor)
+    public void F002_CL07_AusenteOConCaracteresInvalidos_NoEsValido(string? valor)
     {
         // Arrange / Act
         var creado = Telefono.TryCrear(valor, out _);
@@ -75,7 +75,7 @@ public class TelefonoTests
     }
 
     [Fact]
-    public void CL07_CrearConValorInvalido_LanzaArgumentException()
+    public void F002_CL07_CrearConValorInvalido_LanzaArgumentException()
     {
         // Arrange / Act
         var accion = () => Telefono.Crear("3001234567");
@@ -85,7 +85,7 @@ public class TelefonoTests
     }
 
     [Fact]
-    public void CA01_ToString_DevuelveElValorNormalizado()
+    public void F002_CA01_ToString_DevuelveElValorNormalizado()
     {
         // Arrange
         var telefono = Telefono.Crear("+57 (300) 123-4567");

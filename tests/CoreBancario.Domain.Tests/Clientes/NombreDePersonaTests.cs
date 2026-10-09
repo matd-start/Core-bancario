@@ -8,7 +8,7 @@ public class NombreDePersonaTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void CL06_VacioOSoloEspacios_NoEsValido(string? valor)
+    public void F002_CL06_VacioOSoloEspacios_NoEsValido(string? valor)
     {
         // Arrange / Act
         var creado = NombreDePersona.TryCrear(valor, out var nombre);
@@ -23,7 +23,7 @@ public class NombreDePersonaTests
     [InlineData("Núñez")]
     [InlineData("O'Neil")]
     [InlineData("Pérez-Gómez")]
-    public void CL06_ConTildesEnieApostrofoYGuion_EsValido(string valor)
+    public void F002_CL06_ConTildesEnieApostrofoYGuion_EsValido(string valor)
     {
         // Arrange / Act
         var creado = NombreDePersona.TryCrear(valor, out var nombre);
@@ -38,7 +38,7 @@ public class NombreDePersonaTests
     [InlineData("Juan_Perez")]
     [InlineData("Ana@Casa")]
     [InlineData("Luis.")]
-    public void CL06_ConDigitosOSimbolos_NoEsValido(string valor)
+    public void F002_CL06_ConDigitosOSimbolos_NoEsValido(string valor)
     {
         // Arrange / Act
         var creado = NombreDePersona.TryCrear(valor, out _);
@@ -48,7 +48,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CL06_CienCaracteres_EsValido()
+    public void F002_CL06_CienCaracteres_EsValido()
     {
         // Arrange
         var valor = new string('a', 100);
@@ -61,7 +61,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CL06_MasDeCienCaracteres_NoEsValido()
+    public void F002_CL06_MasDeCienCaracteres_NoEsValido()
     {
         // Arrange
         var valor = new string('a', 101);
@@ -74,7 +74,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CL06_QuitaEspaciosAlInicioYAlFinal()
+    public void F002_CL06_QuitaEspaciosAlInicioYAlFinal()
     {
         // Arrange / Act
         var creado = NombreDePersona.TryCrear("  Ana María  ", out var nombre);
@@ -88,7 +88,7 @@ public class NombreDePersonaTests
     [InlineData("'")]
     [InlineData("-")]
     [InlineData("' - '")]
-    public void CL06_SoloApostrofosYGuiones_NoEsValido(string valor)
+    public void F002_CL06_SoloApostrofosYGuiones_NoEsValido(string valor)
     {
         // Arrange / Act
         var creado = NombreDePersona.TryCrear(valor, out _);
@@ -98,7 +98,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CL06_TextoDescompuesto_SeNormalizaANfc()
+    public void F002_CL06_TextoDescompuesto_SeNormalizaANfc()
     {
         // Arrange: "e" + acento combinado (NFD)
         var descompuesto = "José";
@@ -112,7 +112,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CL06_CrearConValorInvalido_LanzaArgumentException()
+    public void F002_CL06_CrearConValorInvalido_LanzaArgumentException()
     {
         // Arrange / Act
         var accion = () => NombreDePersona.Crear("  ");
@@ -122,7 +122,7 @@ public class NombreDePersonaTests
     }
 
     [Fact]
-    public void CA01_ToString_DevuelveElValor()
+    public void F002_CA01_ToString_DevuelveElValor()
     {
         // Arrange
         var nombre = NombreDePersona.Crear(" Ana ");

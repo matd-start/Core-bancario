@@ -29,7 +29,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CA10_BloquearCuentaActiva_QuedaBloqueadaYGuarda()
+    public async Task F002_CA10_BloquearCuentaActiva_QuedaBloqueadaYGuarda()
     {
         // Arrange
         var cuenta = CuentaActiva();
@@ -46,7 +46,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CA10_DesbloquearCuentaBloqueada_VuelveAActiva()
+    public async Task F002_CA10_DesbloquearCuentaBloqueada_VuelveAActiva()
     {
         // Arrange
         var cuenta = CuentaBloqueada();
@@ -64,7 +64,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     [Theory]
     [InlineData(AccionDeEstado.Cerrar)]
     [InlineData(AccionDeEstado.Bloquear)]
-    public async Task CA11_CerrarOBloquearCuentaBloqueada_LanzaTransicionNoPermitidaSinGuardar(AccionDeEstado accion)
+    public async Task F002_CA11_CerrarOBloquearCuentaBloqueada_LanzaTransicionNoPermitidaSinGuardar(AccionDeEstado accion)
     {
         // Arrange
         var cuenta = CuentaBloqueada();
@@ -81,7 +81,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CA12_CerrarCuentaActivaSinSaldo_QuedaCerradaConLaFechaDelReloj()
+    public async Task F002_CA12_CerrarCuentaActivaSinSaldo_QuedaCerradaConLaFechaDelReloj()
     {
         // Arrange
         var cuenta = CuentaActiva();
@@ -101,7 +101,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     [InlineData(AccionDeEstado.Bloquear)]
     [InlineData(AccionDeEstado.Desbloquear)]
     [InlineData(AccionDeEstado.Cerrar)]
-    public async Task CA12_CambiarEstadoDeCuentaCerrada_LanzaTransicionNoPermitidaSinGuardar(AccionDeEstado accion)
+    public async Task F002_CA12_CambiarEstadoDeCuentaCerrada_LanzaTransicionNoPermitidaSinGuardar(AccionDeEstado accion)
     {
         // Arrange
         var cuenta = CuentaActiva();
@@ -118,7 +118,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CA13_CerrarCuentaConSaldo_LanzaSaldoDistintoDeCeroSinGuardar()
+    public async Task F002_CA13_CerrarCuentaConSaldo_LanzaSaldoDistintoDeCeroSinGuardar()
     {
         // Arrange
         var cuenta = CuentaActiva();
@@ -140,7 +140,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     [InlineData(AccionDeEstado.Bloquear)]
     [InlineData(AccionDeEstado.Desbloquear)]
     [InlineData(AccionDeEstado.Cerrar)]
-    public async Task CL16_CuentaInexistente_LanzaRecursoNoEncontrado(AccionDeEstado accion)
+    public async Task F002_CL16_CuentaInexistente_LanzaRecursoNoEncontrado(AccionDeEstado accion)
     {
         // Arrange
         var handler = CrearHandler();
@@ -155,7 +155,7 @@ public class CambiarEstadoDeCuentaHandlerTests
     }
 
     [Fact]
-    public async Task CL15_ConflictoAlGuardar_SePropagaYNoSeReintenta()
+    public async Task F002_CL15_ConflictoAlGuardar_SePropagaYNoSeReintenta()
     {
         // Arrange
         var cuenta = CuentaActiva();

@@ -11,7 +11,7 @@ public class ClientesApiTests(ApiFixture api)
     // ---- RF-01 Registrar cliente ----
 
     [Fact]
-    public async Task CA01_RegistrarClienteValido_Responde201ConIdFechaYDatosNormalizados()
+    public async Task F002_CA01_RegistrarClienteValido_Responde201ConIdFechaYDatosNormalizados()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -35,7 +35,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA01_ClienteRegistrado_SeConsultaPorIdConLosMismosDatos()
+    public async Task F002_CA01_ClienteRegistrado_SeConsultaPorIdConLosMismosDatos()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -54,7 +54,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA02_RegistrarMismoDocumentoConPuntos_RespondeDuplicadoYQuedaUnSoloCliente()
+    public async Task F002_CA02_RegistrarMismoDocumentoConPuntos_RespondeDuplicadoYQuedaUnSoloCliente()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -73,7 +73,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA03_RegistrarMismoNumeroComoPasaporte_SeAcepta()
+    public async Task F002_CA03_RegistrarMismoNumeroComoPasaporte_SeAcepta()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -88,7 +88,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA04_RegistroConTresCamposInvalidos_Responde400ConLosTresErrores()
+    public async Task F002_CA04_RegistroConTresCamposInvalidos_Responde400ConLosTresErrores()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -105,7 +105,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA05_DosRegistrosSimultaneos_UnoCreaYOtroRespondeDuplicado()
+    public async Task F002_CA05_DosRegistrosSimultaneos_UnoCreaYOtroRespondeDuplicado()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -126,7 +126,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA05_DosRegistrosSimultaneos_QuedaExactamenteUnClienteConEseDocumento()
+    public async Task F002_CA05_DosRegistrosSimultaneos_QuedaExactamenteUnClienteConEseDocumento()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -148,7 +148,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL08_ReintentarRegistroGuardado_RespondeDuplicadoYSeEncuentraPorDocumento()
+    public async Task F002_CL08_ReintentarRegistroGuardado_RespondeDuplicadoYSeEncuentraPorDocumento()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -169,7 +169,7 @@ public class ClientesApiTests(ApiFixture api)
     // ---- RF-12 Consultar clientes ----
 
     [Fact]
-    public async Task CA15_BuscarConPuntos_DevuelveLaFichaConSusCuentas()
+    public async Task F002_CA15_BuscarConPuntos_DevuelveLaFichaConSusCuentas()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -192,7 +192,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA16_BuscarDocumentoNoRegistrado_Responde404()
+    public async Task F002_CA16_BuscarDocumentoNoRegistrado_Responde404()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -206,7 +206,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CA16_ClienteSinCuentas_DevuelveListaVacia()
+    public async Task F002_CA16_ClienteSinCuentas_DevuelveListaVacia()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -223,7 +223,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL18_ObtenerClienteInexistente_Responde404()
+    public async Task F002_CL18_ObtenerClienteInexistente_Responde404()
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -237,7 +237,7 @@ public class ClientesApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task CL18_BuscarConTipoInvalido_Responde400()
+    public async Task F002_CL18_BuscarConTipoInvalido_Responde400()
     {
         // Arrange
         using var http = api.CrearCliente();
