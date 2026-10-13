@@ -2,6 +2,7 @@
 
 Estado: Aprobado (2026-10-09)
 Fecha: 2026-10-09
+Enmienda (2026-10-13, fase Design): CL-05 y el vencimiento a las 72 h de la clave temporal pasan a ser un **límite conocido**, porque Keycloak 26 no permite que una clave temporal venza (ADR-0014; decisión del autor en la pregunta abierta 2 del plan). Además, "no contener el número de documento" (sección 4) se aplica en el servidor solo para el usuario completo (`CC1234567`); el número suelto se avisa en el navegador, y ese aviso se puede saltar (pregunta abierta 3 del plan). El estado de aprobación no cambia.
 
 ## 1. Contexto y objetivo
 
@@ -34,8 +35,8 @@ Las operaciones de la 002 (RF-01, RF-02, RF-03, RF-12 y la consulta de cuenta de
 | Acceso digital | Usuario | Documento | Sí | El tipo y el número de documento del cliente, normalizados como en RN-17. No se elige ni cambia. |
 | Acceso digital | Estado | Habilitado · Deshabilitado | Sí | Solo el operador lo cambia (RN-20). |
 | Acceso digital | Segundo factor | Inscrito · Sin inscribir | Sí | Nace sin inscribir; restablecer el acceso lo borra. |
-| Clave | Texto | — | Sí | Mínimo 12 caracteres y máximo 64 (propuesto). No puede contener el número de documento (propuesto). Nunca se guarda ni se muestra en texto plano. |
-| Clave temporal | Texto | — | Sí | La genera el sistema al azar, con 16 caracteres como mínimo (propuesto). Se muestra **una sola vez**, en la respuesta al operador. Sirve solo para el primer ingreso y vence a las 72 h si no se usa (propuesto). |
+| Clave | Texto | — | Sí | Mínimo 12 caracteres y máximo 64 (propuesto). No puede contener el número de documento (propuesto; enmienda 2026-10-13: el servidor rechaza la clave que contiene el usuario completo, `CC1234567`, y el navegador avisa del número suelto; ese aviso se puede saltar). Nunca se guarda ni se muestra en texto plano. |
+| Clave temporal | Texto | — | Sí | La genera el sistema al azar, con 16 caracteres como mínimo (propuesto). Se muestra **una sola vez**, en la respuesta al operador. Sirve solo para el primer ingreso. ~~Vence a las 72 h si no se usa (propuesto).~~ **Límite conocido** (enmienda 2026-10-13): no vence, porque Keycloak 26 no lo permite. El operador la invalida restableciendo o deshabilitando el acceso (sección 9). |
 | Registro de acceso | Cliente | Referencia a `Cliente` | Sí | Cliente afectado. |
 | Registro de acceso | Operador | Identificador del operador | Sí | Quién hizo la operación; sale de su sesión, no de la petición. |
 | Registro de acceso | Acción | Habilitar · Restablecer · Deshabilitar | Sí | — |
@@ -76,7 +77,7 @@ IDs globales de `docs/producto/spec-fase-1.md`. RN-19 a RN-24 se añadieron all�
 - CL-02: El documento se normaliza al iniciar sesión: `1.234.567` y `1234567` son el mismo usuario (RN-17).
 - CL-03: Un código del segundo factor incorrecto o vencido cuenta como intento fallido (RN-23).
 - CL-04: Con una clave temporal, cualquier operación distinta de cambiar la clave e inscribir el segundo factor se rechaza (RN-21).
-- CL-05: Una clave temporal vencida (más de 72 h sin usar, propuesto) ya no sirve; el operador debe restablecer el acceso.
+- CL-05: ~~Una clave temporal vencida (más de 72 h sin usar, propuesto) ya no sirve; el operador debe restablecer el acceso.~~ **Límite conocido** (enmienda 2026-10-13): la clave temporal no vence, porque Keycloak 26 no lo permite. Una clave temporal que no se usa sigue sirviendo hasta que el operador restablece o deshabilita el acceso. Mejora futura: un proceso en segundo plano que deshabilite los accesos con clave temporal de más de 72 h (sección 9).
 - CL-06: La nueva clave que no cumple la política (sección 4) se rechaza indicando qué regla rompe.
 
 **Sesión**
@@ -143,6 +144,7 @@ IDs globales de `docs/producto/spec-fase-1.md`. RN-19 a RN-24 se añadieron all�
 
 - Recuperar la clave olvidada sin el operador (por correo o SMS). La recuperación es el restablecimiento de RF-13.
 - Entregar la clave temporal por un canal que el operador no ve (correo, SMS, sobre). Es un **límite conocido** (sección 11).
+- El vencimiento de la clave temporal a las 72 h (CL-05). Es un **límite conocido** (enmienda 2026-10-13): Keycloak 26 no lo trae. Se deja como mejora futura un proceso en segundo plano de la API que deshabilite los accesos con clave temporal de más de 72 h, junto al proceso de reconciliación de ADR-0017.
 - Códigos de respaldo del segundo factor y otros factores (SMS, correo, llaves de seguridad o passkeys).
 - Gestionar operadores desde la API, un rol Administrador y cualquier rol más allá de Cliente y Operador.
 - Revocación inmediata de las credenciales de acceso (RNF-01).
@@ -187,3 +189,9 @@ Entrevista del 2026-10-09.
 - **Autoservicio:** cambiar la clave y cerrar sesión entran; recuperar la clave sin el operador queda fuera.
 - **Segundo factor obligatorio para clientes y operadores, con app autenticadora (TOTP), dentro de la 003.** Lo eligió aunque la recomendación era dejarlo fuera de la 003. En sus palabras: *"una contraseña sola protege contra el robo de credenciales, pero no contra el uso de esas credenciales una vez robadas. Si un atacante obtiene la contraseña mediante phishing, reutilización de contraseñas o una filtración, todavía le faltaría el segundo factor"*. Matices añadidos: la clave es algo que se *sabe* y se copia sin que el dueño lo note, y el celular es algo que se *tiene*; TOTP no frena el phishing en tiempo real (la página falsa pide también el código y lo usa en el momento). Solo las passkeys resisten eso. Para estudiar: *adversary-in-the-middle phishing* y WebAuthn.
 - **Inscripción del segundo factor en el primer ingreso; si pierde el celular, el operador restablece el acceso.** Sin códigos de respaldo.
+
+Revisión del Design (2026-10-13):
+
+- **La clave temporal no vence a las 72 h (CL-05): se acepta como límite conocido.** En sus palabras: *"Acepto esa ventana porque el principal riesgo recae sobre personal interno que ya está sometido a controles, auditoría y trazabilidad. Además, el operador puede generar un nuevo restablecimiento cuando sea necesario, por lo que el impacto residual me parece asumible frente al coste de construir una solución específica para la caducidad"*.
+- **"No contener el número de documento":** el servidor aplica `notContainsUsername` y el tema avisa del número suelto en el navegador. Se acepta que el aviso se pueda saltar, porque la regla protege al usuario de sí mismo, no frente a un atacante. En sus palabras: *"Se perjudica únicamente a sí mismo porque está eligiendo una contraseña más débil para su propia cuenta. Como la regla busca mejorar la calidad de la contraseña y no proteger un límite de seguridad del servidor, es aceptable aplicarla en el navegador como ayuda al usuario y no como una defensa crítica del sistema"*.
+- **Entrega en dos bloques (003a proteger la API, 003b gestionar el acceso), cada uno con su PR.** En sus palabras: *"Como autor, gano cambios más pequeños, fáciles de implementar, probar y corregir. Como revisor, gano PRs más cortos y con menos decisiones mezcladas. Para hacer merge de 003a sin 003b, la API debe quedar protegida y funcional por sí sola"*.
