@@ -105,7 +105,7 @@ public class MisCuentasApiTests(ApiFixture api)
         Assert.Empty((await respuesta.Content.ReadFromJsonAsync<List<CuentaDto>>(Ct))!);
     }
 
-    // ---- CA-16: detalle de una cuenta propia ----
+    // ---- CA-16 / RF-05: detalle de una cuenta propia ----
 
     [Fact]
     public async Task F003_RF05_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas()
