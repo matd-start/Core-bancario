@@ -1,3 +1,4 @@
+using CoreBancario.Api.AccesosDigitales;
 using CoreBancario.Api.Autenticacion;
 using CoreBancario.Api.Clientes;
 using CoreBancario.Api.Cuentas;
@@ -52,6 +53,7 @@ app.MapHealthChecks("/health").AllowAnonymous();
 app.MapEndpointsDeClientes();
 app.MapEndpointsDeCuentas();
 app.MapEndpointsDeMisCuentas();
+app.MapEndpointsDeAccesoDigital();
 
 app.Run();
 

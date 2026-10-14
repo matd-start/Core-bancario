@@ -1,14 +1,13 @@
 using CoreBancario.Application.AccesosDigitales;
 using CoreBancario.Domain.AccesosDigitales;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreBancario.Infrastructure.Persistencia.Repositorios;
 
-#pragma warning disable CS9113 // Parámetros sin leer: es un esqueleto sin cuerpo.
-// SDD: esqueleto creado por test-writer
 public sealed class AccesoDigitalRepositorio(CoreBancarioDbContext db) : IAccesoDigitalRepositorio
 {
-    public void Agregar(AccesoDigital acceso) => throw new NotImplementedException();
+    public void Agregar(AccesoDigital acceso) => db.AccesosDigitales.Add(acceso);
 
     public Task<AccesoDigital?> ObtenerPorClienteAsync(Guid clienteId, CancellationToken cancellationToken) =>
-        throw new NotImplementedException();
+        db.AccesosDigitales.AsNoTracking().FirstOrDefaultAsync(a => a.ClienteId == clienteId, cancellationToken);
 }

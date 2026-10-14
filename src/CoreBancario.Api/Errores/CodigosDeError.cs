@@ -19,4 +19,7 @@ public static class CodigosDeError
     public const string ErrorInesperado = "error-inesperado";
     public const string NoAutenticado = "no-autenticado";
     public const string Prohibido = "prohibido";
+    public const string AccesoNoHabilitado = "acceso-no-habilitado";
+    public const string IdentidadError = "identidad-error";
+    public const string IdentidadSinRespuesta = "identidad-sin-respuesta";
 }

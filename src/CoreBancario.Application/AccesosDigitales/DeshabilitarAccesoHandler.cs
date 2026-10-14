@@ -4,8 +4,6 @@ using CoreBancario.Domain.AccesosDigitales;
 
 namespace CoreBancario.Application.AccesosDigitales;
 
-#pragma warning disable CS9113 // Parámetros sin leer: es un esqueleto sin cuerpo.
-// SDD: esqueleto creado por test-writer
 public sealed class DeshabilitarAccesoHandler(
     IClienteRepositorio clientes, LocalizadorDeAcceso localizador, ReconciliadorDeSolicitudes reconciliador,
     IProveedorDeIdentidad proveedor, IAccesoDigitalRepositorio accesos, IRegistroDeAccesos registro,
@@ -16,6 +14,47 @@ public sealed class DeshabilitarAccesoHandler(
     /// <exception cref="ProveedorDeIdentidadSinRespuestaException"/>
     /// <exception cref="ErrorDelProveedorDeIdentidadException"/>
     /// <exception cref="ConflictoDeConcurrenciaException"/>
-    public Task<RegistroDeAccesoDto> EjecutarAsync(DeshabilitarAccesoComando comando, CancellationToken cancellationToken) =>
-        throw new NotImplementedException();
+    public async Task<RegistroDeAccesoDto> EjecutarAsync(DeshabilitarAccesoComando comando, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(comando);
+
+        var cliente = await clientes.ObtenerAsync(comando.ClienteId, cancellationToken)
+            ?? throw new RecursoNoEncontradoException("No existe un cliente con ese identificador.");
+
+        var acceso = await localizador.LocalizarAsync(cliente, cancellationToken);
+        await reconciliador.ReconciliarAsync(cliente.Id, acceso.Usuario, cancellationToken);
+
+        // Si el acceso no está habilitado, ParaDeshabilitar lanza antes de crear nada (CL-14, CA-04).
+        var solicitud = SolicitudDeAcceso.ParaDeshabilitar(
+            cliente.Id, comando.Operador, acceso.Estado, reloj.AhoraEnMicrosegundos());
+        registro.AgregarSolicitud(solicitud);
+        await unidadDeTrabajo.GuardarCambiosAsync(cancellationToken);
+
+        // Habilitado implica que el usuario existe: ParaDeshabilitar lanzó si no.
+        var usuario = acceso.Usuario!;
+        await AplicarAsync(usuario, solicitud);
+
+        // Un usuario adoptado (sin vínculo) queda vinculado, igual que al habilitar.
+        if (acceso.Vinculo is null)
+            accesos.Agregar(AccesoDigital.Vincular(cliente.Id, usuario.Sub, reloj.AhoraEnMicrosegundos()));
+
+        registro.AgregarResultado(solicitud.Completar(reloj.AhoraEnMicrosegundos()));
+        await unidadDeTrabajo.GuardarCambiosAsync(CancellationToken.None);
+
+        return new RegistroDeAccesoDto(solicitud.Id, cliente.Id, solicitud.Accion.ToString(), solicitud.Fecha);
+    }
+
+    private async Task AplicarAsync(UsuarioDeIdentidad usuario, SolicitudDeAcceso solicitud)
+    {
+        try
+        {
+            await proveedor.DeshabilitarAsync(usuario.Sub, solicitud.Id, CancellationToken.None);
+        }
+        catch (ErrorDelProveedorDeIdentidadException error)
+        {
+            registro.AgregarResultado(solicitud.Fallar(reloj.AhoraEnMicrosegundos(), error.Motivo));
+            await unidadDeTrabajo.GuardarCambiosAsync(CancellationToken.None);
+            throw;
+        }
+    }
 }
