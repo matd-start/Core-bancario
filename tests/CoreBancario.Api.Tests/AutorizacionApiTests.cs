@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using CoreBancario.Api.Autenticacion;
 using CoreBancario.Api.Errores;
 using static CoreBancario.Api.Tests.Ayudas;
 using static CoreBancario.Api.Tests.AyudasDeAutenticacion;
@@ -43,7 +44,7 @@ public class AutorizacionApiTests(ApiFixture api)
 
     [Theory]
     [MemberData(nameof(RutasDeCliente))]
-    public async Task F003_CA19_OperadorLlamaMisCuentas_Responde403(string metodo, string ruta)
+    public async Task F003_CL09_OperadorLlamaMisCuentas_Responde403(string metodo, string ruta)
     {
         // Arrange
         using var http = api.CrearCliente();
@@ -56,7 +57,7 @@ public class AutorizacionApiTests(ApiFixture api)
     }
 
     [Fact]
-    public async Task F003_CA19_ClienteRegistraCliente_Responde403YNoCreaElCliente()
+    public async Task F003_CL08_ClienteRegistraCliente_Responde403YNoCreaElCliente()
     {
         // Arrange
         using var comoCliente = api.CrearClienteComoCliente(Guid.NewGuid().ToString());
@@ -119,6 +120,42 @@ public class AutorizacionApiTests(ApiFixture api)
         await AssertEsProhibidoAsync(respuesta);
     }
 
+    // ---- RN-19: el rol de la API sale del esquema, no de claims de rol que traiga el token ----
+
+    [Theory]
+    [InlineData("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")]
+    [InlineData("role")]
+    public async Task F003_RN19_TokenDeClientesConClaimDeRolOperador_Responde403(string claimDeRol)
+    {
+        // Arrange: un mapper de Keycloak mal configurado podria emitir el rol de la API como claim propio.
+        var token = EmisorDePruebas.CrearToken(EmisorDeToken.Clientes, Guid.NewGuid().ToString(),
+            [EmisorDePruebas.RolDeCliente], claimsExtra: new Dictionary<string, object> { [claimDeRol] = Roles.Operador });
+        using var http = api.CrearClienteConToken(token);
+
+        // Act
+        var respuesta = await http.GetAsync($"/cuentas/{Guid.NewGuid()}", Ct);
+
+        // Assert
+        await AssertEsProhibidoAsync(respuesta);
+    }
+
+    [Theory]
+    [InlineData("http://schemas.microsoft.com/ws/2008/06/identity/claims/role")]
+    [InlineData("role")]
+    public async Task F003_RN19_TokenDeEmpleadosConClaimDeRolCliente_Responde403EnMisCuentas(string claimDeRol)
+    {
+        // Arrange
+        var token = EmisorDePruebas.CrearToken(EmisorDeToken.Empleados, Guid.NewGuid().ToString(),
+            [EmisorDePruebas.RolDeOperador], claimsExtra: new Dictionary<string, object> { [claimDeRol] = Roles.Cliente });
+        using var http = api.CrearClienteConToken(token);
+
+        // Act
+        var respuesta = await http.GetAsync("/mis-cuentas", Ct);
+
+        // Assert
+        await AssertEsProhibidoAsync(respuesta);
+    }
+
     // ---- CA-20 / RNF-05: la 002 sigue funcionando y el log dice quien la uso ----
 
     [Theory]
@@ -161,6 +198,24 @@ public class AutorizacionApiTests(ApiFixture api)
         Assert.Contains(api.Logs.QueContienen(sub),
             r => r.Mensaje.Contains("AbrirCuenta", StringComparison.Ordinal)
                  && r.Mensaje.EndsWith(": no completada", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task F003_RNF05_OperacionDelOperadorQueRespondeError400_ElLogDiceNoCompletada()
+    {
+        // Arrange: datos invalidos; el endpoint responde 400 sin lanzar excepcion.
+        var sub = $"operador-{Guid.NewGuid()}";
+        using var http = api.CrearClienteConToken(EmisorDePruebas.CrearTokenDeOperador(sub));
+
+        // Act
+        var respuesta = await http.PostAsJsonAsync("/clientes", SolicitudDeRegistro("CC", "abc"), Ct);
+
+        // Assert: misma etiqueta que usa el filtro cuando la operacion lanza.
+        Assert.Equal(HttpStatusCode.BadRequest, respuesta.StatusCode);
+        var registros = api.Logs.QueContienen(sub).ToList();
+        Assert.Contains(registros, r => r.Mensaje.Contains("RegistrarCliente", StringComparison.Ordinal)
+                                        && r.Mensaje.EndsWith(": no completada", StringComparison.Ordinal));
+        Assert.DoesNotContain(registros, r => r.Mensaje.EndsWith(": completada", StringComparison.Ordinal));
     }
 
     /// <summary>Deja listos los datos y devuelve la peticion de la operacion que se va a probar.</summary>

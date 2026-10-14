@@ -108,7 +108,7 @@ public class MisCuentasApiTests(ApiFixture api)
     // ---- CA-16: detalle de una cuenta propia ----
 
     [Fact]
-    public async Task F003_CA16_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas()
+    public async Task F003_RF05_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas()
     {
         // Arrange
         var titular = await TitularConCuentasAsync("USD");
@@ -133,7 +133,7 @@ public class MisCuentasApiTests(ApiFixture api)
     // ---- CA-15 / CL-17: ajena = inexistente ----
 
     [Fact]
-    public async Task F003_CA15_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId()
+    public async Task F003_CL17_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId()
     {
         // Arrange
         var titular = await TitularConCuentasAsync("COP");

@@ -132,6 +132,26 @@ public class ConfiguracionDeRealmsTests
     // ---- RN-21: sin atajos hacia una sesion que no caduca o hacia la consola de cuenta ----
 
     [Theory]
+    [InlineData("clientes", "delete_credential")]
+    [InlineData("clientes", "UPDATE_PROFILE")]
+    [InlineData("clientes", "VERIFY_EMAIL")]
+    [InlineData("empleados", "delete_credential")]
+    [InlineData("empleados", "UPDATE_PROFILE")]
+    [InlineData("empleados", "VERIFY_EMAIL")]
+    public void F003_RN21_RealmsDeProduccion_AccionesQueBorranElOtpOEditanElPerfilEstanDesactivadas(string realm, string accion)
+    {
+        // Arrange: delete_credential permitiria borrar el OTP desde la SPA con kc_action (RN-20: lo restablece el operador).
+        var acciones = Cargar(realm)["requiredActions"]!.AsArray();
+
+        // Act
+        var configurada = acciones.SingleOrDefault(a => (string?)a!["alias"] == accion);
+
+        // Assert
+        Assert.NotNull(configurada);
+        Assert.False((bool?)configurada["enabled"]);
+    }
+
+    [Theory]
     [InlineData("clientes")]
     [InlineData("empleados")]
     public void F003_RN21_RealmsDeProduccion_RolesPorDefectoSinOfflineAccessNiConsolaDeCuenta(string realm)

@@ -19,7 +19,7 @@ public class SesionesTests(KeycloakFixture kc)
     }
 
     [Fact]
-    public async Task F003_CA10_ClienteInactivo_SesionNoSeRenueva()
+    public async Task F003_CL11_ClienteInactivo_SesionNoSeRenueva()
     {
         // Arrange
         var (_, _, cliente) = await kc.CrearClienteConAccesoAsync();

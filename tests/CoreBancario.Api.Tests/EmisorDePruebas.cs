@@ -53,9 +53,10 @@ public static class EmisorDePruebas
     /// <param name="roles">Roles de realm, que Keycloak pone en realm_access.roles.</param>
     /// <param name="vida">Por defecto 270 s, como en los realms.</param>
     /// <param name="emitido">Por defecto, ahora. Fija "iat" y "nbf"; "exp" = emitido + vida.</param>
+    /// <param name="claimsExtra">Claims adicionales de primer nivel (por ejemplo, un claim de rol que un mapper del realm pudiera añadir).</param>
     /// <param name="audiencia">Por defecto, la de la API.</param>
     public static string CrearToken(EmisorDeToken emisor, string? sub, string[] roles, TimeSpan? vida = null,
-        DateTimeOffset? emitido = null, string? audiencia = null, SigningCredentials? firma = null)
+        DateTimeOffset? emitido = null, string? audiencia = null, SigningCredentials? firma = null, IReadOnlyDictionary<string, object>? claimsExtra = null)
     {
         var inicio = (emitido ?? DateTimeOffset.UtcNow).UtcDateTime;
         var claims = new Dictionary<string, object>
@@ -65,6 +66,8 @@ public static class EmisorDePruebas
         };
         if (sub is not null)
             claims["sub"] = sub;
+        foreach (var extra in claimsExtra ?? new Dictionary<string, object>())
+            claims[extra.Key] = extra.Value;
 
         var descriptor = new SecurityTokenDescriptor
         {

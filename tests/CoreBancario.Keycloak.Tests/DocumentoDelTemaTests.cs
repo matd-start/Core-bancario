@@ -19,7 +19,7 @@ public class DocumentoDelTemaTests(KeycloakFixture kc)
     [InlineData(TipoDocumento.CC, "1234567")]
     [InlineData(TipoDocumento.CE, "987.654")]
     [InlineData(TipoDocumento.PA, "ab-12.345")]
-    public void F003_CA12_ScriptDelTema_NormalizaComoElDominio(TipoDocumento tipo, string escrito)
+    public void F003_CL02_ScriptDelTema_NormalizaComoElDominio(TipoDocumento tipo, string escrito)
     {
         // Arrange
         var esperado = AccesoDigital.NombreDeUsuarioDe(Documento.Crear(tipo, escrito));
