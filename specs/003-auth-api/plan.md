@@ -587,9 +587,11 @@ public static class SelectorDeEsquema
 
 /// <summary>
 /// Eventos compartidos por los dos esquemas (resuelve ILogger y IProblemDetailsService de RequestServices):
-///  TokenValidated: si no hay "sub" → context.Fail(new TokenSinSujetoException()). Si realm_access.roles contiene
-///    rolEnKeycloak → añade Claim(ClaimTypes.Role, rolDeLaApi). El rol de la API depende del ESQUEMA, no solo del token:
-///    un token de clientes nunca obtiene Operador aunque alguien cree ese rol en su realm.
+///  TokenValidated: si no hay "sub" → context.Fail(new TokenSinSujetoException()). Después borra TODOS los claims de
+///    rol que traiga el token (tipos identidad.RoleClaimType y ClaimTypes.Role; revisión de 003a) y, si
+///    realm_access.roles contiene rolEnKeycloak, añade Claim(identidad.RoleClaimType, rolDeLaApi). El rol de la API
+///    depende del ESQUEMA, no del token: un token de clientes nunca obtiene Operador, ni aunque alguien cree ese rol en
+///    su realm ni aunque el token traiga un claim de rol propio.
 ///  Challenge: registra (Information) "Petición no autenticada en {Metodo} {Ruta}: {Motivo}" con
 ///    MotivoDeRechazo.Desde(context.AuthenticateFailure), NUNCA el token; HandleResponse(); 401;
 ///    WWW-Authenticate: Bearer (sin detalles); ProblemDetails "No autenticado", codigo no-autenticado.
@@ -629,7 +631,8 @@ public static class ClaimsPrincipalExtensiones
 /// <summary>
 /// RNF-05. Filtro de los endpoints del operador que cambian datos. Tras ejecutar, registra (Information)
 /// "Operación {Operacion} del operador {OperadorId}: {Resultado}". Operacion es el nombre del endpoint (WithName),
-/// Resultado vale "completada" o, si la ejecución lanzó, "no completada" (y relanza).
+/// Resultado vale "completada" o "no completada". Es "no completada" si la ejecución lanzó (y relanza) o si devolvió
+/// un IStatusCodeHttpResult con código >= 400 (revisión de 003a), mirando dentro de Results<A, B> (INestedHttpResult).
 /// </summary>
 public sealed class RegistroDeOperacionDelOperador(ILogger<RegistroDeOperacionDelOperador> logger) : IEndpointFilter
 {
@@ -883,22 +886,22 @@ Domain sigue **sin paquetes**.
 | ID | Caso | Manejo | Test esperado |
 |---|---|---|---|
 | CL-01 | Documento inexistente, clave incorrecta, deshabilitado o bloqueado: mismo mensaje | Tema `core-bancario`: las claves de mensaje del hallazgo 1 con el mismo texto. Durante el bloqueo, Keycloak ya muestra el genérico | E2E: `F003_CA08_DocumentoInexistenteClaveIncorrectaYDeshabilitado_MismoMensaje`, `F003_CL01_CredencialBloqueada_MismoMensajeGenerico` |
-| CL-02 | `1.234.567` = `1234567` | `documento.js` normaliza igual que `Documento` (RN-17) | Keycloak.Tests: `F003_CA12_ScriptDelTema_NormalizaComoElDominio` (Jint; teoría con `1.234.567`, ` 1 234 567 `, `1-234-567`, PA `ab-12.345`; compara con `AccesoDigital.NombreDeUsuarioDe`). E2E: `F003_CA12_UsuarioNormalizado_EntraComoElCliente`. Domain: `F003_RN17_NombreDeUsuario_EsTipoMasNumeroNormalizado` |
+| CL-02 | `1.234.567` = `1234567` | `documento.js` normaliza igual que `Documento` (RN-17) | Keycloak.Tests: `F003_CL02_ScriptDelTema_NormalizaComoElDominio` (Jint; teoría con `1.234.567`, ` 1 234 567 `, `1-234-567`, PA `ab-12.345`; compara con `AccesoDigital.NombreDeUsuarioDe`). E2E: `F003_CA12_UsuarioNormalizado_EntraComoElCliente`. Domain: `F003_RN17_NombreDeUsuario_EsTipoMasNumeroNormalizado` |
 | CL-03 | Código OTP incorrecto cuenta como fallo | Keycloak (hallazgo 3) | E2E: `F003_CL03_CodigoOtpIncorrecto_CuentaComoIntentoFallido` (4 claves erróneas + 1 OTP erróneo → bloqueado) |
 | CL-04 | Con clave temporal no se accede a nada | Keycloak no emite el código de autorización hasta completar `UPDATE_PASSWORD` y `CONFIGURE_TOTP` (hallazgo 5); sin token, la API responde 401 | E2E: `F003_CA07_ConClaveTemporalSinCompletarLosPasos_NoSeEmiteTokenYLaApiResponde401` |
 | CL-05 | Clave temporal vencida a las 72 h | **Límite conocido, sin implementación** (decisión del autor, pregunta 2; spec enmendada el 2026-10-13). Keycloak 26 no permite que una clave temporal venza: "Expire password" obliga a cambiarla, pero no impide usarla. La clave sirve hasta que el operador restablece o deshabilita el acceso. Mejora futura en la sección 10 | Sin prueba (límite conocido) |
 | CL-06 | Clave nueva que rompe la política | `passwordPolicy` del realm. Keycloak indica la regla rota en español (bundle `es`). El número de documento suelto lo avisa `documento.js` (sección 4) | E2E: `F003_CA13_ClaveNuevaDemasiadoCorta_SeRechazaIndicandoLaRegla`, `F003_CL06_ClaveNuevaConElUsuarioCompleto_ElServidorLaRechaza`, `F003_CL06_ClaveNuevaConSoloElNumero_ElServidorLaAcepta` (documenta el límite), `F003_CL06_PaginaDeCambioDeClave_CargaElScriptYTraeElUsuario`. Jint: `F003_CL06_ContieneNumeroDeDocumento_DetectaElNumeroSuelto` (teoría) |
 | CL-07 | Sin credencial, vencida, firma inválida u otra audiencia → 401 | `JwtBearer` con `ValidIssuer`, `ValidAudience`, `ValidAlgorithms`, `ClockSkew`; `EventosDeJwt.Challenge` → 401 `no-autenticado` | Api: `F003_CA18_OperacionProtegidaConCredencialInvalida_Responde401` (teoría: cada operación × {sin token, vencido, firma de otra clave, otra audiencia, otro emisor, HS256}) |
-| CL-08 | Cliente en operación del operador → 403, exista o no el recurso | La autorización corre **antes** del endpoint: el handler ni se ejecuta | Api: `F003_CA19_ClienteLlamaOperacionDelOperador_Responde403` (teoría con las 10 operaciones del operador, con ids inexistentes), `F003_CA05_ClienteHabilitaAcceso_Responde403SinRegistros` |
-| CL-09 | Operador en "mis cuentas" → 403 | Política `Cliente` en el grupo `/mis-cuentas` | Api: `F003_CA19_OperadorLlamaMisCuentas_Responde403` |
+| CL-08 | Cliente en operación del operador → 403, exista o no el recurso | La autorización corre **antes** del endpoint: el handler ni se ejecuta | Api: `F003_CA19_ClienteLlamaOperacionDelOperador_Responde403` (teoría con las 10 operaciones del operador, con ids inexistentes), `F003_CL08_ClienteRegistraCliente_Responde403YNoCreaElCliente`, `F003_CA05_ClienteHabilitaAcceso_Responde403SinRegistros` |
+| CL-09 | Operador en "mis cuentas" → 403 | Política `Cliente` en el grupo `/mis-cuentas` | Api: `F003_CL09_OperadorLlamaMisCuentas_Responde403` |
 | CL-10 | Cerrar sesión: no se renueva; el access token vigente sigue ≤ 5 min | Keycloak revoca la sesión y su refresh token. La API valida sin consultar (ADR-0015) | E2E: `F003_CA11_CerrarSesion_ElRefreshTokenYaNoSirve` |
-| CL-11 | Inactividad o vida máxima | `ssoSessionIdleTimeout`/`ssoSessionMaxLifespan`; el refresh token vence con la inactividad | E2E (realm con tiempos cortos): `F003_CA10_ClienteInactivo_SesionNoSeRenueva`, `F003_CA10_OperadorInactivo_SesionNoSeRenueva`. Configuración: `F003_RN22_RealmsDeProduccion_TienenLosTiemposDeSesion` |
+| CL-11 | Inactividad o vida máxima | `ssoSessionIdleTimeout`/`ssoSessionMaxLifespan`; el refresh token vence con la inactividad | E2E (realm con tiempos cortos): `F003_CL11_ClienteInactivo_SesionNoSeRenueva`, `F003_CA10_OperadorInactivo_SesionNoSeRenueva`. Configuración: `F003_RN22_RealmsDeProduccion_TienenLosTiemposDeSesion` |
 | CL-12 | Habilitar un cliente inexistente | Paso 1 | App: `F003_CA04_HabilitarClienteInexistente_LanzaNoEncontradoSinRegistrarNiLlamarAlProveedor`. Api: `F003_CA04_HabilitarClienteInexistente_Responde404SinRegistros` |
 | CL-13 | Habilitar uno ya habilitado = restablecer | `ParaHabilitar` con Habilitado → Restablecer; `ReiniciarAccesoAsync` | Domain: `F003_CL13_ParaHabilitarConAccesoHabilitado_EsRestablecer`. App: `F003_CA02_HabilitarClienteHabilitado_RestableceConClaveDistintaYRegistraRestablecer`. Keycloak.Tests: `F003_CA02_ReiniciarAcceso_BorraOtpCierraSesionesYPoneClaveTemporal` |
 | CL-14 | Deshabilitar inexistente o ya deshabilitado | `ParaDeshabilitar` lanza antes de crear la solicitud → 422 `acceso-no-habilitado` | Domain: `F003_CL14_ParaDeshabilitarSinAccesoODeshabilitado_LanzaAccesoNoHabilitado` (teoría). App: `F003_CA04_DeshabilitarYaDeshabilitado_LanzaAccesoNoHabilitadoSinRegistrar`. Api: `F003_CA04_DeshabilitarYaDeshabilitado_Responde422SinRegistros` |
 | CL-15 | Tras deshabilitar o restablecer, no se renueva la sesión | `logout` del usuario en Keycloak, y además `enabled = false` al deshabilitar | E2E: `F003_CA03_Deshabilitar_SesionNoSeRenuevaYNoPuedeIniciarSesion`, `F003_CL15_Restablecer_SesionNoSeRenueva` |
 | CL-16 | Rehabilitar un deshabilitado | `ParaHabilitar` con Deshabilitado → Habilitar; `ReiniciarAccesoAsync` (vuelve a habilitar) | Domain: `F003_CL16_ParaHabilitarConAccesoDeshabilitado_EsHabilitar`. App: `F003_CL16_HabilitarClienteDeshabilitado_RegistraHabilitarYLoHabilita` |
-| CL-17 | Cuenta ajena = inexistente | Filtro por dueño en la consulta; mismo mensaje y mismo código | Infra: `F003_CA15_CuentaAjenaEInexistente_DevuelvenNull`. Api: `F003_CA15_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId` (compara estado, cabeceras relevantes y cuerpo sin `traceId`) |
+| CL-17 | Cuenta ajena = inexistente | Filtro por dueño en la consulta; mismo mensaje y mismo código | Infra: `F003_CA15_CuentaAjenaEInexistente_DevuelvenNull`. Api: `F003_CL17_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId` (compara estado, cabeceras relevantes y cuerpo sin `traceId`) |
 | CL-18 | Cliente sin cuentas → lista vacía; Cerradas incluidas | `ListarAsync` sin filtrar por estado | Api: `F003_CA17_ClienteSinCuentas_DevuelveListaVacia`, `F003_CA14_MisCuentas_DevuelveActivaYCerradaSinCuentasAjenas` |
 
 ### Intención primero (pruebas de Application con el fake, ADR-0017)
@@ -935,7 +938,7 @@ Domain sigue **sin paquetes**.
 | RNF-03 | `ClaveTemporal.ToString` oculto; `AccesoHabilitadoDto.ToString` sin la clave; `no-store`; `IncludeErrorDetails = false`; la API nunca registra cabeceras ni cuerpos; el secreto de servicio va por user-secrets o entorno y por `${KC_CLIENTES_API_SECRET}` en el realm; gitleaks en el CI | App: `F003_RNF03_ClaveTemporal_ToStringNoRevelaElValor`, `F003_RNF03_AccesoHabilitadoDto_ToStringNoRevelaLaClave`. Api: `F003_RNF03_HabilitarAcceso_NingunLogContieneLaClaveTemporal` (proveedor de logs en memoria), `F003_RNF03_HabilitarAcceso_RespondeNoStore`. Configuración: `F003_RNF03_RealmClientes_NoContieneElSecretoDeServicio` (el valor es exactamente el marcador) |
 | RNF-04 | `EventosDeJwt.Challenge` registra `MotivoDeRechazo` y nunca el token; la respuesta es idéntica para todos los motivos | Api: `F003_RNF04_TokenVencido_ElLogTieneElMotivoSinElToken` (teoría por motivo; el log no contiene el token ni su firma), `F003_RNF04_MotivosDistintos_MismaRespuesta401` |
 | RNF-05 | `RegistroDeOperacionDelOperador` en las siete operaciones que cambian datos | Api: `F003_CA20_OperadorUsaOperacionesDe002_ElLogIncluyeSuIdentificador` (teoría con las cinco de la 002), `F003_RNF05_GestionarAcceso_ElLogIncluyeElOperador` |
-| RNF-06 | `DocumentarErroresComunes` en todas las operaciones protegidas + esquema y requisito de seguridad en el OpenAPI. El documento se genera al compilar, se versiona en `src/CoreBancario.Api/openapi/core-bancario-api.json` y el CI comprueba que está al día. No se expone en producción (ADR-0019) | Api: `F003_CA22_ContratoFueraDeDevelopment_DescribeSeguridadY401_403_500` y `F002_RNF05_ContratoOpenApi_…` adaptada (con 401, 403 y 500 en cada operación, y las cuatro nuevas) |
+| RNF-06 | `DocumentarErroresComunes` en todas las operaciones protegidas + esquema y requisito de seguridad en el OpenAPI. El documento se genera al compilar, se versiona en `src/CoreBancario.Api/openapi/core-bancario-api.json` y el CI comprueba que está al día. No se expone en producción (ADR-0019) | Api: `F003_CA22_ContratoFueraDeDevelopment_*` (5: esquema Bearer, requisito en cada operación, 401/403/500, operaciones de mis cuentas y errores como ProblemDetails) y `F002_RNF05_ContratoOpenApi_…` adaptada (con 401, 403 y 500 en cada operación, y las cuatro nuevas) |
 | RNF-07 | Flujo `/sdd-build`: test-writer primero | Commit `test(003): pruebas en rojo` |
 | RNF-08 | `CoreBancario.Keycloak.Tests` recorre el flujo real; Api.Tests firma tokens con RSA propio (ADR-0018) | 003a: `F003_CA06_PrimerIngreso_…`, que hace login real y llama a `/mis-cuentas` con un usuario creado por el fixture. 003b: `F003_RNF08_FlujoCompleto_OperadorHabilitaYClienteConsultaSusCuentas` |
 
@@ -971,25 +974,27 @@ Cada bloque tiene su propio commit en rojo: `test(003): pruebas en rojo del bloq
 | CA-07 | `F003_CA07_ConClaveTemporalSinCompletarLosPasos_NoSeEmiteTokenYLaApiResponde401` | Keycloak (E2E) |
 | CA-08 | `F003_CA08_DocumentoInexistenteClaveIncorrectaYDeshabilitado_MismoMensaje` | Keycloak (E2E) |
 | CA-09 | `F003_CA09_CincoFallos_ElSextoCorrectoSeRechazaYTrasLaEsperaEntra` | Keycloak (E2E, tiempos cortos) |
-| CA-10 | `F003_CA10_ClienteInactivo_SesionNoSeRenueva`, `F003_CA10_OperadorInactivo_SesionNoSeRenueva` · `F003_RN22_RealmsDeProduccion_TienenLosTiemposDeSesion` | Keycloak (E2E) · Api |
+| CA-10 | `F003_CL11_ClienteInactivo_SesionNoSeRenueva`, `F003_CA10_OperadorInactivo_SesionNoSeRenueva` · `F003_RN22_RealmsDeProduccion_TienenLosTiemposDeSesion` | Keycloak (E2E) · Api |
 | CA-11 | `F003_CA11_CerrarSesion_ElRefreshTokenYaNoSirve` | Keycloak (E2E) |
-| CA-12 | `F003_CA12_ScriptDelTema_NormalizaComoElDominio` (Jint) + `F003_CA12_UsuarioNormalizado_EntraComoElCliente` + `F003_CA12_PaginaDeLogin_CargaElScriptDelTema` | Keycloak |
+| CA-12 | `F003_CL02_ScriptDelTema_NormalizaComoElDominio` (Jint) + `F003_CA12_UsuarioNormalizado_EntraComoElCliente` + `F003_CA12_PaginaDeLogin_CargaElScriptDelTema` | Keycloak |
 | CA-13 | `F003_CA13_CambiarClave_PideLaActualYDespuesSoloFuncionaLaNueva`, `F003_CA13_ClaveNuevaDemasiadoCorta_SeRechazaIndicandoLaRegla` | Keycloak (E2E) |
 | CA-14 | `F003_CA14_MisCuentas_DevuelveActivaYCerradaSinCuentasAjenas` · `F003_RN12_CuentasDelTitular_SoloDevuelveLasDelClienteVinculado` | Api · Infra |
-| CA-15 | `F003_CA15_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId` · `F003_CA15_CuentaAjenaEInexistente_DevuelvenNull` | Api · Infra |
-| CA-16 | `F003_CA16_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas` | Api |
+| CA-15 | `F003_CL17_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId` · `F003_CA15_CuentaAjenaEInexistente_DevuelvenNull` | Api · Infra |
+| CA-16 | `F003_CA16_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas` · `F003_CA16_ObtenerAsync_CuentaPropia_DevuelveLaCuentaConSuSaldoYFechas` · `F003_RF05_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas` | Application · Infra · Api |
 | CA-17 | `F003_CA17_ClienteSinCuentas_DevuelveListaVacia` | Api |
 | CA-18 | `F003_CA18_OperacionProtegidaConCredencialInvalida_Responde401` | Api |
-| CA-19 | `F003_CA19_ClienteLlamaOperacionDelOperador_Responde403`, `F003_CA19_OperadorLlamaMisCuentas_Responde403` | Api |
+| CA-19 | `F003_CA19_ClienteLlamaOperacionDelOperador_Responde403`, `F003_CL09_OperadorLlamaMisCuentas_Responde403` | Api |
 | CA-20 | Las pruebas de API de la 002, que siguen con el nombre `F002_…` y ahora llevan un token de operador, + `F003_CA20_OperadorUsaOperacionesDe002_ElLogIncluyeSuIdentificador` | Api |
 | CA-21 | `F003_CA21_TokenEmitidoHaceMasDeCincoMinutos_SeRechaza`, `F003_CA21_TokenVencidoDentroDeLaTolerancia_SeAcepta` | Api |
-| CA-22 | `F003_CA22_ContratoFueraDeDevelopment_DescribeSeguridadY401_403_500` | Api |
+| CA-22 | `F003_CA22_ContratoFueraDeDevelopment_*` (5: esquema Bearer, requisito en cada operación, 401/403/500, operaciones de mis cuentas y errores como ProblemDetails) | Api |
 
 Más pruebas que no son de un CA:
 
+- **Correcciones de la revisión de 003a (Api):** `F003_RN21_RealmsDeProduccion_AccionesQueBorranElOtpOEditanElPerfilEstanDesactivadas` (teoría: `delete_credential`, `UPDATE_PROFILE` y `VERIFY_EMAIL` en los dos realms), `F003_RN19_TokenDeClientesConClaimDeRolOperador_Responde403` y `F003_RN19_TokenDeEmpleadosConClaimDeRolCliente_Responde403EnMisCuentas` (teorías con el claim de rol largo de Microsoft y con `role`), `F003_RNF05_OperacionDelOperadorQueRespondeError400_ElLogDiceNoCompletada`.
+
 - **Domain:** `F003_RN20_SolicitudSinOperador_LanzaArgumentException`, `F003_RN20_Solicitud_IdEsVersion7DeLaFecha`, `F003_RN20_Completar_DevuelveResultadoDeEsaSolicitud`, `F003_RN20_FallarSinMotivo_LanzaArgumentException`, `F003_ADR0016_VincularSinSub_LanzaArgumentException`.
 - **Infra:** `F003_RNF02_BaseVacia_TieneLasMigracionesDeLa003` (en 003a comprueba `VinculoDeAccesoDigital`; en 003b se amplía con `RegistroDeAccesos`), `F003_RN20_EditarOBorrarElRegistro_LoRechazaLaBase`, `F003_RN20_DosResultadosParaLaMismaSolicitud_LanzaConflicto`, `F003_ADR0016_DosClientesConElMismoSub_LanzaConflicto`, `F003_ADR0017_ListarPendientes_SoloDevuelveSolicitudesSinResultado`, `F003_ADR0017_ConsultaDocumentadaDeSolicitudesSinResultado_DevuelveLasPendientes` (ejecuta el SQL de la sección 4 tal cual, porque ADR-0004 exige probar el SQL escrito a mano), `F003_RNF03_ClaveTemporalGenerada_Tiene16CaracteresDelAlfabeto`, `F003_CA02_ClavesGeneradas_SonDistintas`, `F003_ADR0017_RespuestaDeError_LanzaErrorDelProveedorSinElCuerpo`, `F003_ADR0017_TiempoDeEsperaAgotado_LanzaSinRespuesta`, `F003_ADR0017_UsuarioInexistente_DevuelveNull`.
-- **Api (configuración de los realms, leyendo los JSON de `infra/keycloak/realms`):** `F003_RN22_…`, `F003_RN23_RealmsDeProduccion_BloqueanCincoFallosQuinceMinutos`, `F003_RN24_RealmsDeProduccion_ExigenOtpEnElFlujoDeNavegador`, `F003_RN21_RealmsDeProduccion_SinOfflineAccessNiConcesionDirectaNiConsolaDeCuenta`, `F003_ADR0014_CuentaDeServicio_SoloTieneManageUsersYViewUsers`, `F003_RNF03_RealmClientes_NoContieneElSecretoDeServicio`. Más el catálogo: `F003_RNF02_CatalogoDeErrores_ClasificaLosErroresNuevos`.
+- **Api (configuración de los realms, leyendo los JSON de `infra/keycloak/realms`):** `F003_RN22_…`, `F003_RN23_RealmsDeProduccion_BloqueanCincoFallosQuinceMinutos`, `F003_RN24_RealmsDeProduccion_ExigenOtpEnElFlujoDeNavegador`, `F003_RN21_ClienteWeb_SinConcesionDirectaNiScopeOfflineAccess`, `F003_RN21_RealmsDeProduccion_RolesPorDefectoSinOfflineAccessNiConsolaDeCuenta`, `F003_ADR0014_CuentaDeServicio_SoloTieneManageUsersYViewUsers`, `F003_RNF03_RealmClientes_NoContieneElSecretoDeServicio`. Más el catálogo: `F003_RNF02_CatalogoDeErrores_ClasificaLosErroresNuevos`.
 - **Keycloak.Tests (adaptador):** `F003_CA03_DeshabilitarAsync_DeshabilitaCierraSesionesYPoneMarca`, `F003_ADR0017_BuscarPorNombreDeUsuario_IgnoraMayusculasYDevuelveNullSiNoExiste`, `F003_ADR0014_CuentaDeServicio_NoPuedeModificarElRealm` (un `PUT /admin/realms/clientes` con su token responde 403).
 
 ### Infraestructura de pruebas (la escribe el test-writer)

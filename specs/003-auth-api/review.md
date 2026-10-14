@@ -161,3 +161,105 @@ Ordenadas por impacto.
 1. "Mis cuentas" filtra por dueño dentro de la consulta (`EXISTS` sobre `accesos_digitales`) en vez de cargar la cuenta y comparar después su `ClienteId`. ¿Qué ataque concreto evita esto (BOLA/IDOR)? ¿Por qué garantiza "por construcción" que una cuenta ajena y una inexistente den una respuesta idéntica (CA-15)?
 2. El rol `Operador` solo lo puede conceder el esquema `Empleados`, aunque el token de `clientes` diga tener ese rol en `realm_access.roles`. ¿Por qué el selector puede leer el `iss` sin validarlo y aun así un token falso que diga venir de `empleados` no consigue nada? ¿Qué pasaría si el rol se mapeara con `IClaimsTransformation`?
 3. La tolerancia de reloj es una constante en el código (30 s) y no un valor de `appsettings`. ¿Por qué esa decisión protege RNF-01? ¿Y qué dos números hay que cambiar a la vez si algún día se quiere una ventana de revocación de 2 minutos?
+
+---
+
+# Revisión: 003-auth-api, bloque 003a (correcciones de la primera revisión)
+
+## Veredicto: APROBADO
+
+Las cuatro sugerencias que el autor eligió (1, 3, 4 y 5) quedaron resueltas tal como las describe `review.md`. Las pruebas nuevas fallaban en el commit en rojo y ahora pasan. El commit `fix` no toca `tests/`. Los renombres solo cambiaron la firma de cada prueba. La suite completa pasa: 670 pruebas, 0 errores. No encontré regresiones ni huecos de seguridad.
+
+Lo único pendiente es documental, y no impide el merge: en `plan.md`, varias tablas siguen citando los nombres anteriores de las pruebas, y dos firmas no describen el comportamiento nuevo (ver "Desviaciones").
+
+Qué comprobé:
+- **Alcance.** Solo los commits `d8f711e`, `d14e86f`, `512cca6` y `1968201`. El bloque 003b (T15 a T27) queda fuera.
+- **Commit en rojo.** Saqué `d8f711e` con `git archive` a una carpeta temporal y ejecuté ahí las pruebas nuevas: 13 en total, 9 fallan y 4 pasan. Las que fallan son las que deben fallar:
+  - las 6 de `F003_RN21_RealmsDeProduccion_AccionesQueBorranElOtpOEditanElPerfilEstanDesactivadas`;
+  - `F003_RNF05_OperacionDelOperadorQueRespondeError400_ElLogDiceNoCompletada`;
+  - los 2 casos de `F003_RN19_TokenDe…ConClaimDeRol…` que usan el tipo `http://schemas.microsoft.com/ws/2008/06/identity/claims/role`.
+- **Casos que ya pasaban en rojo.** Los 2 casos con el claim corto `"role"` pasaban antes del arreglo. Es lo esperado: `RoleClaimType` se queda en `ClaimTypes.Role`, así que `"role"` nunca concedió un rol. Esos casos protegen contra regresiones, no reproducían un fallo.
+- **Pruebas intactas tras el rojo.** `git log d8f711e..HEAD -- tests/` sale vacío, así que ni `d14e86f` ni los commits `docs` tocan `tests/`.
+- **Calidad.** En `src/` no queda ningún esqueleto. `dotnet format --verify-no-changes` termina sin cambios. Después de `dotnet build`, `git status` sigue limpio, así que el contrato OpenAPI no cambia.
+
+## Trazabilidad (solo lo que tocan estas correcciones)
+
+| ID | Implementado | Test | Nota |
+|---|---|---|---|
+| RN-21 (sug. 1) | `delete_credential`, `UPDATE_PROFILE` y `VERIFY_EMAIL` con `enabled: false` en los dos realms | `F003_RN21_RealmsDeProduccion_AccionesQueBorranElOtpOEditanElPerfilEstanDesactivadas` (6 casos) | Los dos realms tienen la lista `requiredActions` idéntica. Quedan activas `CONFIGURE_TOTP`, `UPDATE_PASSWORD` y `update_user_locale`, que es inocua |
+| RN-19 / ADR-0015 (sug. 4) | `EventosDeJwt.TokenValidated` borra los claims de rol del token antes de añadir el del esquema | `F003_RN19_TokenDeClientesConClaimDeRolOperador_Responde403`, `F003_RN19_TokenDeEmpleadosConClaimDeRolCliente_Responde403EnMisCuentas` (2 casos cada una) | `GetString()!` se cambió por `OfType<string>()` |
+| RNF-05 (sug. 3) | `RegistroDeOperacionDelOperador`: un resultado `IStatusCodeHttpResult` con código >= 400 se registra como "no completada"; antes desenvuelve `INestedHttpResult` | `F003_RNF05_OperacionDelOperadorQueRespondeError400_ElLogDiceNoCompletada` | La comprobación `DoesNotContain(": completada")` sirve: no coincide con ": no completada" |
+| CL-02 | sin cambios | `F003_CL02_ScriptDelTema_NormalizaComoElDominio` (antes `CA12`) | CA-12 conserva 3 pruebas en Keycloak.Tests y 1 en Api.Tests |
+| CL-08 | sin cambios | `F003_CL08_ClienteRegistraCliente_Responde403YNoCreaElCliente` (antes `CA19`) | CA-19 conserva `F003_CA19_ClienteLlamaOperacionDelOperador_Responde403` |
+| CL-09 | sin cambios | `F003_CL09_OperadorLlamaMisCuentas_Responde403` (antes `CA19`) | Como en CL-08 |
+| CL-11 | sin cambios | `F003_CL11_ClienteInactivo_SesionNoSeRenueva` (antes `CA10`) | CA-10 conserva `F003_CA10_OperadorInactivo_SesionNoSeRenueva` |
+| CL-17 | sin cambios | `F003_CL17_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId` (antes `CA15`, en Api) | CA-15 conserva 4 pruebas en Application y 1 en Infrastructure. Ya no tiene ninguna en Api con su ID |
+| RF-05 | sin cambios | `F003_RF05_MiCuenta_DevuelveNumeroMonedaEstadoSaldoYFechas` (antes `CA16`, en Api) | CA-16 conserva sus pruebas de Application e Infrastructure |
+| CL-04, CL-07, RF-14 | sin cambios | Por `F003_CA07_…`, `F003_CA18_…` y `F003_CA06/07/08/11_…` | Son la excepción que documenta la nueva "Convención de nombres" del plan, y la excepción está justificada |
+
+Ningún CA se quedó sin al menos una prueba con su ID. Todas las pruebas nuevas llevan el prefijo `F003_`.
+
+## Hallazgos obligatorios
+
+Ninguno.
+
+Por qué no hay nada de seguridad que corregir:
+- **`EventosDeJwt`.** Las políticas usan `RequireRole`, que consulta `identity.RoleClaimType`, y el arreglo borra exactamente ese tipo de claim antes de conceder el rol del esquema. Ahora ADR-0015 ("el rol depende del esquema") se cumple por construcción.
+- **Realms.** Desactivar esas tres acciones no afecta a `CONFIGURE_TOTP` ni a `UPDATE_PASSWORD`. El restablecimiento del OTP que hará el operador en 003b va por la API de administración, que no depende de estas acciones. Las 670 pruebas pasan, incluidas las E2E contra Keycloak 26.3.3 real.
+
+## Sugerencias opcionales
+
+1. **Los dos bucles de `EventosDeJwt.cs:36-39` hacen lo mismo hoy.**
+   - Como `RoleClaimType` no se configura, vale `ClaimTypes.Role` y los dos bucles borran el mismo tipo de claim.
+   - Dejarlos es una defensa razonable por si algún día alguien configura `RoleClaimType = "role"`. Pero en ese caso el `AddClaim(new Claim(ClaimTypes.Role, …))` de la línea 42 dejaría de conceder el rol.
+   - Propuesta: añadir el rol con `identidad.RoleClaimType` en vez de `ClaimTypes.Role`, para que borrar y conceder usen el mismo tipo. Responsable: coder.
+2. **Cabecera de sección en `MisCuentasApiTests.cs:108`.** Dice "CA-16: detalle de una cuenta propia", pero la prueba que hay debajo ahora es `F003_RF05_…`. Conviene poner "CA-16 / RF-05". Responsable: test-writer, en un commit `test(003)`.
+3. **Volumen local de Keycloak en el PR.** El realm solo se importa si no existe (riesgo 10 del plan). Quien ya tenga el volumen local seguirá con `delete_credential` activo hasta borrarlo. Basta con decirlo en la descripción del PR.
+
+## Desviaciones entre spec/plan y código
+
+`512cca6` añadió a `plan.md` la "Convención de nombres", pero no actualizó las tablas que citan las pruebas renombradas. Hoy, buscar en el plan un nombre de prueba lleva a uno que ya no existe:
+
+- `plan.md:886` (CL-02) cita `F003_CA12_ScriptDelTema_NormalizaComoElDominio`. Ahora es `F003_CL02_…`.
+- `plan.md:892` (CL-08) solo cita `F003_CA19_ClienteLlamaOperacionDelOperador_…`. Falta `F003_CL08_ClienteRegistraCliente_…`.
+- `plan.md:893` (CL-09) y `plan.md:983` (CA-19) citan `F003_CA19_OperadorLlamaMisCuentas_Responde403`. Ahora es `F003_CL09_…`.
+- `plan.md:895` (CL-11) y `plan.md:974` (CA-10) citan `F003_CA10_ClienteInactivo_…`. Ahora es `F003_CL11_…`.
+- `plan.md:901` (CL-17) y `plan.md:979` (CA-15) citan `F003_CA15_CuentaAjenaEInexistente_RespuestasIdenticasSalvoTraceId`. Ahora es `F003_CL17_…`.
+- `plan.md:976` (CA-12) cita el nombre anterior de la prueba de Jint.
+- `plan.md:980` (CA-16) cita como prueba de Api `F003_CA16_MiCuenta_…`. En Api ahora es `F003_RF05_…`; el nombre `CA16` solo sobrevive en Application.
+
+Además:
+- **`plan.md:632`, firma de `RegistroDeOperacionDelOperador`.** Sigue diciendo "no completada" solo "si la ejecución lanzó". El código también lo registra cuando la respuesta es >= 400. `learning.md` sí lo explica.
+- **`plan.md:590-592`, firma de `EventosDeJwt.TokenValidated`.** No menciona que primero se borran los claims de rol del token.
+- **Pruebas nuevas.** Las 3 de esta corrección (`F003_RN21_…AccionesQueBorran…`, `F003_RN19_TokenDe…ConClaimDeRol…` y `F003_RNF05_…Error400…`) no aparecen en las tablas de pruebas del plan (secciones 5 y 7).
+- **`1968201`, cambios en la spec.** La aclaración de CA-15 y el nuevo punto de "Fuera de alcance" coinciden con el código. `HuellaDeLaRespuestaAsync` quita `traceId` y cambia por `{id}` el id que aparece en la respuesta, que es justo lo que la aclaración permite. "Sección 9" sí es "Fuera de alcance".
+- **Coherente con el código:**
+  - la fila `requiredActions` del plan (`plan.md:788`);
+  - la nota de `login-update-password.ftl`;
+  - "Aceptada" en la sección 8;
+  - los pendientes 13 y 14 del plan, que recogen las sugerencias 2 y 6 y `admin-cli`.
+- **Sugerencia 7 de la primera revisión** (cookie SSO tras la inactividad). Quedó anotada como pendiente en el riesgo 4, como pedía la sugerencia.
+
+## Resultado de tests
+
+- `dotnet build`: compilación correcta, 0 advertencias y 0 errores.
+- `dotnet test` en HEAD (`1968201`), con Docker 29.8.2:
+
+| Proyecto | Duración | Resultado |
+|---|---|---|
+| CoreBancario.Domain.Tests | 11 s | Correcto |
+| CoreBancario.Application.Tests | 11 s | Correcto |
+| CoreBancario.Infrastructure.Tests | 1 min 31 s | Correcto |
+| CoreBancario.Api.Tests | 1 min 18 s | Correcto |
+| CoreBancario.Keycloak.Tests | 5 min 21 s | Correcto (Keycloak 26.3.3 real) |
+| **Total** | 5 min 25 s | **670, error: 0, correcto: 670, omitido: 0** |
+
+670 = 659 de la primera revisión + 11 casos nuevos (6 de RN-21, 4 de RN-19 y 1 de RNF-05).
+
+- En `d8f711e`, con el filtro de las pruebas nuevas: 13 en total, 9 errores y 4 correctas. El detalle está arriba, en "Commit en rojo".
+
+## Preguntas de comprensión para el autor
+
+1. Antes del arreglo, el rol `Operador` ya dependía del esquema `Empleados`. Aun así, un token del realm `clientes` podía pasar la política `Operador`. ¿Qué cadena exacta lo permitía (`MapInboundClaims = false`, `RoleClaimType`, `IsInRole`)? ¿Y por qué el caso con el claim corto `"role"` nunca fue peligroso?
+2. Quitar `manage-account` no bastaba para impedir que un cliente borrara su OTP, y hubo que desactivar `delete_credential`. ¿Qué diferencia hay entre un permiso (un rol que habilita la consola de cuenta) y una acción obligatoria que la SPA puede invocar con `kc_action`? ¿Qué regla de la spec se rompería si un cliente pudiera borrar su propio OTP?
+3. El registro del operador ahora dice "no completada" ante un 400 o un 409 aunque nada haya lanzado una excepción. ¿Por qué en un registro de auditoría es peor un "completada" falso que un "no completada" de más? ¿Por qué hay que mirar dentro de `Results<A, B>` (`INestedHttpResult`) para saber el código real?
