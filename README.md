@@ -78,7 +78,7 @@ La API no emite credenciales: las emite **Keycloak** (ADR-0014) y la API solo va
 
 ### Levantar Keycloak y entrar a la consola
 
-1. Rellena en `.env` `KC_BOOTSTRAP_ADMIN_USERNAME` y `KC_BOOTSTRAP_ADMIN_PASSWORD` (el administrador de la consola; elige tus propios valores).
+1. Rellena en `.env` `KC_BOOTSTRAP_ADMIN_USERNAME` y `KC_BOOTSTRAP_ADMIN_PASSWORD` (el administrador de la consola; elige tus propios valores) y `KC_CLIENTES_API_SECRET` (ver "Secreto de la cuenta de servicio").
 2. `docker compose up -d`. El primer arranque de Keycloak tarda varios minutos (compila su configuración y crea los realms).
 3. Abre `http://localhost:8080` (o el `KEYCLOAK_PORT` de tu `.env`) y entra a la consola de administración con ese usuario.
 
@@ -92,19 +92,50 @@ En `Development` la API espera a Keycloak en `http://localhost:8080` (sección `
 
 En su primer ingreso Keycloak le pedirá inscribir la app autenticadora (OTP): el segundo factor es obligatorio (RN-24).
 
-### Crear un cliente de prueba (mientras no exista el endpoint de habilitar acceso, bloque 003b)
+### Secreto de la cuenta de servicio
 
-1. Registra el cliente con `POST /clientes` usando el token de un operador, y guarda su `id`.
-2. Consola → realm `clientes` → *Users* → *Add user*:
-   - *Username*: el tipo y el número de documento sin separadores, por ejemplo `CC1234567`.
-   - *Required user actions*: `Update Password` y `Configure OTP`.
-3. Pestaña *Credentials* → *Set password* con *Temporary* activado (es la clave temporal que entregaría el operador).
-4. Copia el *ID* del usuario (es el `sub` de sus tokens) y vincúlalo con el cliente en la base:
+Para habilitar y deshabilitar accesos, la API usa la cuenta de servicio `core-bancario-api-admin` del realm `clientes`, que solo puede gestionar y ver usuarios (ADR-0014). Su secreto **nunca** está en el repositorio: el realm trae el marcador `${KC_CLIENTES_API_SECRET}` y Keycloak lo resuelve con la variable de entorno al importar.
+
+1. Genera un secreto largo y aleatorio (por ejemplo `openssl rand -hex 32`) y ponlo en `.env` como `KC_CLIENTES_API_SECRET`. Sin este valor `docker compose up` no arranca Keycloak.
+2. Pon **el mismo valor** en los user-secrets de la API:
+
+```bash
+dotnet user-secrets set "Keycloak:Administracion:ClientSecret" "<el mismo secreto>" --project src/CoreBancario.Api
+# o bien: export Keycloak__Administracion__ClientSecret="<el mismo secreto>"
+```
+
+Si ya tenías un volumen de Keycloak de antes de la 003b, el realm `clientes` no trae esta cuenta: recárgalo (sección siguiente).
+
+### Habilitar el acceso de un cliente de prueba
+
+Ya no hace falta crear al cliente a mano en la consola ni vincularlo con SQL:
+
+1. Registra el cliente con `POST /clientes` usando el token de un operador y guarda su `id`.
+2. Llama a `POST /clientes/{id}/acceso-digital/habilitar` con el token de un operador. La respuesta trae la `claveTemporal` (solo aparece ahí) para entregársela al cliente. El usuario se llama como su documento sin separadores, por ejemplo `CC1234567`.
+3. El cliente entra con esa clave: Keycloak le pedirá cambiarla e inscribir su app autenticadora (OTP).
+
+Llamar otra vez a `habilitar` sobre un acceso ya habilitado lo **restablece**: clave temporal nueva, segundo factor borrado y sesiones cerradas. `POST /clientes/{id}/acceso-digital/deshabilitar` lo deshabilita y cierra sus sesiones.
+
+### Solicitudes de acceso sin resultado
+
+Cada habilitar o deshabilitar deja primero una **solicitud** en la base y después un **resultado** en otra fila; nada se edita ni se borra (RN-20, ADR-0017). Una solicitud sin resultado es una operación cuyo desenlace no se confirmó (por ejemplo, Keycloak no respondió). El siguiente intento sobre el mismo cliente las cierra solo, mirando la marca del usuario en Keycloak. Para auditar las que sigan abiertas:
 
 ```sql
-INSERT INTO accesos_digitales (cliente_id, sub, fecha_de_vinculo)
-VALUES ('<id del cliente>', '<ID del usuario en Keycloak>', now());
+SELECT s.id, s.cliente_id, s.operador, s.accion, s.fecha
+FROM solicitudes_de_acceso s
+LEFT JOIN resultados_de_acceso r ON r.solicitud_id = s.id
+WHERE r.solicitud_id IS NULL
+ORDER BY s.fecha;
 ```
+
+### Errores 502 y 503 al gestionar accesos
+
+| Estado | `codigo` | Qué pasó | Qué debe hacer el operador |
+|---|---|---|---|
+| 502 | `identidad-error` | Keycloak respondió con un error y la operación no se completó (pudo quedar a medias). La solicitud queda como `Fallido`. | Leer el `detail` de la respuesta (trae el mensaje fijo, no el motivo técnico) y volver a intentar la misma operación. Si se repite, avisar a quien administra Keycloak. |
+| 503 | `identidad-sin-respuesta` | Keycloak no respondió (tiempo de espera o conexión). **No se sabe si se aplicó.** La solicitud queda pendiente. | Leer el `detail` y volver a intentar la **misma** operación: el reintento confirma o descarta la anterior. No entregar ninguna clave anterior; la que sirve es la de la respuesta 200. |
+
+Un `422 acceso-no-habilitado` al deshabilitar significa que el cliente ya no tiene un acceso habilitado (por ejemplo, un intento anterior sí se aplicó).
 
 ### Recargar un realm modificado
 

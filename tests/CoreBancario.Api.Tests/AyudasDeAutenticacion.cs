@@ -21,9 +21,11 @@ internal static class AyudasDeAutenticacion
     public const string SinSub = "sin-sub";
     public const string MalFormado = "mal-formado";
 
-    /// <summary>Las ocho operaciones de la 002: solo el rol Operador.</summary>
+    /// <summary>Las ocho operaciones de la 002 y las dos de gestionar el acceso (003b): solo el rol Operador.</summary>
     public static readonly (string Metodo, string Ruta)[] OperacionesDelOperador =
     [
+        ("POST", "/clientes/{id}/acceso-digital/habilitar"),
+        ("POST", "/clientes/{id}/acceso-digital/deshabilitar"),
         ("POST", "/clientes"),
         ("GET", "/clientes/{id}"),
         ("GET", "/clientes/por-documento?tipoDocumento=CC&numeroDocumento=1234567"),

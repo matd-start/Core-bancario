@@ -165,7 +165,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Domain
 
-- [ ] T15 — Registro de accesos:
+- [x] T15 — Registro de accesos:
   - `AccionDeAcceso`, `EstadoDeAcceso` y `ResultadoDeAcceso`;
   - `AccesoNoHabilitadoException : ReglaDeNegocioException`, con `EstadoActual`;
   - `SolicitudDeAcceso`: `ParaHabilitar` (Habilitado → Restablecer; si no, Habilitar), `ParaDeshabilitar` (si el estado no es Habilitado, lanza **antes** de construir), `Completar`, `Fallar`, guardas de operador y motivo, e `Id = Guid.CreateVersion7(fecha)`;
@@ -175,7 +175,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Application
 
-- [ ] T16 — Tipos y puertos:
+- [x] T16 — Tipos y puertos:
   - `ClaveTemporal`, con `ToString` oculto y un mínimo de 16 caracteres;
   - `IGeneradorDeClaveTemporal`, `UsuarioDeIdentidad`, `IProveedorDeIdentidad`, `IAccesoDigitalRepositorio` e `IRegistroDeAccesos`;
   - las dos excepciones del proveedor, con mensajes fijos y `Motivo`;
@@ -184,13 +184,13 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: Application · Archivos: `src/CoreBancario.Application/AccesosDigitales/{ClaveTemporal,IGeneradorDeClaveTemporal,UsuarioDeIdentidad,IProveedorDeIdentidad,IAccesoDigitalRepositorio,IRegistroDeAccesos,ProveedorDeIdentidadSinRespuestaException,ErrorDelProveedorDeIdentidadException,HabilitarAccesoComando,DeshabilitarAccesoComando,AccesoHabilitadoDto,RegistroDeAccesoDto}.cs` · Cubre: RF-13, RNF-03, CA-01
 
-- [ ] T17 — `AccesoLocalizado`, `LocalizadorDeAcceso` y `ReconciliadorDeSolicitudes`:
+- [x] T17 — `AccesoLocalizado`, `LocalizadorDeAcceso` y `ReconciliadorDeSolicitudes`:
   - el localizador busca por el sub del vínculo o, si no hay vínculo, por el nombre de usuario (adopción); si hay vínculo pero el usuario no existe en el proveedor, lanza `InvalidOperationException`;
   - el reconciliador da Completado si la marca coincide y Fallido si no, con un solo guardado y solo si hubo pendientes.
 
   Capa: Application · Archivos: `src/CoreBancario.Application/AccesosDigitales/{AccesoLocalizado,LocalizadorDeAcceso,ReconciliadorDeSolicitudes}.cs` · Cubre: RF-13, RN-20 (reconciliación (a) de ADR-0017)
 
-- [ ] T18 — `HabilitarAccesoHandler` con la secuencia exacta de la sección 5 del plan:
+- [x] T18 — `HabilitarAccesoHandler` con la secuencia exacta de la sección 5 del plan:
   - la solicitud se confirma **antes** de llamar al proveedor;
   - desde ese punto se usa `CancellationToken.None`;
   - un error del proveedor escribe Fallido y propaga; sin respuesta, no escribe resultado y propaga;
@@ -198,11 +198,11 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: Application · Archivos: `src/CoreBancario.Application/AccesosDigitales/HabilitarAccesoHandler.cs` · Cubre: RF-13, RN-20, CA-01, CA-02, CA-04, CL-12, CL-13, CL-16
 
-- [ ] T19 — `DeshabilitarAccesoHandler`: la misma secuencia, con `ParaDeshabilitar` (CL-14 sin registrar nada) y `DeshabilitarAsync`. `AddAplicacion` registra como Scoped `LocalizadorDeAcceso`, `ReconciliadorDeSolicitudes` y los dos handlers · Capa: Application · Archivos: `src/CoreBancario.Application/AccesosDigitales/DeshabilitarAccesoHandler.cs`, `src/CoreBancario.Application/DependencyInjection.cs` · Cubre: RF-13, RN-20, CA-03, CA-04, CL-14
+- [x] T19 — `DeshabilitarAccesoHandler`: la misma secuencia, con `ParaDeshabilitar` (CL-14 sin registrar nada) y `DeshabilitarAsync`. `AddAplicacion` registra como Scoped `LocalizadorDeAcceso`, `ReconciliadorDeSolicitudes` y los dos handlers · Capa: Application · Archivos: `src/CoreBancario.Application/AccesosDigitales/DeshabilitarAccesoHandler.cs`, `src/CoreBancario.Application/DependencyInjection.cs` · Cubre: RF-13, RN-20, CA-03, CA-04, CL-14
 
 ## Infrastructure
 
-- [ ] T20 — Configuraciones de EF Core y traducción de errores:
+- [x] T20 — Configuraciones de EF Core y traducción de errores:
   - `SolicitudDeAccesoConfiguracion`: `accion` como texto con `ck_solicitudes_de_acceso_accion`, FK `Restrict` e índice por `cliente_id`;
   - `ResultadoDeSolicitudConfiguracion`: PK `pk_resultados_de_acceso` sobre `solicitud_id`, FK `Restrict`, `resultado` con su CHECK y `motivo` `varchar(200)`;
   - dos `DbSet` en `CoreBancarioDbContext`;
@@ -210,13 +210,13 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Configuraciones/{SolicitudDeAccesoConfiguracion,ResultadoDeSolicitudConfiguracion}.cs`, `src/CoreBancario.Infrastructure/Persistencia/CoreBancarioDbContext.cs` · Cubre: RF-13, RN-20, CA-01
 
-- [ ] T21 — Migración `RegistroDeAccesos` (`dotnet ef migrations add RegistroDeAccesos …`):
+- [x] T21 — Migración `RegistroDeAccesos` (`dotnet ef migrations add RegistroDeAccesos …`):
   - a mano, en `Up`: la función `impedir_cambios_en_registro_de_accesos()` y los dos triggers `BEFORE UPDATE OR DELETE`; en `Down`, su eliminación;
   - revisar el SQL con `dotnet ef migrations script` y después ejecutar `dotnet format`.
 
   Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Migraciones/*_RegistroDeAccesos*.cs`, `CoreBancarioDbContextModelSnapshot.cs` · Cubre: RN-20, CA-01 · Pruebas en verde: `F003_RNF02_BaseVacia_…` ampliada, `F003_RN20_EditarOBorrarElRegistro_LoRechazaLaBase`, `F003_RN20_DosResultadosParaLaMismaSolicitud_LanzaConflicto`, `F003_ADR0016_DosClientesConElMismoSub_LanzaConflicto`
 
-- [ ] T22 — Repositorios y generador:
+- [x] T22 — Repositorios y generador:
   - `AccesoDigitalRepositorio`;
   - `RegistroDeAccesos`, cuyo `ListarPendientesAsync` busca solicitudes del cliente sin resultado, ordenadas por fecha;
   - `GeneradorAleatorioDeClaveTemporal` (`RandomNumberGenerator.GetString(Alfabeto, 16)`);
@@ -224,7 +224,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Repositorios/{AccesoDigitalRepositorio,RegistroDeAccesos}.cs`, `src/CoreBancario.Infrastructure/AccesosDigitales/GeneradorAleatorioDeClaveTemporal.cs`, `src/CoreBancario.Infrastructure/DependencyInjection.cs` · Cubre: RF-13, RN-20, RNF-03, CA-01, CA-02
 
-- [ ] T23 — Adaptador de Keycloak:
+- [x] T23 — Adaptador de Keycloak:
   - `OpcionesDeKeycloak`;
   - `TokenDeServicioHandler`: client credentials con un `HttpClient` con nombre y caché hasta 30 s antes de vencer;
   - `ProveedorDeIdentidadKeycloak`, con las peticiones y su orden de la tabla "Llamadas a Keycloak" del plan (marca en el último paso, `PUT` con la representación completa) y la traducción de errores;
@@ -235,7 +235,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Configuración de Keycloak
 
-- [ ] T24 — En `clientes-realm.json`:
+- [x] T24 — En `clientes-realm.json`:
   - cliente confidencial `core-bancario-api-admin` (solo cuenta de servicio, `secret: "${KC_CLIENTES_API_SECRET}"`, roles de `realm-management` `manage-users` y `view-users`);
   - atributo `ultima_solicitud_de_acceso` en el perfil de usuario, con ver y editar solo para `admin`.
 
@@ -243,13 +243,13 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Api
 
-- [ ] T25 — Catálogo de errores:
+- [x] T25 — Catálogo de errores:
   - `CodigosDeError`: `AccesoNoHabilitado = "acceso-no-habilitado"`, `IdentidadError = "identidad-error"` e `IdentidadSinRespuesta = "identidad-sin-respuesta"`;
   - `CatalogoDeErrores.Clasificar`: `AccesoNoHabilitadoException` → 422; `ErrorDelProveedorDeIdentidadException` → 502 "Error del sistema de identidad"; `ProveedorDeIdentidadSinRespuestaException` → 503 "Sistema de identidad no disponible".
 
   `ManejadorDeErrores` no cambia · Capa: Api · Archivos: `src/CoreBancario.Api/Errores/CodigosDeError.cs`, `src/CoreBancario.Api/Errores/CatalogoDeErrores.cs` · Cubre: RF-13, RNF-02, CL-14, CA-04 · Pruebas en verde: `F002_RNF03_CadaReglaDeNegocioDelDominio_TieneCodigoPropio`, `F003_RNF02_CatalogoDeErrores_ClasificaLosErroresNuevos`
 
-- [ ] T26 — `EndpointsDeAccesoDigital`:
+- [x] T26 — `EndpointsDeAccesoDigital`:
   - grupo de Operador con `RegistroDeOperacionDelOperador` y `DocumentarErroresComunes`;
   - `POST /clientes/{clienteId:guid}/acceso-digital/habilitar` (200 + `Cache-Control: no-store`) y `…/deshabilitar` (200), con `WithName`, `WithSummary` y `ProducesProblem` según la tabla de endpoints;
   - el operador sale de `usuario.Sub()`;
@@ -261,7 +261,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Cierre del bloque 003b
 
-- [ ] T27 — README y verificación final:
+- [x] T27 — README y verificación final:
   - en el README (sección de Keycloak):
     - cómo poner el secreto de servicio en `.env` y en user-secrets;
     - que el cliente de prueba ya se habilita desde la API (y quitar la receta manual de T13);

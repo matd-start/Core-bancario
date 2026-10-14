@@ -1,6 +1,8 @@
+using CoreBancario.Application.AccesosDigitales;
 using CoreBancario.Application.Clientes;
 using CoreBancario.Application.Comun;
 using CoreBancario.Domain;
+using CoreBancario.Domain.AccesosDigitales;
 using CoreBancario.Domain.Cuentas;
 using CoreBancario.Domain.Monetario;
 
@@ -32,6 +34,13 @@ public static class CatalogoDeErrores
             MonedasDistintasException => Regla(CodigosDeError.MonedasDistintas),
             MontoNegativoException => Regla(CodigosDeError.MontoNegativo),
             PrecisionExcedidaException => Regla(CodigosDeError.PrecisionExcedida),
+            AccesoNoHabilitadoException => Regla(CodigosDeError.AccesoNoHabilitado),
+
+            // El sistema de identidad (Keycloak) falló: 502 si respondió con un error, 503 si no respondió (ADR-0017).
+            ErrorDelProveedorDeIdentidadException => new ErrorHttp(
+                StatusCodes.Status502BadGateway, CodigosDeError.IdentidadError, "Error del sistema de identidad", Previsto: true),
+            ProveedorDeIdentidadSinRespuestaException => new ErrorHttp(
+                StatusCodes.Status503ServiceUnavailable, CodigosDeError.IdentidadSinRespuesta, "Sistema de identidad no disponible", Previsto: true),
 
             // Respaldo: una prueba exige que ninguna regla del dominio caiga aquí, para que cada una tenga su código.
             ReglaDeNegocioException => Regla(CodigosDeError.ReglaDeNegocio),

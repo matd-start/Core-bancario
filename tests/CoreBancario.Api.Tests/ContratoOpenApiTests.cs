@@ -105,6 +105,36 @@ public class ContratoOpenApiTests(ApiFixture api)
     }
 
     [Fact]
+    public void F003_CA22_ContratoFueraDeDevelopment_IncluyeLasOperacionesDeAccesoDigital()
+    {
+        // Arrange: 003b, T26 regenera y versiona el archivo con los endpoints nuevos.
+        var contrato = ContratoVersionado();
+
+        // Act
+        var ids = Operaciones(contrato).Select(o => o.Id).ToList();
+
+        // Assert
+        Assert.Contains("HabilitarAccesoDigital", ids);
+        Assert.Contains("DeshabilitarAccesoDigital", ids);
+    }
+
+    [Theory]
+    [InlineData("HabilitarAccesoDigital", "200,401,403,404,409,500,502,503")]
+    [InlineData("DeshabilitarAccesoDigital", "200,401,403,404,409,422,500,502,503")]
+    public void F003_RNF06_ContratoVersionado_DocumentaLasRespuestasDelAccesoDigital(string operationId, string codigosEsperados)
+    {
+        // Arrange
+        var contrato = ContratoVersionado();
+
+        // Act
+        var operacion = Operaciones(contrato).SingleOrDefault(o => o.Id == operationId).Operacion;
+        var codigos = operacion?["responses"]?.AsObject().Select(r => r.Key).Order().ToList();
+
+        // Assert
+        Assert.Equal(codigosEsperados.Split(','), codigos);
+    }
+
+    [Fact]
     public async Task F003_RNF06_OpenApiEnDevelopment_SeSirveSinSesionYDescribeElEsquemaBearer()
     {
         // Arrange: /openapi/* es la excepcion a la politica por defecto "usuario autenticado".

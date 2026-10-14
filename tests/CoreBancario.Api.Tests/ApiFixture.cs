@@ -1,11 +1,14 @@
 using CoreBancario.Api.Autenticacion;
+using CoreBancario.Application.AccesosDigitales;
 using CoreBancario.Infrastructure.Persistencia;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using Npgsql;
 using Testcontainers.PostgreSql;
 
 [assembly: AssemblyFixture(typeof(CoreBancario.Api.Tests.ApiFixture))]
@@ -30,6 +33,12 @@ public sealed class ApiFixture : IAsyncLifetime
 
     public string CadenaDeConexion => _contenedor.GetConnectionString();
 
+    /// <summary>
+    /// El sistema de identidad de la API en las pruebas (003b, ADR-0018): un fake propio, sin Keycloak. Las pruebas que
+    /// necesitan que falle derivan una API con otro proveedor (ConServicios).
+    /// </summary>
+    public ProveedorDeIdentidadFalso Proveedor { get; } = new();
+
     public async ValueTask InitializeAsync()
     {
         await _contenedor.StartAsync();
@@ -52,6 +61,8 @@ public sealed class ApiFixture : IAsyncLifetime
                     o => FijarConfiguracionOidc(o, EmisorDeToken.Clientes));
                 servicios.Configure<JwtBearerOptions>(EsquemasDeAutenticacion.Empleados,
                     o => FijarConfiguracionOidc(o, EmisorDeToken.Empleados));
+                servicios.RemoveAll<IProveedorDeIdentidad>();
+                servicios.AddSingleton<IProveedorDeIdentidad>(Proveedor);
             });
         });
     }
@@ -102,6 +113,48 @@ public sealed class ApiFixture : IAsyncLifetime
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"INSERT INTO accesos_digitales (cliente_id, sub, fecha_de_vinculo) VALUES ({clienteId}, {sub}, {DateTimeOffset.UtcNow})",
             TestContext.Current.CancellationToken);
+    }
+
+    // ---- Lo que quedo en la base (003b): se lee por SQL, sin depender del mapeo de las entidades ----
+
+    /// <summary>Una fila de solicitudes_de_acceso.</summary>
+    public sealed record SolicitudGuardada(Guid Id, string Operador, string Accion, DateTimeOffset Fecha);
+
+    /// <summary>Una fila de resultados_de_acceso con la accion de su solicitud.</summary>
+    public sealed record ResultadoGuardado(Guid SolicitudId, string Resultado, string? Motivo);
+
+    /// <summary>Las solicitudes de un cliente, de la mas antigua a la mas reciente.</summary>
+    public Task<IReadOnlyList<SolicitudGuardada>> SolicitudesDeAsync(Guid clienteId) =>
+        LeerAsync(
+            "SELECT id, operador, accion, fecha FROM solicitudes_de_acceso WHERE cliente_id = @cliente ORDER BY fecha, id",
+            clienteId,
+            lector => new SolicitudGuardada(lector.GetGuid(0), lector.GetString(1), lector.GetString(2), lector.GetFieldValue<DateTimeOffset>(3)));
+
+    /// <summary>Los resultados de las solicitudes de un cliente.</summary>
+    public Task<IReadOnlyList<ResultadoGuardado>> ResultadosDeAsync(Guid clienteId) =>
+        LeerAsync(
+            "SELECT r.solicitud_id, r.resultado, r.motivo FROM resultados_de_acceso r " +
+            "JOIN solicitudes_de_acceso s ON s.id = r.solicitud_id WHERE s.cliente_id = @cliente ORDER BY r.fecha, r.solicitud_id",
+            clienteId,
+            lector => new ResultadoGuardado(lector.GetGuid(0), lector.GetString(1), lector.IsDBNull(2) ? null : lector.GetString(2)));
+
+    /// <summary>El sub vinculado al cliente (ADR-0016), o null si no hay vinculo.</summary>
+    public async Task<string?> SubVinculadoAsync(Guid clienteId) =>
+        (await LeerAsync("SELECT sub FROM accesos_digitales WHERE cliente_id = @cliente", clienteId,
+            lector => lector.GetString(0))).SingleOrDefault();
+
+    private async Task<IReadOnlyList<T>> LeerAsync<T>(string sql, Guid clienteId, Func<NpgsqlDataReader, T> leer)
+    {
+        var filas = new List<T>();
+        await using var conexion = new NpgsqlConnection(CadenaDeConexion);
+        await conexion.OpenAsync(TestContext.Current.CancellationToken);
+        await using var comando = new NpgsqlCommand(sql, conexion);
+        comando.Parameters.AddWithValue("cliente", clienteId);
+        await using var lector = await comando.ExecuteReaderAsync(TestContext.Current.CancellationToken);
+        while (await lector.ReadAsync(TestContext.Current.CancellationToken))
+            filas.Add(leer(lector));
+
+        return filas;
     }
 
     private static HttpClient ConToken(HttpClient http, string token)

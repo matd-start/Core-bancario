@@ -26,6 +26,9 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?Define KC_BOOTSTRAP_ADMIN_USERNAME en .env}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Define KC_BOOTSTRAP_ADMIN_PASSWORD en .env}
+      # Secreto de la cuenta de servicio core-bancario-api-admin (003b). El realm clientes trae un marcador con este
+      # mismo nombre y Keycloak lo resuelve con esta variable al importar: el secreto no está en el repositorio.
+      KC_CLIENTES_API_SECRET: ${KC_CLIENTES_API_SECRET:?Define KC_CLIENTES_API_SECRET en .env}
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:

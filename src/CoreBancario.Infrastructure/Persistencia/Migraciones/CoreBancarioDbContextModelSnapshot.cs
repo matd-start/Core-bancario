@@ -49,6 +49,74 @@ namespace CoreBancario.Infrastructure.Persistencia.Migraciones
                     b.ToTable("accesos_digitales", (string)null);
                 });
 
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.ResultadoDeSolicitud", b =>
+                {
+                    b.Property<Guid>("SolicitudId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("solicitud_id");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("Motivo")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("motivo");
+
+                    b.Property<string>("Resultado")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)")
+                        .HasColumnName("resultado");
+
+                    b.HasKey("SolicitudId")
+                        .HasName("pk_resultados_de_acceso");
+
+                    b.ToTable("resultados_de_acceso", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_resultados_de_acceso_resultado", "resultado IN ('Completado', 'Fallido')");
+                        });
+                });
+
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.SolicitudDeAcceso", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("Accion")
+                        .IsRequired()
+                        .HasMaxLength(12)
+                        .HasColumnType("character varying(12)")
+                        .HasColumnName("accion");
+
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<DateTimeOffset>("Fecha")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha");
+
+                    b.Property<string>("Operador")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("operador");
+
+                    b.HasKey("Id")
+                        .HasName("pk_solicitudes_de_acceso");
+
+                    b.HasIndex("ClienteId")
+                        .HasDatabaseName("ix_solicitudes_de_acceso_cliente_id");
+
+                    b.ToTable("solicitudes_de_acceso", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_solicitudes_de_acceso_accion", "accion IN ('Habilitar', 'Restablecer', 'Deshabilitar')");
+                        });
+                });
+
             modelBuilder.Entity("CoreBancario.Domain.Clientes.Cliente", b =>
                 {
                     b.Property<Guid>("Id")
@@ -175,6 +243,26 @@ namespace CoreBancario.Infrastructure.Persistencia.Migraciones
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
                         .HasConstraintName("fk_accesos_digitales_clientes_cliente_id");
+                });
+
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.ResultadoDeSolicitud", b =>
+                {
+                    b.HasOne("CoreBancario.Domain.AccesosDigitales.SolicitudDeAcceso", null)
+                        .WithOne()
+                        .HasForeignKey("CoreBancario.Domain.AccesosDigitales.ResultadoDeSolicitud", "SolicitudId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_resultados_de_acceso_solicitudes_de_acceso_solicitud_id");
+                });
+
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.SolicitudDeAcceso", b =>
+                {
+                    b.HasOne("CoreBancario.Domain.Clientes.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_solicitudes_de_acceso_clientes_cliente_id");
                 });
 
             modelBuilder.Entity("CoreBancario.Domain.Clientes.Cliente", b =>

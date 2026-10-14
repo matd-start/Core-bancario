@@ -1,6 +1,6 @@
-# Aprendizaje — 003 Autenticación y autorización (bloque 003a: proteger la API)
+# Aprendizaje — 003 Autenticación y autorización (bloques 003a y 003b)
 
-Este documento explica lo que se construyó en el bloque 003a (tareas T01 a T14) para alguien que ve estos patrones por primera vez. El bloque 003b (habilitar y deshabilitar accesos desde la API) todavía no existe.
+Este documento explica lo que se construyó en el bloque 003a (tareas T01 a T14) para alguien que ve estos patrones por primera vez. El bloque 003b (habilitar y deshabilitar accesos desde la API) se explica en la segunda parte, a partir de "Bloque 003b".
 
 ## 1. Mapa del código
 
@@ -147,3 +147,144 @@ Ciclo **Copiar → Modificar → Recrear**: primero copia el patrón tal cual, l
 - **Copiar:** ejecuta `F003_RNF04_MotivosDistintos_MismaRespuesta401` y mira el log de la prueba `F003_RNF04_TokenRechazado_ElLogTieneElMotivoSinElToken`.
 - **Modificar:** añade un motivo nuevo a `MotivoDeRechazo` (por ejemplo, `ClaveDeFirmaDesconocida`, separando el caso en que el `kid` del token no existe en el realm) y su caso en la teoría `FallasYMotivos`. Fíjate en que la respuesta al cliente no debe cambiar.
 - **Recrear:** sin mirar, escribe una frase que explique por qué la respuesta al cliente es siempre la misma y el motivo solo va al log.
+
+---
+
+# Bloque 003b — Gestionar el acceso (T15 a T27)
+
+El operador puede **habilitar** el acceso de un cliente (la API crea su usuario en Keycloak y le entrega una clave temporal), **restablecerlo** si lo olvidó y **deshabilitarlo**. Lo difícil es que hay dos sistemas (PostgreSQL y Keycloak) y no existe una transacción que cubra a los dos.
+
+## 5. Mapa del código (003b)
+
+### Domain (`src/CoreBancario.Domain/AccesosDigitales`)
+
+| Archivo | Qué hace |
+|---|---|
+| `AccionDeAcceso.cs`, `EstadoDeAcceso.cs`, `ResultadoDeAcceso.cs` | Tres enums: lo que pidió el operador (Habilitar, Restablecer, Deshabilitar), cómo está el acceso (SinAcceso, Habilitado, Deshabilitado) y cómo terminó una solicitud (Completado, Fallido). |
+| `SolicitudDeAcceso.cs` | La **intención** del operador, una fila que nunca se edita. `ParaHabilitar` decide si es Habilitar o Restablecer según el estado; `ParaDeshabilitar` rechaza antes de crear nada si no hay acceso habilitado. |
+| `ResultadoDeSolicitud.cs` | El desenlace de una solicitud, **otra fila** distinta. Solo la crean `Completar` y `Fallar`. |
+| `AccesoNoHabilitadoException.cs` | La regla rota "deshabilitar lo que no está habilitado" (422). |
+
+### Application (`src/CoreBancario.Application/AccesosDigitales`)
+
+| Archivo | Qué hace |
+|---|---|
+| `IProveedorDeIdentidad.cs`, `UsuarioDeIdentidad.cs` | **Puerto** hacia Keycloak: buscar, obtener, crear, reiniciar y deshabilitar usuarios. Application no sabe que existe HTTP. |
+| `IAccesoDigitalRepositorio.cs`, `IRegistroDeAccesos.cs` | Puertos de persistencia. El registro solo tiene "agregar" y "listar pendientes": no hay forma de editar ni borrar. |
+| `IGeneradorDeClaveTemporal.cs`, `ClaveTemporal.cs` | El azar es una frontera; `ClaveTemporal` oculta su valor en `ToString`. |
+| `LocalizadorDeAcceso.cs`, `AccesoLocalizado.cs` | Encuentran el acceso actual de un cliente (vínculo en la base + usuario en Keycloak) y calculan su `Estado`. |
+| `ReconciliadorDeSolicitudes.cs` | Cierra las solicitudes que quedaron sin resultado, mirando la **marca** del usuario en Keycloak. |
+| `HabilitarAccesoHandler.cs`, `DeshabilitarAccesoHandler.cs` | Los dos casos de uso, con la secuencia "intención primero". |
+| `ProveedorDeIdentidadSinRespuestaException.cs`, `ErrorDelProveedorDeIdentidadException.cs` | Los dos modos de falla de Keycloak: no respondió (503) / respondió con error (502). |
+| `HabilitarAccesoComando.cs`, `DeshabilitarAccesoComando.cs`, `AccesoHabilitadoDto.cs`, `RegistroDeAccesoDto.cs` | Entradas y salidas. `AccesoHabilitadoDto.ToString` no imprime la clave. |
+
+### Infrastructure (`src/CoreBancario.Infrastructure`)
+
+| Archivo | Qué hace |
+|---|---|
+| `Persistencia/Configuraciones/SolicitudDeAccesoConfiguracion.cs`, `ResultadoDeSolicitudConfiguracion.cs` | Las tablas `solicitudes_de_acceso` y `resultados_de_acceso`. La clave primaria del resultado es `solicitud_id`: **un solo resultado por solicitud**. |
+| `Persistencia/Migraciones/*_RegistroDeAccesos.cs` | Crea las tablas y, a mano, la función y los triggers que impiden editar o borrar el registro. |
+| `Persistencia/CoreBancarioDbContext.cs` | `GuardarCambiosAsync` traduce los choques de unicidad del vínculo y del resultado a `ConflictoDeConcurrenciaException` (409). |
+| `Persistencia/Repositorios/AccesoDigitalRepositorio.cs`, `RegistroDeAccesos.cs` | Implementan los puertos. `ListarPendientesAsync` = solicitudes sin fila de resultado. |
+| `AccesosDigitales/GeneradorAleatorioDeClaveTemporal.cs` | 16 caracteres con `RandomNumberGenerator.GetString`, sin caracteres ambiguos. |
+| `Identidad/ProveedorDeIdentidadKeycloak.cs` | El adaptador: traduce el puerto a llamadas de la Admin REST API de Keycloak y los fallos HTTP a las dos excepciones. |
+| `Identidad/TokenDeServicioHandler.cs` | Pide (y guarda hasta 30 s antes de que venza) el token de la cuenta de servicio y lo pone en cada llamada. |
+| `Identidad/OpcionesDeKeycloak.cs` | La sección de configuración `Keycloak:Administracion`. |
+| `DependencyInjection.cs` | Registra repositorios, generador y los dos `HttpClient` (el del adaptador y el que pide el token). |
+
+### Api y configuración
+
+| Archivo | Qué hace |
+|---|---|
+| `Api/AccesosDigitales/EndpointsDeAccesoDigital.cs` | `POST /clientes/{id}/acceso-digital/habilitar` y `/deshabilitar`. El operador sale de `usuario.Sub()`; habilitar responde `Cache-Control: no-store`. |
+| `Api/Errores/CatalogoDeErrores.cs`, `CodigosDeError.cs` | 422 `acceso-no-habilitado`, 502 `identidad-error`, 503 `identidad-sin-respuesta`. |
+| `infra/keycloak/realms/clientes-realm.json` | Se añade el cliente `core-bancario-api-admin` (cuenta de servicio con solo `manage-users` y `view-users`) y el atributo `ultima_solicitud_de_acceso` (la marca), visible y editable solo por `admin`. |
+| `docker-compose.yml`, `.env.example` | La variable `KC_CLIENTES_API_SECRET`: el secreto no está en el repositorio. |
+
+## 6. Recorrido de una petición: habilitar el acceso de un cliente
+
+`POST /clientes/{clienteId}/acceso-digital/habilitar` con el token de un operador.
+
+1. La autenticación y la autorización son las del bloque 003a: el grupo exige la política `Operador`. `RegistroDeOperacionDelOperador` dejará en el log si la operación se completó.
+2. `EndpointsDeAccesoDigital` arma `HabilitarAccesoComando(clienteId, usuario.Sub())` y llama a `HabilitarAccesoHandler.EjecutarAsync`.
+3. El handler pide el cliente a `IClienteRepositorio`. Si no existe, lanza `RecursoNoEncontradoException` (404) **sin escribir nada ni llamar a Keycloak**.
+4. `LocalizadorDeAcceso` busca el acceso: con vínculo, consulta a Keycloak por el `sub`; sin vínculo, busca por nombre de usuario (por si un intento anterior dejó un usuario a medias, para **adoptarlo** y no crearlo dos veces). Aquí `ProveedorDeIdentidadKeycloak` y `TokenDeServicioHandler` hacen las primeras llamadas HTTP. Si Keycloak no responde, 503 y todavía no se escribió nada.
+5. `ReconciliadorDeSolicitudes` cierra las solicitudes pendientes de intentos anteriores: Completada si la marca del usuario coincide con su id, Fallida si no.
+6. `SolicitudDeAcceso.ParaHabilitar` decide la acción (Habilitar o Restablecer, según el estado). El handler la agrega a `IRegistroDeAccesos` y llama a `GuardarCambiosAsync`: **la intención queda confirmada en PostgreSQL antes de tocar Keycloak**.
+7. `IGeneradorDeClaveTemporal` produce la clave. Desde aquí el handler usa `CancellationToken.None`: aunque el operador cierre el navegador, la operación termina.
+8. Si no había usuario, `CrearAsync` hace **una sola** petición con la clave temporal, las acciones obligatorias (`UPDATE_PASSWORD`, `CONFIGURE_TOTP`) y la marca (el id de la solicitud). Si ya existía, `ReiniciarAccesoAsync` hace los pasos en orden (clave temporal, borrar el OTP, cerrar sesiones) y en el **último** escribe la marca.
+9. Si Keycloak respondió con un error, el handler escribe una fila `Fallido` y relanza (502). Si no respondió, **no escribe nada** y relanza (503): la solicitud queda pendiente.
+10. Si todo fue bien, el handler agrega el vínculo (si faltaba) y el resultado `Completado` y guarda **una sola vez** (PostgreSQL traduce un choque de unicidad a 409).
+11. Devuelve `AccesoHabilitadoDto` y el endpoint añade `Cache-Control: no-store` y responde 200. Es la única vez que la clave viaja.
+
+## 7. Conceptos clave (003b)
+
+### 7.1 Intención primero
+
+- **Qué problema resuelve:** no hay transacción entre PostgreSQL y Keycloak. Si primero llamáramos a Keycloak y la base cayera, habría un usuario creado sin rastro de quién lo pidió. Si primero escribiéramos "hecho" y Keycloak fallara, el registro mentiría.
+- **Dónde está:** `HabilitarAccesoHandler` y `DeshabilitarAccesoHandler` (el orden de los pasos); `SolicitudDeAcceso` (la intención).
+- **Analogía:** pedir algo en un restaurante. El camarero anota el pedido en la comanda **antes** de ir a la cocina. Si la cocina no contesta, la comanda queda abierta y se sabe qué falta aclarar; nadie se queda con un plato sin comanda.
+- **Para estudiar:** sagas y consistencia eventual, el "write-ahead log", y por qué un tiempo de espera agotado **no** es un "no".
+
+### 7.2 La marca y la reconciliación
+
+- **Qué problema resuelve:** si Keycloak no respondió, no sabemos si aplicó el cambio. La **marca** (`ultima_solicitud_de_acceso`) es el id de la solicitud escrito como último paso en el usuario de Keycloak: si coincide, se aplicó todo. Al reintentar, `ReconciliadorDeSolicitudes` compara y cierra la solicitud vieja como Completada o Fallida.
+- **Dónde está:** `ProveedorDeIdentidadKeycloak.ActualizarUsuarioAsync` (escribe la marca al final), `ReconciliadorDeSolicitudes`, el atributo del perfil en `clientes-realm.json`.
+- **Analogía:** poner un sello en un documento **solo cuando terminas el último paso del trámite**. Si el sello está, el trámite se completó; si no, aunque hayas hecho tres de cuatro pasos, no cuenta.
+- **Detalle importante:** al deshabilitar, las sesiones se cierran **antes** de escribir la marca. Si fuera al revés y cerrar fallara, la marca diría "completado" sin serlo.
+- **Para estudiar:** idempotencia, "at-least-once" y reintentos seguros.
+
+### 7.3 Registro inmutable con trigger
+
+- **Qué problema resuelve:** un registro de auditoría que se puede editar no es evidencia. El código nunca edita, pero la base lo garantiza también (defensa en profundidad).
+- **Dónde está:** la migración `RegistroDeAccesos` (función `impedir_cambios_en_registro_de_accesos` y dos triggers `BEFORE UPDATE OR DELETE`); dos tablas separadas porque "pendiente" se define como "solicitud sin resultado" y así no hay que editar una fila para cerrarla.
+- **Analogía:** un libro de actas con las hojas numeradas y selladas: solo se puede añadir hojas al final; cualquier tachón queda a la vista.
+- **Para estudiar:** triggers de PostgreSQL, `RAISE EXCEPTION` (SQLSTATE `P0001`) y por qué la clave primaria `solicitud_id` en la tabla de resultados impide cerrar dos veces la misma solicitud.
+
+### 7.4 Cuenta de servicio de mínimo privilegio
+
+- **Qué problema resuelve:** la API necesita crear y deshabilitar usuarios en Keycloak, pero si usara el administrador de `master`, una fuga de la API sería una fuga de todo Keycloak.
+- **Dónde está:** el cliente `core-bancario-api-admin` en `clientes-realm.json` (solo roles `manage-users` y `view-users` de `realm-management`), `TokenDeServicioHandler`, la prueba `ConfiguracionDeCuentaDeServicioTests`.
+- **Analogía:** darle al repartidor la llave del buzón, no la llave maestra del edificio.
+- **Secreto:** nunca en el repositorio. El JSON trae el marcador `${KC_CLIENTES_API_SECRET}` y Keycloak lo sustituye al importar con la variable de entorno.
+- **Para estudiar:** OAuth 2.0 *client credentials* y la Admin REST API de Keycloak.
+
+### 7.5 Traducir los fallos de un sistema externo
+
+- **Qué problema resuelve:** Application no debe conocer `HttpClient`. El adaptador convierte "respondió con error" en `ErrorDelProveedorDeIdentidadException` (502) y "no respondió" en `ProveedorDeIdentidadSinRespuestaException` (503). El motivo guarda solo el estado HTTP, **nunca el cuerpo** de la respuesta.
+- **Dónde está:** `ProveedorDeIdentidadKeycloak.EnviarAsync` y `CatalogoDeErrores`.
+- **Analogía:** un intérprete que distingue "me dijeron que no" de "nadie contestó el teléfono": son noticias distintas y piden acciones distintas.
+
+## 8. Para practicar (003b)
+
+### Ejercicio 1: otra acción del registro
+
+- **Copiar:** lee `SolicitudDeAcceso.ParaDeshabilitar` y `DeshabilitarAccesoHandler`, y observa que valida antes de crear la solicitud.
+- **Modificar:** imagina una acción `Suspender` (Habilitado a Deshabilitado, igual que Deshabilitar pero con otro nombre en el registro). Escribe primero la prueba en `SolicitudDeAccesoTests` y después añade el valor al enum, al CHECK de la tabla y a una migración nueva.
+- **Recrear:** sin mirar, explica por qué el CHECK `ck_solicitudes_de_acceso_accion` está en la base y no solo en el enum.
+
+### Ejercicio 2: leer una reconciliación
+
+- **Copiar:** ejecuta `F003_ADR0017_ReintentoConPendienteAplicada_LaCierraComoCompletada` y sigue con el depurador qué devuelve `ReconciliarAsync`.
+- **Modificar:** cambia el motivo de `ReconciliadorDeSolicitudes` ("Confirmada al reintentar") y observa qué pruebas se rompen. ¿Cuántas fijan ese texto?
+- **Recrear:** dibuja en papel la línea de tiempo de un habilitar que se cae justo después de crear el usuario en Keycloak, y marca en qué momento se escribe cada fila.
+
+### Ejercicio 3: una pregunta al registro
+
+- **Copiar:** ejecuta en PostgreSQL la consulta de "solicitudes sin resultado" del README.
+- **Modificar:** amplíala para mostrar también cuántos minutos llevan abiertas (`now() - s.fecha`) y ordénalas de la más vieja a la más nueva. Comprueba que una solicitud con resultado no aparece.
+- **Recrear:** escribe de memoria un `INSERT` en `resultados_de_acceso` para una solicitud pendiente y comprueba que el trigger rechaza cambiarlo después con un `UPDATE`.
+
+## 9. Notas de la revisión del bloque 003b
+
+### 9.1 Errores previstos frente a inesperados
+
+- **Qué cambió:** `ManejadorDeErrores` ya no decide por el número (`>= 500`), sino por el **origen**. `ErrorHttp` tiene la bandera `Previsto`: los 502 `identidad-error` y 503 `identidad-sin-respuesta` del catálogo la llevan en `true`.
+- **Por qué:** un fallo de Keycloak es un hecho esperado de un tercero: el operador necesita leer qué pasó y qué hacer, así que el `detail` lleva el **mensaje fijo** (nunca el motivo técnico) y se registra como Warning. Un error inesperado (500) puede traer SQL o rutas en su mensaje: sigue sin `detail` y se registra como Error, que es lo que debe hacer sonar una alerta.
+- **Analogía:** una avería anunciada ("la línea 3 está cortada, usa la 4") frente a un fallo desconocido en la central: lo primero se explica al pasajero; lo segundo se investiga por dentro.
+
+### 9.2 La cuenta de servicio no debe tener roles de realm
+
+- **Qué cambió:** el usuario de la cuenta de servicio en `clientes-realm.json` queda con `realmRoles: []` (antes heredaba `default-roles-clientes`, y con él el rol `cliente`).
+- **Por qué:** menor privilegio (ADR-0014). Con ese rol, el token de servicio habría parecido el de un cliente real. La Admin API se autoriza con los roles de `realm-management` (`manage-users`, `view-users`), que es lo único que necesita.
+- **Analogía:** la llave del buzón no debería además llevar el carné de socio del club.

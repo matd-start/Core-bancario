@@ -2,10 +2,12 @@ using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
 using CoreBancario.Domain.AccesosDigitales;
 using CoreBancario.Domain.Clientes;
+using CoreBancario.Infrastructure.Identidad;
 using CoreBancario.Infrastructure.Persistencia;
 using DotNet.Testcontainers.Configurations;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
 
@@ -38,6 +40,12 @@ public sealed class KeycloakFixture : IAsyncLifetime
     private KeycloakContainer? _keycloak;
 
     public string UrlDeKeycloak { get; private set; } = "";
+
+    /// <summary>
+    /// Secreto de la cuenta de servicio core-bancario-api-admin (003b). Es aleatorio en cada ejecucion: el realm lo recibe
+    /// por la variable KC_CLIENTES_API_SECRET y la API de las pruebas, por Keycloak:Administracion:ClientSecret.
+    /// </summary>
+    public string SecretoDeServicio { get; } = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24));
 
     public AdministracionDeKeycloak Admin { get; private set; } = null!;
 
@@ -75,6 +83,11 @@ public sealed class KeycloakFixture : IAsyncLifetime
             constructor.UseSetting("Autenticacion:Audiencia", "core-bancario-api");
             constructor.UseSetting("Autenticacion:Clientes:Emisor", $"{UrlDeKeycloak}/realms/{RealmDeClientes}");
             constructor.UseSetting("Autenticacion:Empleados:Emisor", $"{UrlDeKeycloak}/realms/{RealmDeEmpleados}");
+            // 003b: la API real gestiona accesos con su cuenta de servicio contra este Keycloak.
+            constructor.UseSetting("Keycloak:Administracion:UrlBase", UrlDeKeycloak);
+            constructor.UseSetting("Keycloak:Administracion:Realm", RealmDeClientes);
+            constructor.UseSetting("Keycloak:Administracion:ClientId", "core-bancario-api-admin");
+            constructor.UseSetting("Keycloak:Administracion:ClientSecret", SecretoDeServicio);
         });
     }
 
@@ -110,7 +123,7 @@ public sealed class KeycloakFixture : IAsyncLifetime
             .WithUsername(AdminDeMaster)
             .WithPassword(ClaveDelAdminDeMaster)
             // Los realms usan el marcador ${KC_CLIENTES_API_SECRET} (003b): Keycloak lo resuelve con esta variable.
-            .WithEnvironment("KC_CLIENTES_API_SECRET", Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24)))
+            .WithEnvironment("KC_CLIENTES_API_SECRET", SecretoDeServicio)
             .WithResourceMapping(realms, "/opt/keycloak/data/import")
             .WithResourceMapping(temaBase, "/opt/keycloak/themes/core-bancario")
             .WithResourceMapping(temaDeClientes, "/opt/keycloak/themes/core-bancario-clientes")
@@ -142,6 +155,32 @@ public sealed class KeycloakFixture : IAsyncLifetime
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
         return http;
+    }
+
+    /// <summary>
+    /// El adaptador real (003b) contra este Keycloak, con la cuenta de servicio y el secreto del fixture: la misma cadena
+    /// HttpClient - TokenDeServicioHandler que arma AddInfraestructura.
+    /// </summary>
+    public ProveedorDeIdentidadKeycloak CrearProveedorDeIdentidad()
+    {
+        var opciones = Options.Create(new OpcionesDeKeycloak
+        {
+            UrlBase = new Uri(UrlDeKeycloak),
+            Realm = RealmDeClientes,
+            ClientId = "core-bancario-api-admin",
+            ClientSecret = SecretoDeServicio,
+        });
+        var token = new TokenDeServicioHandler(new FabricaDeClientesSimple(), opciones, TimeProvider.System)
+        {
+            InnerHandler = new HttpClientHandler(),
+        };
+        var http = new HttpClient(token) { BaseAddress = new Uri(UrlDeKeycloak), Timeout = opciones.Value.TiempoDeEspera };
+        return new ProveedorDeIdentidadKeycloak(http, opciones);
+    }
+
+    private sealed class FabricaDeClientesSimple : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => new();
     }
 
     // ---- Usuarios de prueba (plan, seccion 1.1: lo que hara HabilitarAccesoDigital en la 003b) ----

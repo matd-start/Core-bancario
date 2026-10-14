@@ -1,3 +1,4 @@
+using CoreBancario.Application.AccesosDigitales;
 using CoreBancario.Application.Clientes;
 using CoreBancario.Application.Cuentas;
 using Microsoft.Extensions.DependencyInjection;
@@ -7,7 +8,7 @@ namespace CoreBancario.Application;
 
 public static class DependencyInjection
 {
-    /// <summary>Registra los ocho handlers como Scoped y TryAddSingleton(TimeProvider.System).</summary>
+    /// <summary>Registra los handlers como Scoped y TryAddSingleton(TimeProvider.System).</summary>
     public static IServiceCollection AddAplicacion(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -23,6 +24,10 @@ public static class DependencyInjection
         services.AddScoped<ObtenerCuentaHandler>();
         services.AddScoped<ListarMisCuentasHandler>();
         services.AddScoped<ObtenerMiCuentaHandler>();
+        services.AddScoped<LocalizadorDeAcceso>();
+        services.AddScoped<ReconciliadorDeSolicitudes>();
+        services.AddScoped<HabilitarAccesoHandler>();
+        services.AddScoped<DeshabilitarAccesoHandler>();
 
         return services;
     }
