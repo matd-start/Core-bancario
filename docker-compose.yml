@@ -17,5 +17,23 @@ services:
       timeout: 3s
       retries: 10
 
+  # Keycloak (ADR-0014): emite los tokens. start-dev es solo para desarrollo local; el despliegue lo decide D-11.
+  # Importa los dos realms al crear el volumen: si cambias un realm, borra el volumen (README, "Recargar un realm").
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3.3
+    container_name: core-bancario-keycloak
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?Define KC_BOOTSTRAP_ADMIN_USERNAME en .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?Define KC_BOOTSTRAP_ADMIN_PASSWORD en .env}
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data/h2
+      - ./infra/keycloak/realms:/opt/keycloak/data/import:ro
+      - ./infra/keycloak/themes/core-bancario:/opt/keycloak/themes/core-bancario:ro
+      - ./infra/keycloak/themes/core-bancario-clientes:/opt/keycloak/themes/core-bancario-clientes:ro
+
 volumes:
   postgres-data:
+  keycloak-data:

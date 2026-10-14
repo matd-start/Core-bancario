@@ -5,11 +5,18 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>2c1f6a4e-7b1d-4f0a-9b53-6c0a3e9d5f21</UserSecretsId>
+    <!-- ADR-0019: el contrato OpenAPI se genera al compilar y se versiona en Git (el CI comprueba que está al día). -->
+    <OpenApiDocumentsDirectory>openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name core-bancario-api</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.12" />
+    <PackageReference Include="Microsoft.Extensions.ApiDescription.Server" Version="10.0.12">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>

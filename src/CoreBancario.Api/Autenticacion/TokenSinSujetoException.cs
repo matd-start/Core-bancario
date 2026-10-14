@@ -1,4 +1,3 @@
-// SDD: esqueleto creado por test-writer
 namespace CoreBancario.Api.Autenticacion;
 
 public sealed class TokenSinSujetoException : Exception

@@ -1,4 +1,6 @@
+using CoreBancario.Api.Autenticacion;
 using CoreBancario.Api.Errores;
+using CoreBancario.Api.OpenApi;
 using CoreBancario.Application.Clientes;
 using Microsoft.AspNetCore.Http.HttpResults;
 
@@ -9,12 +11,17 @@ public static class EndpointsDeClientes
     /// <summary>
     /// Registra las tres rutas de /clientes con WithName, WithSummary y metadatos de respuesta (RNF-05).
     /// Los endpoints solo traducen: arman el comando, llaman al handler y convierten el resultado en HTTP.
+    /// Todo el grupo es del Operador (RN-19); RegistrarCliente deja además el rastro del operador (RNF-05).
     /// </summary>
     public static IEndpointRouteBuilder MapEndpointsDeClientes(this IEndpointRouteBuilder app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        app.MapPost("/clientes", async Task<Results<Created<ClienteDto>, ValidationProblem>> (
+        var grupo = app.MapGroup(string.Empty)
+            .RequireAuthorization(Politicas.Operador)
+            .DocumentarErroresComunes();
+
+        grupo.MapPost("/clientes", async Task<Results<Created<ClienteDto>, ValidationProblem>> (
                 RegistrarClienteRequest solicitud, RegistrarClienteHandler handler, CancellationToken cancellationToken) =>
             {
                 var comando = new RegistrarClienteComando(
@@ -29,9 +36,10 @@ public static class EndpointsDeClientes
             })
             .WithName("RegistrarCliente")
             .WithSummary("Registra un cliente (persona natural) con su documento, nombres, correo y teléfono.")
-            .ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status409Conflict)
+            .AddEndpointFilter<RegistroDeOperacionDelOperador>();
 
-        app.MapGet("/clientes/{clienteId:guid}", async Task<Ok<FichaClienteDto>> (
+        grupo.MapGet("/clientes/{clienteId:guid}", async Task<Ok<FichaClienteDto>> (
                 Guid clienteId, ObtenerClienteHandler handler, CancellationToken cancellationToken) =>
             {
                 var ficha = await handler.EjecutarAsync(new ObtenerClienteConsulta(clienteId), cancellationToken);
@@ -41,7 +49,7 @@ public static class EndpointsDeClientes
             .WithSummary("Devuelve la ficha de un cliente con sus cuentas.")
             .ProducesProblem(StatusCodes.Status404NotFound);
 
-        app.MapGet("/clientes/por-documento", async Task<Results<Ok<FichaClienteDto>, ValidationProblem>> (
+        grupo.MapGet("/clientes/por-documento", async Task<Results<Ok<FichaClienteDto>, ValidationProblem>> (
                 string? tipoDocumento, string? numeroDocumento,
                 BuscarClientePorDocumentoHandler handler, CancellationToken cancellationToken) =>
             {

@@ -1,4 +1,3 @@
-// SDD: esqueleto creado por test-writer
 using CoreBancario.Domain.Clientes;
 
 namespace CoreBancario.Domain.AccesosDigitales;
@@ -9,6 +8,8 @@ namespace CoreBancario.Domain.AccesosDigitales;
 /// </summary>
 public sealed class AccesoDigital
 {
+    public const int LongitudMaximaDelSub = 255;
+
     public Guid ClienteId { get; }
 
     /// <summary>Identificador del usuario en el sistema de identidad (claim "sub" del token).</summary>
@@ -24,14 +25,27 @@ public sealed class AccesoDigital
     }
 
     /// <exception cref="ArgumentException">clienteId es Guid.Empty, o sub es null, vacío, solo espacios o tiene más de 255 caracteres.</exception>
-    public static AccesoDigital Vincular(Guid clienteId, string sub, DateTimeOffset fechaDeVinculo) =>
-        throw new NotImplementedException();
+    public static AccesoDigital Vincular(Guid clienteId, string sub, DateTimeOffset fechaDeVinculo)
+    {
+        if (clienteId == Guid.Empty)
+            throw new ArgumentException("El identificador del cliente no puede estar vacío.", nameof(clienteId));
+
+        ArgumentException.ThrowIfNullOrWhiteSpace(sub);
+        if (sub.Length > LongitudMaximaDelSub)
+            throw new ArgumentException($"El sub no puede tener más de {LongitudMaximaDelSub} caracteres.", nameof(sub));
+
+        return new AccesoDigital(clienteId, sub, fechaDeVinculo);
+    }
 
     /// <summary>
     /// Nombre de usuario con el que el cliente inicia sesión (RN-17): el código del tipo seguido del número ya
     /// normalizado, sin separador. CC 1.234.567 → "CC1234567"; PA ab-12345 → "PAAB12345".
     /// </summary>
     /// <exception cref="ArgumentNullException">documento es null.</exception>
-    public static string NombreDeUsuarioDe(Documento documento) =>
-        throw new NotImplementedException();
+    public static string NombreDeUsuarioDe(Documento documento)
+    {
+        ArgumentNullException.ThrowIfNull(documento);
+
+        return $"{documento.Tipo}{documento.Numero}";
+    }
 }

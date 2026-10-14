@@ -38,11 +38,11 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Domain
 
-- [ ] T01 — `AccesoDigital` (`ClienteId`, `Sub`, `FechaDeVinculo`), con `Vincular`, sus guardas y `NombreDeUsuarioDe(Documento)` (`$"{Tipo}{Numero}"`). Sin paquetes: `ArquitecturaDelDominioTests` sigue en verde · Capa: Domain · Archivos: `src/CoreBancario.Domain/AccesosDigitales/AccesoDigital.cs` · Cubre: RN-17, CL-02, CA-12 (nombre de usuario), ADR-0016
+- [x] T01 — `AccesoDigital` (`ClienteId`, `Sub`, `FechaDeVinculo`), con `Vincular`, sus guardas y `NombreDeUsuarioDe(Documento)` (`$"{Tipo}{Numero}"`). Sin paquetes: `ArquitecturaDelDominioTests` sigue en verde · Capa: Domain · Archivos: `src/CoreBancario.Domain/AccesosDigitales/AccesoDigital.cs` · Cubre: RN-17, CL-02, CA-12 (nombre de usuario), ADR-0016
 
 ## Application
 
-- [ ] T02 — Mis cuentas:
+- [x] T02 — Mis cuentas:
   - `ICuentasDelTitular`, `ListarMisCuentasConsulta`/`ListarMisCuentasHandler` y `ObtenerMiCuentaConsulta`/`ObtenerMiCuentaHandler`;
   - el 404 lleva **exactamente** el mensaje de `ObtenerCuentaHandler`, con una constante `internal` compartida en `Cuentas/`;
   - `AddAplicacion` registra los dos handlers como Scoped.
@@ -51,18 +51,18 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Infrastructure
 
-- [ ] T03 — Vínculo en la base:
+- [x] T03 — Vínculo en la base:
   - `AccesoDigitalConfiguracion`: PK `pk_accesos_digitales` sobre `cliente_id`, FK `Restrict` a `clientes`, `sub` `varchar(255)` con `ux_accesos_digitales_sub` y `fecha_de_vinculo`;
   - `DbSet<AccesoDigital> AccesosDigitales` en `CoreBancarioDbContext` (la traducción de errores llega en 003b, cuando la API escriba la tabla);
   - migración `VinculoDeAccesoDigital` (`dotnet ef migrations add VinculoDeAccesoDigital …`), seguida de `dotnet format`.
 
   Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Configuraciones/AccesoDigitalConfiguracion.cs`, `src/CoreBancario.Infrastructure/Persistencia/CoreBancarioDbContext.cs`, `src/CoreBancario.Infrastructure/Persistencia/Migraciones/*_VinculoDeAccesoDigital*.cs`, `CoreBancarioDbContextModelSnapshot.cs` · Cubre: RN-12, CA-14 (esquema), ADR-0016 · Pruebas en verde: `F003_RNF02_BaseVacia_TieneLasMigracionesDeLa003`
 
-- [ ] T04 — `CuentasDelTitular`: `AsNoTracking`, filtro de dueño **dentro** de la consulta (`EXISTS` sobre `accesos_digitales` por `sub`) y orden por `FechaApertura` y después `Id`. Se registra como Scoped en `AddInfraestructura` · Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Repositorios/CuentasDelTitular.cs`, `src/CoreBancario.Infrastructure/DependencyInjection.cs` · Cubre: RF-05, RN-12, CA-14, CA-15, CA-17, CL-17, CL-18
+- [x] T04 — `CuentasDelTitular`: `AsNoTracking`, filtro de dueño **dentro** de la consulta (`EXISTS` sobre `accesos_digitales` por `sub`) y orden por `FechaApertura` y después `Id`. Se registra como Scoped en `AddInfraestructura` · Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Persistencia/Repositorios/CuentasDelTitular.cs`, `src/CoreBancario.Infrastructure/DependencyInjection.cs` · Cubre: RF-05, RN-12, CA-14, CA-15, CA-17, CL-17, CL-18
 
 ## Configuración de Keycloak (archivos del repo)
 
-- [ ] T05 — Realms `infra/keycloak/realms/clientes-realm.json` y `empleados-realm.json`, con los ajustes de la tabla "Ajustes de los dos realms" del plan **salvo** el cliente `core-bancario-api-admin` y el atributo `ultima_solicitud_de_acceso`, que llegan en 003b (T24). Incluye:
+- [x] T05 — Realms `infra/keycloak/realms/clientes-realm.json` y `empleados-realm.json`, con los ajustes de la tabla "Ajustes de los dos realms" del plan **salvo** el cliente `core-bancario-api-admin` y el atributo `ultima_solicitud_de_acceso`, que llegan en 003b (T24). Incluye:
   - tiempos, bloqueo, rotación de refresh tokens, flujo de navegador con OTP `REQUIRED`, acciones obligatorias y `max_auth_age = 0`;
   - `passwordPolicy` con `notContainsUsername()`;
   - roles por defecto sin `offline_access`, `manage-account` ni `view-profile`;
@@ -72,7 +72,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Conviene exportar un realm configurado en la consola de administración y depurarlo a mano. Al terminar, confirmar en local que un usuario creado con solo `username` no recibe `VERIFY_PROFILE` · Capa: Configuración de Keycloak · Archivos: `infra/keycloak/realms/clientes-realm.json`, `infra/keycloak/realms/empleados-realm.json` · Cubre: RF-14, RF-15, RN-21, RN-22, RN-23, RN-24, RNF-01, RNF-08, CL-03, CL-04, CL-06, CL-10, CL-11, CA-06, CA-07, CA-09, CA-10, CA-11, CA-13, D-08 · Pruebas en verde: `F003_RN22_…`, `F003_RN23_…`, `F003_RN24_…` y `F003_RN21_…`, y `F003_RNF01_…` junto con T08
 
-- [ ] T06 — Temas (normalización) y entorno local:
+- [x] T06 — Temas (normalización) y entorno local:
   - `core-bancario` (`parent=keycloak.v2`, `messages_es.properties` con el mensaje genérico en las claves de CA-08);
   - `core-bancario-clientes` (`parent=core-bancario`, `scripts=js/documento.js`, etiqueta "Número de documento"), con `documento.js`: función pura `normalizarUsuario(tipo, numero)`, el selector de tipo y la escritura de `username` al enviar el login;
   - servicio `keycloak` en `docker-compose.yml`: imagen `quay.io/keycloak/keycloak:26.3.3`, `start-dev --import-realm`, montajes de `realms/` y de cada tema, volumen de datos, puerto `${KEYCLOAK_PORT:-8080}`, `KC_BOOTSTRAP_ADMIN_USERNAME` y `KC_BOOTSTRAP_ADMIN_PASSWORD`;
@@ -80,7 +80,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Si `scripts=` no inyecta el script con `keycloak.v2`, se sobrescribe `login.ftl` (riesgo 8 del plan) · Capa: Configuración de Keycloak · Archivos: `infra/keycloak/themes/core-bancario/login/**`, `infra/keycloak/themes/core-bancario-clientes/login/**`, `docker-compose.yml`, `.env.example` · Cubre: RF-14, RN-17, RNF-08, CL-01, CL-02, CA-06, CA-08, CA-12
 
-- [ ] T07 — Aviso del número de documento (decisión del autor, pregunta 3; plan, sección 4, "Aviso del número de documento"):
+- [x] T07 — Aviso del número de documento (decisión del autor, pregunta 3; plan, sección 4, "Aviso del número de documento"):
   - en `documento.js`, la función pura `contieneNumeroDeDocumento(usuario, clave)`;
   - en la pantalla de cambio de clave de `clientes` (primer ingreso y `kc_action=UPDATE_PASSWORD`), el script lee el usuario del campo `username` oculto de la plantilla, cancela el envío si la clave nueva contiene el número y muestra "La clave no puede contener tu número de documento.";
   - si el campo no existe en la plantilla de `keycloak.v2`, se sobrescribe `login-update-password.ftl` para exponer el usuario en un atributo `data-`.
@@ -89,7 +89,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Api
 
-- [ ] T08 — Autenticación:
+- [x] T08 — Autenticación:
   - `EsquemasDeAutenticacion`, `Politicas`, `Roles`, `OpcionesDeAutenticacion` (con `ToleranciaDeReloj` constante de 30 s y `AlgoritmoPermitido`) y `OpcionesDeEmisor`;
   - `SelectorDeEsquema.Elegir`;
   - `EventosDeJwt` (sub obligatorio, rol según el esquema, 401 y 403 con `ProblemDetails` y `WWW-Authenticate: Bearer` sin detalles, y log del motivo sin el token);
@@ -100,7 +100,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Se cablea en T10 · Capa: Api · Archivos: `src/CoreBancario.Api/Autenticacion/{EsquemasDeAutenticacion,Politicas,Roles,OpcionesDeAutenticacion,SelectorDeEsquema,EventosDeJwt,MotivoDeRechazo,TokenSinSujetoException,ClaimsPrincipalExtensiones,ConfiguracionDeAutenticacion}.cs`, `src/CoreBancario.Api/Errores/CodigosDeError.cs`, `src/CoreBancario.Api/CoreBancario.Api.csproj` · Cubre: RN-19, RNF-01, RNF-02, RNF-03, RNF-04, CL-07, CA-07 (401 sin token), CA-18, CA-21
 
-- [ ] T09 — Proteger la 002:
+- [x] T09 — Proteger la 002:
   - `DocumentacionDeErrores.DocumentarErroresComunes` (401, 403 y 500 con `ProblemDetails`);
   - `RegistroDeOperacionDelOperador : IEndpointFilter`;
   - `MapEndpointsDeClientes` y `MapEndpointsDeCuentas` declaran sus rutas, iguales a las de la 002, en un grupo con `RequireAuthorization(Politicas.Operador)` y `DocumentarErroresComunes()`;
@@ -108,21 +108,21 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: Api · Archivos: `src/CoreBancario.Api/OpenApi/DocumentacionDeErrores.cs`, `src/CoreBancario.Api/Autenticacion/RegistroDeOperacionDelOperador.cs`, `src/CoreBancario.Api/Clientes/EndpointsDeClientes.cs`, `src/CoreBancario.Api/Cuentas/EndpointsDeCuentas.cs` · Cubre: RN-19, RNF-05, RNF-06, CL-08, CA-19, CA-20
 
-- [ ] T10 — `Program.cs`:
+- [x] T10 — `Program.cs`:
   - `AddAutenticacionConKeycloak(builder.Configuration, builder.Environment)`;
   - `UseAuthentication()` y `UseAuthorization()` después de `UseExceptionHandler()`;
   - `/health` con `AllowAnonymous()`, y `MapOpenApi()` solo en Development con `AllowAnonymous()`.
 
   `appsettings.Development.json` lleva la sección `Autenticacion` del plan y `appsettings.json` solo `Autenticacion:Audiencia` · Capa: Api · Archivos: `src/CoreBancario.Api/Program.cs`, `src/CoreBancario.Api/appsettings.json`, `src/CoreBancario.Api/appsettings.Development.json` · Cubre: RNF-08, CA-18 · Pruebas en verde: todas las de la 002 en Api.Tests (con el token de operador del fixture), `F003_CA18_…`, `F003_CA19_ClienteLlamaOperacionDelOperador_…`, `F003_CA20_…`, `F003_CA21_…`, `F003_RNF04_…`, y las de punta a punta de login (CA-07…CA-13) junto con T05 y T06. CA-06 necesita además T11, porque llama a `/mis-cuentas`
 
-- [ ] T11 — `EndpointsDeMisCuentas`:
+- [x] T11 — `EndpointsDeMisCuentas`:
   - grupo `/mis-cuentas` con `RequireAuthorization(Politicas.Cliente)` y `DocumentarErroresComunes`;
   - `GET /mis-cuentas` (`ListarMisCuentas`) y `GET /mis-cuentas/{cuentaId:guid}` (`ObtenerMiCuenta`), con el sub de `usuario.Sub()`;
   - en `Program.cs`, `MapEndpointsDeMisCuentas()`.
 
   Capa: Api · Archivos: `src/CoreBancario.Api/Cuentas/EndpointsDeMisCuentas.cs`, `src/CoreBancario.Api/Program.cs` · Cubre: RF-05, RN-12, RN-19, RNF-02, CL-09, CL-17, CL-18, CA-14, CA-15, CA-16, CA-17, CA-19
 
-- [ ] T12 — OpenAPI (ADR-0019, decidido):
+- [x] T12 — OpenAPI (ADR-0019, decidido):
   - `EsquemaDeSeguridadEnOpenApi` y `RequisitoDeSeguridadEnOpenApi`, registrados en `AddOpenApi`;
   - paquete `Microsoft.Extensions.ApiDescription.Server` 10.0.12, y en el `.csproj` `OpenApiDocumentsDirectory=openapi` y `--file-name core-bancario-api`;
   - el archivo `src/CoreBancario.Api/openapi/core-bancario-api.json` se versiona en Git;
@@ -134,7 +134,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
 ## Cierre del bloque 003a
 
-- [ ] T13 — README, sección "Autenticación con Keycloak":
+- [x] T13 — README, sección "Autenticación con Keycloak":
   - cómo levantar Keycloak (`docker compose up -d`) y entrar a la consola;
   - cómo crear un operador en `empleados` (rol `operador`) y, **mientras no exista 003b**, un cliente de prueba a mano (usuario `CC…`, clave temporal y vínculo en `accesos_digitales`);
   - cómo recargar un realm modificado (borrar el volumen de Keycloak);
@@ -142,7 +142,7 @@ Cada tarea lista los IDs que cubre. Una prueba de API o de punta a punta de un C
 
   Capa: transversal · Archivos: `README.md` · Cubre: RNF-03 (documentación), CL-05 (límite documentado)
 
-- [ ] T14 — Verificación y documentación del bloque:
+- [x] T14 — Verificación y documentación del bloque:
   - verificación: `dotnet format --verify-no-changes`, `dotnet build -c Release -warnaserror` (el contrato queda regenerado y versionado), `dotnet test` en verde con Docker en marcha (incluido `CoreBancario.Keycloak.Tests`), CI en verde en el PR y `/sdd-review` del bloque;
   - comprobaciones: ningún log ni respuesta contiene un token;
   - en `docs/producto/spec-fase-1.md`, "Resueltas": añadir "D-08 → ADR-0014";

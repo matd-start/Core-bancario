@@ -1,4 +1,3 @@
-// SDD: esqueleto creado por test-writer
 using CoreBancario.Domain.Cuentas;
 
 namespace CoreBancario.Application.Cuentas;

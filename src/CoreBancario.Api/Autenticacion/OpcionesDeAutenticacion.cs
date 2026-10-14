@@ -1,4 +1,3 @@
-// SDD: esqueleto creado por test-writer
 namespace CoreBancario.Api.Autenticacion;
 
 /// <summary>Sección "Autenticacion". La tolerancia de reloj NO es configurable: RNF-01 depende de ella (ADR-0015).</summary>

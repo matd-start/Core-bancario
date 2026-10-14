@@ -1,5 +1,8 @@
-// SDD: esqueleto creado por test-writer
+using System.Security.Claims;
+using System.Text.Json;
+using CoreBancario.Api.Errores;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 
 namespace CoreBancario.Api.Autenticacion;
 
@@ -7,20 +10,89 @@ namespace CoreBancario.Api.Autenticacion;
 /// Eventos compartidos por los dos esquemas: TokenValidated (sub obligatorio y rol según el esquema),
 /// Challenge (401 no-autenticado, registra el motivo sin el token) y Forbidden (403 prohibido).
 /// </summary>
-public sealed class EventosDeJwt : JwtBearerEvents
+/// <param name="rolEnKeycloak">Rol de realm que se busca en realm_access.roles ("cliente" u "operador").</param>
+/// <param name="rolDeLaApi">Rol que la API concede si lo encuentra (Roles.Cliente o Roles.Operador).</param>
+public sealed class EventosDeJwt(string rolEnKeycloak, string rolDeLaApi) : JwtBearerEvents
 {
-    private readonly string _rolEnKeycloak;
-    private readonly string _rolDeLaApi;
-
-    public EventosDeJwt(string rolEnKeycloak, string rolDeLaApi)
+    /// <summary>
+    /// El rol de la API depende del ESQUEMA que validó el token, no solo de lo que el token diga: un token del realm
+    /// clientes nunca obtiene Operador aunque alguien cree ese rol en su realm (RN-19, plan decisión 4).
+    /// </summary>
+    public override Task TokenValidated(TokenValidatedContext context)
     {
-        _rolEnKeycloak = rolEnKeycloak;
-        _rolDeLaApi = rolDeLaApi;
+        var principal = context.Principal;
+
+        if (string.IsNullOrWhiteSpace(principal?.FindFirst("sub")?.Value))
+        {
+            context.Fail(new TokenSinSujetoException());
+            return Task.CompletedTask;
+        }
+
+        if (principal.Identity is ClaimsIdentity identidad && RolesDeRealm(principal).Contains(rolEnKeycloak, StringComparer.Ordinal))
+            identidad.AddClaim(new Claim(ClaimTypes.Role, rolDeLaApi));
+
+        return Task.CompletedTask;
     }
 
-    public override Task TokenValidated(TokenValidatedContext context) => throw new NotImplementedException();
+    /// <summary>La respuesta es idéntica para todos los motivos (RNF-04); el motivo solo va al log.</summary>
+    public override Task Challenge(JwtBearerChallengeContext context)
+    {
+        // Sin HandleResponse, JwtBearer escribiría su propia respuesta, con error y error_description.
+        context.HandleResponse();
 
-    public override Task Challenge(JwtBearerChallengeContext context) => throw new NotImplementedException();
+        var http = context.HttpContext;
+        var motivo = MotivoDeRechazo.Desde(context.AuthenticateFailure);
+        http.RequestServices.GetRequiredService<ILogger<EventosDeJwt>>()
+            .LogInformation("Petición no autenticada en {Metodo} {Ruta}: {Motivo}", http.Request.Method, http.Request.Path, motivo);
 
-    public override Task Forbidden(ForbiddenContext context) => throw new NotImplementedException();
+        http.Response.Headers.WWWAuthenticate = "Bearer";
+        return EscribirProblemaAsync(http, StatusCodes.Status401Unauthorized, "No autenticado", CodigosDeError.NoAutenticado);
+    }
+
+    public override Task Forbidden(ForbiddenContext context)
+    {
+        var http = context.HttpContext;
+        http.RequestServices.GetRequiredService<ILogger<EventosDeJwt>>()
+            .LogInformation("Petición prohibida en {Metodo} {Ruta}: el rol del usuario no sirve a esta operación", http.Request.Method, http.Request.Path);
+
+        return EscribirProblemaAsync(http, StatusCodes.Status403Forbidden, "Prohibido", CodigosDeError.Prohibido);
+    }
+
+    private static async Task EscribirProblemaAsync(HttpContext http, int estado, string titulo, string codigo)
+    {
+        var problema = new ProblemDetails { Status = estado, Title = titulo, Instance = http.Request.Path };
+        problema.Extensions["codigo"] = codigo;
+
+        http.Response.StatusCode = estado;
+        await http.RequestServices.GetRequiredService<IProblemDetailsService>().WriteAsync(new ProblemDetailsContext
+        {
+            HttpContext = http,
+            ProblemDetails = problema,
+        });
+    }
+
+    // Keycloak pone los roles de realm en el claim "realm_access": {"roles": ["cliente", ...]}. Con
+    // MapInboundClaims = false ese claim llega tal cual, como texto JSON.
+    private static IEnumerable<string> RolesDeRealm(ClaimsPrincipal principal)
+    {
+        var acceso = principal.FindFirst("realm_access")?.Value;
+        if (string.IsNullOrWhiteSpace(acceso))
+            return [];
+
+        try
+        {
+            using var documento = JsonDocument.Parse(acceso);
+            if (documento.RootElement.ValueKind != JsonValueKind.Object
+                || !documento.RootElement.TryGetProperty("roles", out var roles)
+                || roles.ValueKind != JsonValueKind.Array)
+                return [];
+
+            return [.. roles.EnumerateArray().Where(r => r.ValueKind == JsonValueKind.String).Select(r => r.GetString()!)];
+        }
+        catch (JsonException)
+        {
+            // Un claim ilegible equivale a "sin roles": el usuario queda autenticado pero sin permisos (403).
+            return [];
+        }
+    }
 }

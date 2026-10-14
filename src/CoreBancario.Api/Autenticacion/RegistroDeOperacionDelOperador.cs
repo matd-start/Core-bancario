@@ -1,16 +1,33 @@
-// SDD: esqueleto creado por test-writer
 namespace CoreBancario.Api.Autenticacion;
 
 /// <summary>
 /// RNF-05. Filtro de los endpoints del operador que cambian datos. Tras ejecutar, registra (Information)
 /// "Operación {Operacion} del operador {OperadorId}: {Resultado}" ("completada" o "no completada").
 /// </summary>
-public sealed class RegistroDeOperacionDelOperador : IEndpointFilter
+public sealed class RegistroDeOperacionDelOperador(ILogger<RegistroDeOperacionDelOperador> logger) : IEndpointFilter
 {
-    private readonly ILogger<RegistroDeOperacionDelOperador> _logger;
+    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(next);
 
-    public RegistroDeOperacionDelOperador(ILogger<RegistroDeOperacionDelOperador> logger) => _logger = logger;
+        var operacion = context.HttpContext.GetEndpoint()?.Metadata.GetMetadata<IEndpointNameMetadata>()?.EndpointName
+            ?? context.HttpContext.Request.Path.Value;
+        var operador = context.HttpContext.User.Sub();
 
-    public ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next) =>
-        throw new NotImplementedException();
+        try
+        {
+            var resultado = await next(context);
+            Registrar(operacion, operador, "completada");
+            return resultado;
+        }
+        catch
+        {
+            Registrar(operacion, operador, "no completada");
+            throw;
+        }
+    }
+
+    private void Registrar(string? operacion, string operador, string resultado) =>
+        logger.LogInformation("Operación {Operacion} del operador {OperadorId}: {Resultado}", operacion, operador, resultado);
 }
