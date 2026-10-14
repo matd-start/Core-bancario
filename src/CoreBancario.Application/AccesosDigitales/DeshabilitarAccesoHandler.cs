@@ -31,7 +31,8 @@ public sealed class DeshabilitarAccesoHandler(
         await unidadDeTrabajo.GuardarCambiosAsync(cancellationToken);
 
         // Habilitado implica que el usuario existe: ParaDeshabilitar lanzó si no.
-        var usuario = acceso.Usuario!;
+        var usuario = acceso.Usuario
+            ?? throw new InvalidOperationException("Un acceso Habilitado debe tener usuario en el sistema de identidad.");
         await AplicarAsync(usuario, solicitud);
 
         // Un usuario adoptado (sin vínculo) queda vinculado, igual que al habilitar.

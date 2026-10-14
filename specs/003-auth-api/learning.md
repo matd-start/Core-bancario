@@ -1,4 +1,4 @@
-# Aprendizaje — 003 Autenticación y autorización (bloque 003a: proteger la API)
+# Aprendizaje — 003 Autenticación y autorización (bloques 003a y 003b)
 
 Este documento explica lo que se construyó en el bloque 003a (tareas T01 a T14) para alguien que ve estos patrones por primera vez. El bloque 003b (habilitar y deshabilitar accesos desde la API) se explica en la segunda parte, a partir de "Bloque 003b".
 
@@ -274,3 +274,17 @@ El operador puede **habilitar** el acceso de un cliente (la API crea su usuario 
 - **Copiar:** ejecuta en PostgreSQL la consulta de "solicitudes sin resultado" del README.
 - **Modificar:** amplíala para mostrar también cuántos minutos llevan abiertas (`now() - s.fecha`) y ordénalas de la más vieja a la más nueva. Comprueba que una solicitud con resultado no aparece.
 - **Recrear:** escribe de memoria un `INSERT` en `resultados_de_acceso` para una solicitud pendiente y comprueba que el trigger rechaza cambiarlo después con un `UPDATE`.
+
+## 9. Notas de la revisión del bloque 003b
+
+### 9.1 Errores previstos frente a inesperados
+
+- **Qué cambió:** `ManejadorDeErrores` ya no decide por el número (`>= 500`), sino por el **origen**. `ErrorHttp` tiene la bandera `Previsto`: los 502 `identidad-error` y 503 `identidad-sin-respuesta` del catálogo la llevan en `true`.
+- **Por qué:** un fallo de Keycloak es un hecho esperado de un tercero: el operador necesita leer qué pasó y qué hacer, así que el `detail` lleva el **mensaje fijo** (nunca el motivo técnico) y se registra como Warning. Un error inesperado (500) puede traer SQL o rutas en su mensaje: sigue sin `detail` y se registra como Error, que es lo que debe hacer sonar una alerta.
+- **Analogía:** una avería anunciada ("la línea 3 está cortada, usa la 4") frente a un fallo desconocido en la central: lo primero se explica al pasajero; lo segundo se investiga por dentro.
+
+### 9.2 La cuenta de servicio no debe tener roles de realm
+
+- **Qué cambió:** el usuario de la cuenta de servicio en `clientes-realm.json` queda con `realmRoles: []` (antes heredaba `default-roles-clientes`, y con él el rol `cliente`).
+- **Por qué:** menor privilegio (ADR-0014). Con ese rol, el token de servicio habría parecido el de un cliente real. La Admin API se autoriza con los roles de `realm-management` (`manage-users`, `view-users`), que es lo único que necesita.
+- **Analogía:** la llave del buzón no debería además llevar el carné de socio del club.

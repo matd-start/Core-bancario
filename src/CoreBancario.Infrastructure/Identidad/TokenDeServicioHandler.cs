@@ -24,6 +24,14 @@ public sealed class TokenDeServicioHandler(IHttpClientFactory fabrica, IOptions<
     private string? _token;
     private DateTimeOffset _renovarDesde;
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+            _candado.Dispose();
+
+        base.Dispose(disposing);
+    }
+
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         var token = await ObtenerTokenAsync(cancellationToken);

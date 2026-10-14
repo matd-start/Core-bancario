@@ -154,10 +154,22 @@ public sealed class ProveedorDeIdentidadKeycloak(HttpClient http, IOptions<Opcio
             ?? throw new ErrorDelProveedorDeIdentidadException("Respuesta sin identificador al leer el usuario");
 
         var habilitado = (bool?)usuario?["enabled"] ?? false;
-        var textoDeLaMarca = (usuario?["attributes"]?[AtributoDeMarca] as JsonArray)?.FirstOrDefault()?.GetValue<string>();
+        var textoDeLaMarca = LeerMarca(usuario);
         Guid? marca = Guid.TryParse(textoDeLaMarca, out var guid) ? guid : null;
 
         return new UsuarioDeIdentidad(sub, habilitado, marca);
+    }
+
+    // Un valor que no es texto (número, objeto, booleano) es una respuesta inesperada de Keycloak: 502, no 500.
+    private static string? LeerMarca(JsonNode? usuario)
+    {
+        var primero = (usuario?["attributes"]?[AtributoDeMarca] as JsonArray)?.FirstOrDefault();
+        if (primero is null)
+            return null;
+
+        return primero is JsonValue valor && valor.TryGetValue<string>(out var texto)
+            ? texto
+            : throw new ErrorDelProveedorDeIdentidadException("Marca con formato inesperado al leer el usuario");
     }
 
     private static async Task<JsonNode?> LeerJsonAsync(HttpResponseMessage respuesta, string paso, CancellationToken cancellationToken)

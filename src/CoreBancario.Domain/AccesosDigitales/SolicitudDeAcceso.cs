@@ -48,8 +48,14 @@ public sealed class SolicitudDeAcceso
     }
 
     /// <summary>Resultado Completado de ESTA solicitud. No modifica la solicitud: devuelve una fila nueva.</summary>
-    public ResultadoDeSolicitud Completar(DateTimeOffset fecha, string? motivo = null) =>
-        new(Id, ResultadoDeAcceso.Completado, fecha, motivo);
+    public ResultadoDeSolicitud Completar(DateTimeOffset fecha, string? motivo = null)
+    {
+        if (motivo is { Length: > ResultadoDeSolicitud.LongitudMaximaDelMotivo })
+            throw new ArgumentException(
+                $"El motivo no puede tener más de {ResultadoDeSolicitud.LongitudMaximaDelMotivo} caracteres.", nameof(motivo));
+
+        return new(Id, ResultadoDeAcceso.Completado, fecha, motivo);
+    }
 
     /// <exception cref="ArgumentException">motivo null, vacío o de más de 200 caracteres.</exception>
     public ResultadoDeSolicitud Fallar(DateTimeOffset fecha, string motivo)

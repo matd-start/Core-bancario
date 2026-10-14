@@ -132,8 +132,8 @@ ORDER BY s.fecha;
 
 | Estado | `codigo` | Qué pasó | Qué debe hacer el operador |
 |---|---|---|---|
-| 502 | `identidad-error` | Keycloak respondió con un error y la operación no se completó (pudo quedar a medias). La solicitud queda como `Fallido`. | Volver a intentar la misma operación. Si se repite, avisar a quien administra Keycloak. |
-| 503 | `identidad-sin-respuesta` | Keycloak no respondió (tiempo de espera o conexión). **No se sabe si se aplicó.** La solicitud queda pendiente. | Volver a intentar la **misma** operación: el reintento confirma o descarta la anterior. No entregar ninguna clave anterior; la que sirve es la de la respuesta 200. |
+| 502 | `identidad-error` | Keycloak respondió con un error y la operación no se completó (pudo quedar a medias). La solicitud queda como `Fallido`. | Leer el `detail` de la respuesta (trae el mensaje fijo, no el motivo técnico) y volver a intentar la misma operación. Si se repite, avisar a quien administra Keycloak. |
+| 503 | `identidad-sin-respuesta` | Keycloak no respondió (tiempo de espera o conexión). **No se sabe si se aplicó.** La solicitud queda pendiente. | Leer el `detail` y volver a intentar la **misma** operación: el reintento confirma o descarta la anterior. No entregar ninguna clave anterior; la que sirve es la de la respuesta 200. |
 
 Un `422 acceso-no-habilitado` al deshabilitar significa que el cliente ya no tiene un acceso habilitado (por ejemplo, un intento anterior sí se aplicó).
 

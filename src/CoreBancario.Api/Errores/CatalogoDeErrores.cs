@@ -38,9 +38,9 @@ public static class CatalogoDeErrores
 
             // El sistema de identidad (Keycloak) falló: 502 si respondió con un error, 503 si no respondió (ADR-0017).
             ErrorDelProveedorDeIdentidadException => new ErrorHttp(
-                StatusCodes.Status502BadGateway, CodigosDeError.IdentidadError, "Error del sistema de identidad"),
+                StatusCodes.Status502BadGateway, CodigosDeError.IdentidadError, "Error del sistema de identidad", Previsto: true),
             ProveedorDeIdentidadSinRespuestaException => new ErrorHttp(
-                StatusCodes.Status503ServiceUnavailable, CodigosDeError.IdentidadSinRespuesta, "Sistema de identidad no disponible"),
+                StatusCodes.Status503ServiceUnavailable, CodigosDeError.IdentidadSinRespuesta, "Sistema de identidad no disponible", Previsto: true),
 
             // Respaldo: una prueba exige que ninguna regla del dominio caiga aquí, para que cada una tenga su código.
             ReglaDeNegocioException => Regla(CodigosDeError.ReglaDeNegocio),

@@ -17,8 +17,10 @@ public sealed class ManejadorDeErrores(IProblemDetailsService problemDetailsServ
     {
         var error = CatalogoDeErrores.Clasificar(exception);
 
-        if (error.Estado >= StatusCodes.Status500InternalServerError)
+        if (error.Estado >= StatusCodes.Status500InternalServerError && !error.Previsto)
             logger.LogError(exception, "Error inesperado al atender {Metodo} {Ruta}.", httpContext.Request.Method, httpContext.Request.Path);
+        else if (error.Previsto)
+            logger.LogWarning(exception, "Fallo previsto ({Codigo}) al atender {Metodo} {Ruta}.", error.Codigo, httpContext.Request.Method, httpContext.Request.Path);
         else
             logger.LogInformation("Solicitud rechazada ({Codigo}) en {Metodo} {Ruta}.", error.Codigo, httpContext.Request.Method, httpContext.Request.Path);
 
@@ -47,7 +49,7 @@ public sealed class ManejadorDeErrores(IProblemDetailsService problemDetailsServ
     // El mensaje del framework para un JSON mal formado tampoco se envía: es técnico y está en inglés.
     private static string? DetalleParaElCliente(ErrorHttp error, Exception excepcion) => excepcion switch
     {
-        _ when error.Estado >= StatusCodes.Status500InternalServerError => null,
+        _ when error.Estado >= StatusCodes.Status500InternalServerError && !error.Previsto => null,
         BadHttpRequestException => DetalleDeCuerpoInvalido,
         _ => excepcion.Message,
     };

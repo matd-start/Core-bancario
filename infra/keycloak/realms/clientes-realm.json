@@ -969,9 +969,7 @@
       "serviceAccountClientId": "core-bancario-api-admin",
       "disableableCredentialTypes": [],
       "requiredActions": [],
-      "realmRoles": [
-        "default-roles-clientes"
-      ],
+      "realmRoles": [],
       "clientRoles": {
         "realm-management": [
           "view-users",
