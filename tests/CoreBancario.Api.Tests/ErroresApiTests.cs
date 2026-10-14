@@ -108,7 +108,7 @@ public class ErroresApiTests(ApiFixture api)
             servicios.RemoveAll<TimeProvider>();
             servicios.AddSingleton<TimeProvider>(new RelojQueLanza(mensajeInterno));
         });
-        using var http = fabrica.CreateClient();
+        using var http = api.CrearClienteDe(fabrica);
 
         // Act
         var respuesta = await http.PostAsJsonAsync("/clientes", SolicitudDeRegistro(), Ct);
@@ -124,14 +124,16 @@ public class ErroresApiTests(ApiFixture api)
     }
 
     [Theory]
-    [InlineData("RegistrarCliente", "201,400,409")]
-    [InlineData("ObtenerCliente", "200,404")]
-    [InlineData("BuscarClientePorDocumento", "200,400,404")]
-    [InlineData("AbrirCuenta", "201,400,404")]
-    [InlineData("ObtenerCuenta", "200,404")]
-    [InlineData("BloquearCuenta", "200,404,409,422")]
-    [InlineData("DesbloquearCuenta", "200,404,409,422")]
-    [InlineData("CerrarCuenta", "200,404,409,422")]
+    [InlineData("RegistrarCliente", "201,400,401,403,409,500")]
+    [InlineData("ObtenerCliente", "200,401,403,404,500")]
+    [InlineData("BuscarClientePorDocumento", "200,400,401,403,404,500")]
+    [InlineData("AbrirCuenta", "201,400,401,403,404,500")]
+    [InlineData("ObtenerCuenta", "200,401,403,404,500")]
+    [InlineData("BloquearCuenta", "200,401,403,404,409,422,500")]
+    [InlineData("DesbloquearCuenta", "200,401,403,404,409,422,500")]
+    [InlineData("CerrarCuenta", "200,401,403,404,409,422,500")]
+    [InlineData("ListarMisCuentas", "200,401,403,500")]
+    [InlineData("ObtenerMiCuenta", "200,401,403,404,500")]
     public async Task F002_RNF05_ContratoOpenApi_DescribeCadaOperacionYSusErrores(string operationId, string codigosEsperados)
     {
         // Arrange

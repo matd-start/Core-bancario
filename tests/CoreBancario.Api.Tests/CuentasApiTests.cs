@@ -156,7 +156,7 @@ public class CuentasApiTests(ApiFixture api)
             servicios.RemoveAll<IGeneradorDeNumeroDeCuenta>();
             servicios.AddSingleton<IGeneradorDeNumeroDeCuenta>(generador);
         });
-        using var http = fabrica.CreateClient();
+        using var http = api.CrearClienteDe(fabrica);
         var cliente = await RegistrarClienteAsync(http);
         var primera = await AbrirCuentaAsync(http, cliente.Id);
 

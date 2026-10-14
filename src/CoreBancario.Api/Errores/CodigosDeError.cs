@@ -17,4 +17,6 @@ public static class CodigosDeError
     public const string PrecisionExcedida = "precision-excedida";
     public const string ReglaDeNegocio = "regla-de-negocio";
     public const string ErrorInesperado = "error-inesperado";
+    public const string NoAutenticado = "no-autenticado";
+    public const string Prohibido = "prohibido";
 }

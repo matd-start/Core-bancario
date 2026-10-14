@@ -29,6 +29,10 @@ jobs:
       - name: Compilar
         run: dotnet build --no-restore --configuration Release -warnaserror
 
+      # ADR-0019: compilar regenera el contrato OpenAPI; si cambió y no se versionó, falla.
+      - name: Contrato OpenAPI al día
+        run: git diff --exit-code -- src/CoreBancario.Api/openapi
+
       # Las pruebas de integración usan Testcontainers: el runner de Ubuntu ya trae Docker.
       - name: Pruebas
         run: dotnet test --no-build --configuration Release

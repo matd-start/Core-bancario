@@ -15,7 +15,7 @@ public static class DependencyInjection
     /// <summary>
     /// AddDbContext con UsarPostgres; la cadena se lee de configuración DENTRO del callback de opciones (perezoso),
     /// para que WebApplicationFactory pueda sobrescribirla. Si falta → InvalidOperationException con mensaje claro.
-    /// Registra IUnidadDeTrabajo (el mismo DbContext del scope), los dos repositorios (Scoped) y el generador (Singleton).
+    /// Registra IUnidadDeTrabajo (el mismo DbContext del scope), los repositorios y `CuentasDelTitular` (Scoped) y el generador (Singleton).
     /// </summary>
     public static IServiceCollection AddInfraestructura(this IServiceCollection services, IConfiguration configuracion)
     {
@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IUnidadDeTrabajo>(proveedor => proveedor.GetRequiredService<CoreBancarioDbContext>());
         services.AddScoped<IClienteRepositorio, ClienteRepositorio>();
         services.AddScoped<ICuentaRepositorio, CuentaRepositorio>();
+        services.AddScoped<ICuentasDelTitular, CuentasDelTitular>();
         services.AddSingleton<IGeneradorDeNumeroDeCuenta, GeneradorAleatorioDeNumeroDeCuenta>();
 
         return services;

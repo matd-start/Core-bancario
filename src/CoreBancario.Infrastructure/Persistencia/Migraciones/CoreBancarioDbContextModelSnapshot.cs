@@ -23,6 +23,32 @@ namespace CoreBancario.Infrastructure.Persistencia.Migraciones
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.AccesoDigital", b =>
+                {
+                    b.Property<Guid>("ClienteId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("cliente_id");
+
+                    b.Property<DateTimeOffset>("FechaDeVinculo")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("fecha_de_vinculo");
+
+                    b.Property<string>("Sub")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("sub");
+
+                    b.HasKey("ClienteId")
+                        .HasName("pk_accesos_digitales");
+
+                    b.HasIndex("Sub")
+                        .IsUnique()
+                        .HasDatabaseName("ux_accesos_digitales_sub");
+
+                    b.ToTable("accesos_digitales", (string)null);
+                });
+
             modelBuilder.Entity("CoreBancario.Domain.Clientes.Cliente", b =>
                 {
                     b.Property<Guid>("Id")
@@ -139,6 +165,16 @@ namespace CoreBancario.Infrastructure.Persistencia.Migraciones
 
                             t.HasCheckConstraint("ck_cuentas_saldo_no_negativo", "saldo >= 0");
                         });
+                });
+
+            modelBuilder.Entity("CoreBancario.Domain.AccesosDigitales.AccesoDigital", b =>
+                {
+                    b.HasOne("CoreBancario.Domain.Clientes.Cliente", null)
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_accesos_digitales_clientes_cliente_id");
                 });
 
             modelBuilder.Entity("CoreBancario.Domain.Clientes.Cliente", b =>

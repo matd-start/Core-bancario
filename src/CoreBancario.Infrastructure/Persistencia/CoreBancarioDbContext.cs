@@ -1,5 +1,6 @@
 using CoreBancario.Application.Clientes;
 using CoreBancario.Application.Comun;
+using CoreBancario.Domain.AccesosDigitales;
 using CoreBancario.Domain.Clientes;
 using CoreBancario.Domain.Cuentas;
 using Microsoft.EntityFrameworkCore;
@@ -13,9 +14,11 @@ public sealed class CoreBancarioDbContext(DbContextOptions<CoreBancarioDbContext
     // distinguir qué regla se rompió al traducir el error de PostgreSQL.
     internal const string IndiceUnicoDeDocumento = "ux_clientes_documento";
     internal const string IndiceUnicoDeNumeroDeCuenta = "ux_cuentas_numero";
+    internal const string IndiceUnicoDeSubDeAcceso = "ux_accesos_digitales_sub";
 
     public DbSet<Cliente> Clientes => Set<Cliente>();
     public DbSet<Cuenta> Cuentas => Set<Cuenta>();
+    public DbSet<AccesoDigital> AccesosDigitales => Set<AccesoDigital>();
 
     /// <summary>
     /// SaveChangesAsync con traducción de errores: la capa Application no conoce EF Core ni Npgsql, así que

@@ -49,8 +49,8 @@ Dos actores humanos operan en fase 1; el banco externo entra en fase 3 como sist
 
 | Actor | Casos de uso | Fase |
 | --- | --- | --- |
-| Cliente | Ver sus cuentas y saldos · consultar extracto · transferir a una cuenta propia o de otro cliente del banco · consultar el estado y comprobante de una transferencia | 1 |
-| Operador backoffice | Registrar clientes · abrir cuentas en COP o USD · bloquear, desbloquear y cerrar cuentas · registrar depósitos y retiros de ventanilla · configurar la tasa COP/USD · consultar cualquier cuenta | 1 |
+| Cliente | Iniciar y cerrar sesión · cambiar su clave · ver sus cuentas y saldos · consultar extracto · transferir a una cuenta propia o de otro cliente del banco · consultar el estado y comprobante de una transferencia | 1 |
+| Operador backoffice | Registrar clientes · habilitar, restablecer y deshabilitar su acceso digital · abrir cuentas en COP o USD · bloquear, desbloquear y cerrar cuentas · registrar depósitos y retiros de ventanilla · configurar la tasa COP/USD · consultar cualquier cuenta | 1 |
 | Banco externo (sistema) | Enviar y recibir transferencias interbancarias · confirmar o rechazar una transferencia recibida | 3 |
 
 ## Lenguaje ubicuo
@@ -73,6 +73,10 @@ Estos términos se usan igual en la Spec, el código, las pruebas y el frontend;
 | Reverso | Movimiento que compensa otro erróneo; la única forma de corregir | `Reverso` |
 | Clave de idempotencia | Identificador que envía el cliente o el operador para que un reintento no repita la operación | `IdempotencyKey` |
 | Estado de cuenta | Activa, Bloqueada o Cerrada | `EstadoCuenta` |
+| Acceso digital | Credencial con la que un cliente entra a la banca digital; el operador la habilita, restablece o deshabilita | `AccesoDigital` |
+| Clave temporal | Clave generada por el sistema que solo sirve para el primer ingreso | — |
+| Segundo factor | Clave dinámica de una app autenticadora que se pide además de la clave | — |
+| Sesión | Periodo en que un usuario autenticado opera sin volver a iniciar sesión; termina por inactividad, vida máxima o al cerrarla | — |
 
 ## Modelo de dominio
 
@@ -109,10 +113,16 @@ Cada regla tiene un identificador para citarla en pruebas, ADRs y commits; cada 
 | RN-16 | Un monto con más decimales de los que admite su moneda se rechaza. Solo el resultado de un cálculo se ajusta a la precisión de su moneda, siempre hacia el valor más cercano, sin favorecer al banco ni al cliente; el caso del punto medio exacto lo fija el ADR de D-07. |
 | RN-17 | Un cliente se identifica por su documento: tipo (cédula de ciudadanía, cédula de extranjería o pasaporte) y número. No pueden existir dos clientes con el mismo tipo y número; el número se compara después de quitarle espacios, puntos y guiones y de pasarlo a mayúsculas. El mismo número con otro tipo es otro documento. |
 | RN-18 | El número de cuenta lo asigna el banco al abrirla y no cambia nunca: es único, tiene 10 dígitos, no sigue un orden que permita deducir otros números y su último dígito es verificador. |
+| RN-19 | Una credencial tiene un solo rol, Cliente u Operador. El cliente inicia sesión con su documento; el operador, con su usuario de empleado. La identidad de quien hace una operación sale siempre de su sesión, nunca de los datos de la petición. |
+| RN-20 | Solo el operador habilita, restablece o deshabilita el acceso digital de un cliente. Habilitar y restablecer generan una clave temporal nueva y borran el segundo factor inscrito; restablecer y deshabilitar terminan las sesiones abiertas del cliente. Cada operación queda registrada de forma permanente con el cliente, el operador, la acción y la fecha. |
+| RN-21 | Una clave temporal sirve solo para el primer ingreso: con ella el usuario solo puede cambiar su clave e inscribir su segundo factor, y no accede a nada más hasta completar ambos pasos. |
+| RN-22 | Una sesión termina por inactividad o por vida máxima, lo que ocurra primero. Cliente: 5 min de inactividad y 30 min de vida máxima. Operador: 15 min de inactividad y 9 h de vida máxima. |
+| RN-23 | Tras 5 intentos fallidos seguidos de inicio de sesión, la credencial se bloquea 15 min y luego se libera sola. |
+| RN-24 | El segundo factor es obligatorio para clientes y operadores: una clave dinámica de 6 dígitos generada por una app autenticadora (estándar TOTP), inscrita en el primer ingreso. |
 
 ## Requisitos funcionales
 
-Doce requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
+Quince requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
 
 | ID | Requisito | Actor | Criterio de aceptación |
 | --- | --- | --- | --- |
@@ -128,6 +138,9 @@ Doce requisitos cierran la fase 1; cada criterio de aceptación se convierte en 
 | RF-10 | Configurar tasa COP/USD | Operador | Crea una versión con fecha de vigencia; las transferencias ya hechas conservan su tasa aplicada. |
 | RF-11 | Consultar una transferencia | Cliente, Operador | Devuelve estado, montos, tasa aplicada y movimientos asociados. |
 | RF-12 | Consultar clientes | Operador | Buscar por tipo y número de documento, escrito con o sin puntos ni espacios, devuelve la ficha del cliente con sus cuentas; un documento no registrado responde no encontrado. |
+| RF-13 | Gestionar el acceso digital de un cliente | Operador | Habilitar o restablecer entrega una clave temporal que se muestra una sola vez; deshabilitar impide renovar la sesión; cada operación queda registrada con el operador y la fecha (RN-20). |
+| RF-14 | Iniciar y cerrar sesión | Cliente, Operador | Con usuario, clave y segundo factor (RN-24); con una clave temporal solo se puede cambiar la clave e inscribir el segundo factor (RN-21); un fallo no revela si el usuario existe. |
+| RF-15 | Cambiar la clave | Cliente | Exige la clave actual; después solo funciona la nueva. |
 
 ## Requisitos no funcionales
 
@@ -185,7 +198,7 @@ Prácticas que el frontend debe mostrar:
 
 ## Decisiones abiertas para Design
 
-Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-10 → ADR-0005.
+Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-08 → ADR-0014, D-10 → ADR-0005.
 
 | ID | Pregunta | Opciones a comparar |
 | --- | --- | --- |

@@ -55,8 +55,8 @@ flowchart TB
 Requisitos: .NET 10 SDK y Docker.
 
 ```bash
-cp .env.example .env        # ajusta la contraseña
-docker compose up -d        # PostgreSQL local
+cp .env.example .env        # ajusta las claves (PostgreSQL y el administrador de Keycloak)
+docker compose up -d        # PostgreSQL y Keycloak locales
 dotnet build
 dotnet test
 ```
@@ -71,6 +71,66 @@ dotnet user-secrets set "ConnectionStrings:CoreBancario" "Host=localhost;Port=54
 ```
 
 En `Development` la API aplica las migraciones al arrancar. Las pruebas de Infrastructure y Api usan Testcontainers, así que necesitan Docker en marcha.
+
+## Autenticación con Keycloak
+
+La API no emite credenciales: las emite **Keycloak** (ADR-0014) y la API solo valida los tokens (ADR-0015). Hay dos realms, `clientes` y `empleados`, que se importan solos desde [`infra/keycloak/realms`](infra/keycloak/realms). Los temas de la pantalla de ingreso están en [`infra/keycloak/themes`](infra/keycloak/themes).
+
+### Levantar Keycloak y entrar a la consola
+
+1. Rellena en `.env` `KC_BOOTSTRAP_ADMIN_USERNAME` y `KC_BOOTSTRAP_ADMIN_PASSWORD` (el administrador de la consola; elige tus propios valores).
+2. `docker compose up -d`. El primer arranque de Keycloak tarda varios minutos (compila su configuración y crea los realms).
+3. Abre `http://localhost:8080` (o el `KEYCLOAK_PORT` de tu `.env`) y entra a la consola de administración con ese usuario.
+
+En `Development` la API espera a Keycloak en `http://localhost:8080` (sección `Autenticacion` de `appsettings.Development.json`). Si cambias `KEYCLOAK_PORT`, ajusta `Autenticacion:Clientes:Emisor` y `Autenticacion:Empleados:Emisor` con user-secrets: el emisor debe ser **exactamente** el `iss` de los tokens.
+
+### Crear un operador (realm `empleados`)
+
+1. Consola → realm `empleados` → *Users* → *Add user*: escribe un nombre de usuario y guarda.
+2. Pestaña *Credentials* → *Set password*, con *Temporary* desactivado (mínimo 12 caracteres y sin contener el usuario).
+3. Pestaña *Role mapping* → *Assign role* → `operador`.
+
+En su primer ingreso Keycloak le pedirá inscribir la app autenticadora (OTP): el segundo factor es obligatorio (RN-24).
+
+### Crear un cliente de prueba (mientras no exista el endpoint de habilitar acceso, bloque 003b)
+
+1. Registra el cliente con `POST /clientes` usando el token de un operador, y guarda su `id`.
+2. Consola → realm `clientes` → *Users* → *Add user*:
+   - *Username*: el tipo y el número de documento sin separadores, por ejemplo `CC1234567`.
+   - *Required user actions*: `Update Password` y `Configure OTP`.
+3. Pestaña *Credentials* → *Set password* con *Temporary* activado (es la clave temporal que entregaría el operador).
+4. Copia el *ID* del usuario (es el `sub` de sus tokens) y vincúlalo con el cliente en la base:
+
+```sql
+INSERT INTO accesos_digitales (cliente_id, sub, fecha_de_vinculo)
+VALUES ('<id del cliente>', '<ID del usuario en Keycloak>', now());
+```
+
+### Recargar un realm modificado
+
+Keycloak importa los realms **solo si no existen**: si cambias un JSON de `infra/keycloak/realms`, hay que borrar el volumen de Keycloak para que lo vuelva a importar (esto borra los usuarios de prueba):
+
+```bash
+docker compose rm -sf keycloak
+docker volume rm core-bancario_keycloak-data   # el prefijo es el nombre de la carpeta del proyecto
+docker compose up -d keycloak
+```
+
+Los temas sí se recargan en caliente: no hace falta borrar nada para ver un cambio en un tema.
+
+### Contrato OpenAPI
+
+El contrato se genera al compilar y se versiona en [`src/CoreBancario.Api/openapi/core-bancario-api.json`](src/CoreBancario.Api/openapi/core-bancario-api.json) (ADR-0019). Si cambias un endpoint, compila y haz commit del archivo: el CI falla si el contrato versionado no está al día. En producción no se expone ninguna ruta de OpenAPI.
+
+### Límites conocidos
+
+Se aceptaron a propósito y están explicados en el [plan de la 003](specs/003-auth-api/plan.md):
+
+- **La clave temporal no vence (CL-05).** Keycloak 26 no permite que una clave temporal caduque: sirve hasta que el operador restablece o deshabilita el acceso. Mejora futura: un proceso que deshabilite los accesos con la clave temporal sin usar tras 72 horas.
+- **La pantalla del OTP confirma que la clave era correcta.** Es inherente al ingreso en dos pasos; lo mitiga el bloqueo, porque un OTP erróneo también cuenta como intento fallido.
+- **Ventana de revocación de hasta 5 minutos.** La API valida el token sin consultar a Keycloak (270 s de vida + 30 s de tolerancia de reloj), así que un acceso deshabilitado o una sesión cerrada siguen sirviendo hasta que vence el token que ya se emitió.
+- **El aviso del número de documento se puede saltar.** El navegador avisa si la clave nueva contiene el número de documento, pero un cliente sin JavaScript o una petición hecha a mano lo evitan. El servidor sí rechaza la clave que contiene el usuario completo (por ejemplo `CC1234567`).
+- **El operador ve la clave temporal** que entrega al cliente.
 
 ## Cómo se trabaja
 

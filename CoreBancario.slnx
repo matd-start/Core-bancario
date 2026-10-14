@@ -10,5 +10,6 @@
     <Project Path="tests/CoreBancario.Application.Tests/CoreBancario.Application.Tests.csproj" />
     <Project Path="tests/CoreBancario.Domain.Tests/CoreBancario.Domain.Tests.csproj" />
     <Project Path="tests/CoreBancario.Infrastructure.Tests/CoreBancario.Infrastructure.Tests.csproj" />
+    <Project Path="tests/CoreBancario.Keycloak.Tests/CoreBancario.Keycloak.Tests.csproj" />
   </Folder>
 </Solution>

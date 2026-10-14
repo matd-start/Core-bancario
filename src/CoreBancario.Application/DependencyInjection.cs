@@ -7,7 +7,7 @@ namespace CoreBancario.Application;
 
 public static class DependencyInjection
 {
-    /// <summary>Registra los seis handlers como Scoped y TryAddSingleton(TimeProvider.System).</summary>
+    /// <summary>Registra los ocho handlers como Scoped y TryAddSingleton(TimeProvider.System).</summary>
     public static IServiceCollection AddAplicacion(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
@@ -21,6 +21,8 @@ public static class DependencyInjection
         services.AddScoped<AbrirCuentaHandler>();
         services.AddScoped<CambiarEstadoDeCuentaHandler>();
         services.AddScoped<ObtenerCuentaHandler>();
+        services.AddScoped<ListarMisCuentasHandler>();
+        services.AddScoped<ObtenerMiCuentaHandler>();
 
         return services;
     }
