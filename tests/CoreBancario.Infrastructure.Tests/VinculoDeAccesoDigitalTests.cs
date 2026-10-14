@@ -33,6 +33,8 @@ public class VinculoDeAccesoDigitalTests(PostgresFixture bd)
         // Assert
         Assert.Empty(pendientes);
         Assert.Contains(aplicadas, migracion => migracion.EndsWith("_VinculoDeAccesoDigital", StringComparison.Ordinal));
+        // 003b: el registro de accesos (solicitudes, resultados y el trigger de inmutabilidad).
+        Assert.Contains(aplicadas, migracion => migracion.EndsWith("_RegistroDeAccesos", StringComparison.Ordinal));
     }
 
     [Fact]

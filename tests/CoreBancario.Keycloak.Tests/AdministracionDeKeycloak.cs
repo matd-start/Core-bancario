@@ -142,4 +142,18 @@ public sealed class AdministracionDeKeycloak(string urlBase, string usuario, str
         using var respuesta = await EnviarAsync(HttpMethod.Get, $"/admin/realms/{realm}/users/{sub}");
         return respuesta.StatusCode != HttpStatusCode.NotFound;
     }
+
+    // ---- Lectura del estado de un usuario (003b): lo que comprueban las pruebas del adaptador ----
+
+    /// <summary>La representacion completa del usuario, tal como la devuelve Keycloak (username, enabled, requiredActions, attributes…).</summary>
+    public async Task<JsonObject> ObtenerUsuarioAsync(string realm, string sub) =>
+        (await LeerAsync($"/admin/realms/{realm}/users/{sub}")).AsObject();
+
+    /// <summary>Los tipos de credencial del usuario ("password", "otp"…).</summary>
+    public async Task<IReadOnlyList<string>> TiposDeCredencialAsync(string realm, string sub) =>
+        [.. (await LeerAsync($"/admin/realms/{realm}/users/{sub}/credentials")).AsArray().Select(c => (string)c!["type"]!)];
+
+    /// <summary>Cuantas sesiones abiertas tiene el usuario.</summary>
+    public async Task<int> SesionesAbiertasAsync(string realm, string sub) =>
+        (await LeerAsync($"/admin/realms/{realm}/users/{sub}/sessions")).AsArray().Count;
 }
