@@ -785,7 +785,7 @@ Imagen **`quay.io/keycloak/keycloak:26.3.3`**, la misma de los experimentos, en 
 | `maxDeltaTimeSeconds` | 43200 | 43200 | Tiempo de reinicio del contador (12 h por defecto). Keycloak recomienda que sea mayor que la espera máxima |
 | `quickLoginCheckMilliSeconds` / `minimumQuickLoginWaitSeconds` | 1000 / 60 | 1000 / 60 | Por defecto: dos intentos con menos de 1 s de diferencia bloquean 1 min. Es más estricto que RN-23 y se acepta |
 | `browserFlow` ✔ | copia del flujo de navegador con **OTP Form `REQUIRED`** (no condicional) | ídem | RN-24. Según la documentación de Keycloak, si un segundo factor es `REQUIRED` y el usuario no lo tiene, lo inscribe durante el login. Por eso, aunque un administrador cree un operador sin acciones obligatorias, el OTP es inevitable |
-| `requiredActions` | `CONFIGURE_TOTP` (acción por defecto), `UPDATE_PASSWORD` con `max_auth_age = 0`; `VERIFY_PROFILE` desactivada | ídem | RN-21. Con `max_auth_age = 0`, cambiar la clave **siempre** pide la actual (RF-15: "exige la clave actual"). Si no, Keycloak no la pide si se inició sesión hace menos de 5 min |
+| `requiredActions` | `CONFIGURE_TOTP` (acción por defecto), `UPDATE_PASSWORD` con `max_auth_age = 0`; `VERIFY_PROFILE`, `UPDATE_PROFILE`, `VERIFY_EMAIL` y `delete_credential` desactivadas (revisión de 003a: `delete_credential` permitiría al usuario borrar su OTP con `kc_action`, y el restablecimiento es del operador) | ídem | RN-21. Con `max_auth_age = 0`, cambiar la clave **siempre** pide la actual (RF-15: "exige la clave actual"). Si no, Keycloak no la pide si se inició sesión hace menos de 5 min |
 | `otpPolicy*` | TOTP, HmacSHA1, 6 dígitos, 30 s, sin reutilizar código | ídem | RN-24 |
 | `passwordPolicy` ✔ | `length(12) and maxLength(64) and notUsername() and notContainsUsername()` | `length(12) and maxLength(64) and notUsername() and notContainsUsername()` | Sección 4 de la spec. El servidor rechaza la clave que contiene el usuario completo (`CC1234567`). Del número suelto **avisa el tema en el navegador** (decisión del autor, pregunta 3; ver "Aviso del número de documento") |
 | `loginWithEmailAllowed`, `registrationAllowed`, `resetPasswordAllowed`, `rememberMe`, `editUsernameAllowed` ✔ | false | false | Sin autorregistro ni recuperación sin operador (sección 9). No se inicia sesión con correo: solo con el documento (RN-19) |
@@ -814,6 +814,7 @@ Imagen **`quay.io/keycloak/keycloak:26.3.3`**, la misma de los experimentos, en 
 - **Función pura** `contieneNumeroDeDocumento(usuario, clave)`. El número es `usuario` sin sus dos primeras letras (el tipo). Devuelve `true` si `clave`, en mayúsculas ASCII, contiene ese número. Por ejemplo: `("cc1234567", "Abc1234567xyz!")` → `true`; `("cc1234567", "OtraClaveLarga!")` → `false`.
 - **Al enviar el formulario:** si devuelve `true`, el script cancela el envío y muestra junto al campo de la clave nueva un mensaje que indica la regla rota (CL-06): "La clave no puede contener tu número de documento."
 - **De dónde sale el usuario:** del campo `username` oculto que la plantilla de Keycloak incluye en esa pantalla para los gestores de contraseñas. **Hay que verificarlo en el Build.** Si no estuviera, se sobrescribe `login-update-password.ftl` para exponer `${username}` en un atributo `data-`.
+  - **Resultado del Build (003a):** la plantilla de `keycloak.v2` en 26.3.3 **no** trae el campo `username`. Se aplicó la alternativa: el tema `core-bancario-clientes` sobrescribe `login-update-password.ftl` y expone el usuario en `data-usuario`. Esa plantilla queda acoplada a Keycloak 26.3.3 (ver el riesgo 8).
 - **Límite aceptado:** el aviso **se puede saltar** (sin JavaScript, o con una petición hecha a mano). Se acepta porque la regla protege al usuario de sí mismo, no frente a un atacante. Lo que sí garantiza el servidor es `notContainsUsername`.
 - **Cómo se prueba:**
   - **Jint** ejecuta `contieneNumeroDeDocumento` con casos positivos y negativos.
@@ -876,6 +877,8 @@ Domain sigue **sin paquetes**.
 **Ejemplo de habilitar interrumpido.** `CrearAsync` se aplicó, pero la base cayó antes del paso 7. Queda un usuario en Keycloak sin vínculo y una solicitud pendiente. Al reintentar, el localizador encuentra al usuario por su nombre y el reconciliador cierra la solicitud anterior como Completada. Como el usuario está habilitado, la nueva solicitud es un Restablecer, que adopta al usuario (crea el vínculo) y entrega una clave nueva. La clave del intento anterior nunca llegó a nadie y deja de servir.
 
 ### Casos de la spec
+
+**Convención de nombres (revisión de 003a).** Cada CL o RF que se prueba lleva al menos una prueba con su ID en el nombre (`F003_CLxx_…`), siempre que su CA siga cubierto por otra prueba con el ID del CA. Cuando la única prueba de un CA es también la que cubre el CL o el RF, conserva el ID del CA y la trazabilidad queda en la tabla de abajo: CL-04 → `F003_CA07_…`, CL-07 → `F003_CA18_…` y RF-14 → CA-06, CA-07, CA-08 y CA-11.
 
 | ID | Caso | Manejo | Test esperado |
 |---|---|---|---|
@@ -1016,7 +1019,7 @@ Más pruebas que no son de un CA:
 
 ## 8. Decisiones
 
-ADRs nuevas (todas en `Propuesta`):
+ADRs nuevas (todas en `Aceptada` desde el 2026-10-13):
 
 - **ADR-0014: Keycloak como emisor de tokens, con dos realms (D-08).** Decidido por el autor. Incluye la cuenta de servicio de mínimo privilegio.
 - **ADR-0015: Validación local de JWT con ventana de revocación de 5 minutos.** Dos esquemas y un selector por emisor, 270 s + 30 s, RS256 y el rol según el esquema.
@@ -1148,16 +1151,23 @@ Ninguna. Las tres de la primera versión del plan y la propuesta de alcance qued
 2. **La lógica del navegador se prueba fuera del navegador.** Jint comprueba `normalizarUsuario` (CA-12) y `contieneNumeroDeDocumento` (CL-06). El punta a punta comprueba que las páginas cargan el script y tienen los campos que necesita, y lo que hace el servidor. Ninguna prueba ejecuta el script *dentro* de un navegador. Playwright cerraría ese hueco a costa de descargar navegadores en el CI. Se deja como mejora.
 3. **Límite conocido (hallazgo 4):** la pantalla del OTP confirma que la clave era correcta. Es inherente al login en dos pasos. Se documenta en el README. Lo mitiga el bloqueo, porque el OTP erróneo también cuenta.
 4. **Ventana de gracia de la inactividad.** La documentación de Keycloak dice que la inactividad tiene una gracia de 2 min **cuando las sesiones persistentes no están activas**. En Keycloak 26 están activas por defecto y, además, el refresh token vence a los 5 min exactos. Aun así, CA-10 se comprueba con el refresh token. Hay que verificar en el Build que la cookie SSO tampoco reabre la sesión pasada la inactividad. Si lo hace, se documenta.
+   - **Pendiente tras 003a:** las pruebas de CA-10 comprueban el refresh token, no la cookie SSO. La verificación de la cookie queda abierta: se hace en 003b o se documenta como límite conocido.
 5. **Dos operadores habilitan a la vez al mismo cliente.** Las dos solicitudes quedan registradas, y la clave que vale es la de la última que llega a Keycloak (el otro operador tendrá una clave inútil). Si los dos crean el vínculo, el índice único da 409 a uno y su solicitud queda pendiente hasta el siguiente intento. No hay hueco de seguridad y todo deja rastro. Se acepta.
 6. **Carrera de la reconciliación.** Si Keycloak termina de aplicar una petición *después* de que el reintento la cerró como Fallida, el registro diría Fallido de algo que se aplicó. Exige una petición de más de 10 s más un reintento inmediato, y la solicitud nueva sobrescribe el estado de todas formas. Los eventos de administración de Keycloak (`adminEventsEnabled`) dejan el rastro para investigarlo. Se acepta.
 7. **Usuario borrado a mano en Keycloak con el vínculo vivo.** `LocalizadorDeAcceso` lanza `InvalidOperationException` (500) y lo registra en el log. Arreglarlo es manual (borrar el vínculo). No hay requisito que pida automatizarlo (YAGNI).
 8. **Inyección del script en el tema `keycloak.v2`.** Si `scripts=` en `theme.properties` no basta, hay que sobrescribir `login.ftl`, que se acopla más a la versión de Keycloak. Por eso la imagen queda fijada en 26.3.3, la misma de los experimentos (la documentación ya va por 26.8). Actualizarla es una tarea `chore` aparte que vuelve a pasar Keycloak.Tests.
+   - **Resultado del Build (003a):** `scripts=` sí basta en la pantalla de login (no se sobrescribió `login.ftl`). En cambio, sí se sobrescribió `login-update-password.ftl` (sección 4, "Aviso del número de documento"). Esa es la plantilla que hay que revisar al actualizar la imagen.
 9. **Tiempo del CI.** El arranque de Keycloak (unos 188 s el primero) y las esperas de las pruebas de punta a punta (ventanas OTP de 30 s y tiempos cortos) suman varios minutos. Se empieza en el mismo job. Si molesta, se separa Keycloak.Tests en un job paralelo.
 10. **El import se omite si el realm existe.** En local, cambiar un realm JSON exige borrar el volumen de Keycloak (README). Si falta `KC_CLIENTES_API_SECRET`, el marcador podría importarse literal. El README y `.env.example` lo advierten.
 11. **HTTPS.** Las cookies `Secure` y `RequireHttpsMetadata` funcionan en local porque es Development. En producción hace falta HTTPS de punta a punta, y se decide con D-11.
 12. **Para la 004 (aviso, no es de esta feature):**
     - la SPA en otro origen necesitará **CORS** en la API;
     - la ficha del cliente no muestra el estado del acceso digital. Si la pantalla del operador lo necesita, es un endpoint nuevo (un `GET` que consulte Keycloak).
+13. **Pendientes de la revisión de 003a (sugerencias no aplicadas):**
+    - **Emisor sin configurar** (para D-11): fuera de Development, si falta `Autenticacion:Clientes:Emisor` o `Autenticacion:Empleados:Emisor`, la API responde 401 a todo, con `firma-invalida` en el log. Falla cerrado, pero es difícil de diagnosticar. Remedio: `ValidateOnStart()` sobre `OpcionesDeAutenticacion`.
+    - **`security` en el OpenAPI** (para 003b): `RequisitoDeSeguridadEnOpenApi` solo marca las rutas con `IAuthorizeData`. Una ruta protegida solo por la `FallbackPolicy` no aparecería como protegida en el contrato. Las rutas de 003b deben declarar su política.
+    - **`admin-cli`** sigue con la concesión directa por defecto de Keycloak. Sus tokens no llevan la audiencia de la API y se rechazan, pero se podría desactivar.
+14. **Mayúsculas en `src/CoreBancario.Api/`:** `OpenApi/` tiene los transformadores (`.cs`) y `openapi/` tiene el contrato JSON (ADR-0019). En Windows son la misma carpeta y en Linux dos. Git en Windows tiende a indexar el JSON bajo `OpenApi/`, y entonces el paso del CI `git diff --exit-code -- src/CoreBancario.Api/openapi` no compararía nada. En 003a se forzó la ruta en minúscula en el índice. Mejora a decidir: renombrar una de las dos carpetas para que no difieran solo en las mayúsculas.
 
 ### Para estudiar antes o durante el Build
 
