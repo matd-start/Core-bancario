@@ -18,7 +18,9 @@ public sealed class RegistroDeOperacionDelOperador(ILogger<RegistroDeOperacionDe
         try
         {
             var resultado = await next(context);
-            Registrar(operacion, operador, "completada");
+            // Una respuesta de error (400, 404...) no lanza excepción, pero la operación tampoco se completó.
+            var fallida = Desenvolver(resultado) is IStatusCodeHttpResult { StatusCode: >= StatusCodes.Status400BadRequest };
+            Registrar(operacion, operador, fallida ? "no completada" : "completada");
             return resultado;
         }
         catch
@@ -27,6 +29,9 @@ public sealed class RegistroDeOperacionDelOperador(ILogger<RegistroDeOperacionDe
             throw;
         }
     }
+
+    // Results<A, B> envuelve el resultado real (INestedHttpResult): hay que mirar el de adentro.
+    private static object? Desenvolver(object? resultado) => resultado is INestedHttpResult anidado ? anidado.Result : resultado;
 
     private void Registrar(string? operacion, string operador, string resultado) =>
         logger.LogInformation("Operación {Operacion} del operador {OperadorId}: {Resultado}", operacion, operador, resultado);

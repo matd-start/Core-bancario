@@ -120,6 +120,11 @@ Una cuenta ajena y una cuenta inexistente recorren **exactamente el mismo camino
 - **Analogía:** una receta escrita frente a "cocinar de memoria". Cualquiera puede repetir el plato y, si alguien cambia un ingrediente, se ve en la diferencia.
 - **Para estudiar:** importación de realms de Keycloak y por qué se omite si el realm ya existe.
 
+### Nota de las correcciones de la revisión
+
+- **El rol sale solo del esquema.** `EventosDeJwt` borra cualquier claim de rol que el token traiga con el tipo de rol de ASP.NET antes de añadir el suyo: si no, un token del realm `clientes` con ese claim fabricado se haría pasar por Operador y rompería la regla de ADR-0015.
+- **"Completada" significa completada.** `RegistroDeOperacionDelOperador` también registra "no completada" cuando el endpoint responde 4xx/5xx sin lanzar excepción (por ejemplo un 400 de validación); un registro de auditoría que dice "completada" ante un rechazo engaña.
+
 ## 4. Para practicar
 
 Ciclo **Copiar → Modificar → Recrear**: primero copia el patrón tal cual, luego cámbialo, y por último reconstrúyelo sin mirar.

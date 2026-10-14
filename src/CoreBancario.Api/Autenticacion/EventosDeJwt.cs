@@ -28,7 +28,17 @@ public sealed class EventosDeJwt(string rolEnKeycloak, string rolDeLaApi) : JwtB
             return Task.CompletedTask;
         }
 
-        if (principal.Identity is ClaimsIdentity identidad && RolesDeRealm(principal).Contains(rolEnKeycloak, StringComparer.Ordinal))
+        if (principal.Identity is not ClaimsIdentity identidad)
+            return Task.CompletedTask;
+
+        // El token puede traer un claim de rol con el tipo de rol de la API: se descarta antes de decidir, para que el
+        // rol salga solo del esquema que validó el token (ADR-0015).
+        foreach (var rolDelToken in identidad.FindAll(identidad.RoleClaimType).ToList())
+            identidad.RemoveClaim(rolDelToken);
+        foreach (var rolDelToken in identidad.FindAll(ClaimTypes.Role).ToList())
+            identidad.RemoveClaim(rolDelToken);
+
+        if (RolesDeRealm(principal).Contains(rolEnKeycloak, StringComparer.Ordinal))
             identidad.AddClaim(new Claim(ClaimTypes.Role, rolDeLaApi));
 
         return Task.CompletedTask;
@@ -87,7 +97,7 @@ public sealed class EventosDeJwt(string rolEnKeycloak, string rolDeLaApi) : JwtB
                 || roles.ValueKind != JsonValueKind.Array)
                 return [];
 
-            return [.. roles.EnumerateArray().Where(r => r.ValueKind == JsonValueKind.String).Select(r => r.GetString()!)];
+            return [.. roles.EnumerateArray().Where(r => r.ValueKind == JsonValueKind.String).Select(r => r.GetString()).OfType<string>()];
         }
         catch (JsonException)
         {
