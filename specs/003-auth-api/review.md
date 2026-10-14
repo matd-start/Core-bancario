@@ -263,3 +263,93 @@ Además:
 1. Antes del arreglo, el rol `Operador` ya dependía del esquema `Empleados`. Aun así, un token del realm `clientes` podía pasar la política `Operador`. ¿Qué cadena exacta lo permitía (`MapInboundClaims = false`, `RoleClaimType`, `IsInRole`)? ¿Y por qué el caso con el claim corto `"role"` nunca fue peligroso?
 2. Quitar `manage-account` no bastaba para impedir que un cliente borrara su OTP, y hubo que desactivar `delete_credential`. ¿Qué diferencia hay entre un permiso (un rol que habilita la consola de cuenta) y una acción obligatoria que la SPA puede invocar con `kc_action`? ¿Qué regla de la spec se rompería si un cliente pudiera borrar su propio OTP?
 3. El registro del operador ahora dice "no completada" ante un 400 o un 409 aunque nada haya lanzado una excepción. ¿Por qué en un registro de auditoría es peor un "completada" falso que un "no completada" de más? ¿Por qué hay que mirar dentro de `Results<A, B>` (`INestedHttpResult`) para saber el código real?
+
+---
+
+# Revisión — 003-auth-api, bloque 003b (Gestionar el acceso, T15–T27)
+
+## Veredicto: APROBADO
+
+No encontré nada que impida el merge. Todos los CA, CL y RN del bloque están implementados y tienen pruebas con el prefijo `F003_`. Se respetaron la integridad de las pruebas y las ADR-0014 y ADR-0017. La compilación da 0 advertencias, `dotnet test` pasa 890 de 890 (incluido Keycloak real) y `dotnet format --verify-no-changes` queda limpio. Tras compilar, el contrato OpenAPI regenerado no cambia el árbol de trabajo. Quedan sugerencias menores, ninguna obligatoria.
+
+## Trazabilidad
+
+| ID | Implementado | Test | Nota |
+|---|---|---|---|
+| RF-13 | Sí (handlers, endpoints, adaptador) | `F003_RF13_AddAplicacion_RegistraElAccesoDigitalComoScoped` y todas las de CA-01…CA-05 | |
+| RN-20 | Sí (`SolicitudDeAcceso`, `ResultadoDeSolicitud`, trigger, PK `pk_resultados_de_acceso`) | `F003_RN20_EditarOBorrarElRegistro_LoRechazaLaBase`, `F003_RN20_DosResultadosParaLaMismaSolicitud_LanzaConflicto`, `F003_RN20_Solicitud_IdEsVersion7DeLaFecha`, `F003_RN20_HabilitarAcceso_RegistraAlOperadorDelComando` y unas 20 más | |
+| RN-19 (en 003b) | Sí (operador desde `usuario.Sub()`) | `F003_CA01_HabilitarAcceso_RegistraAlOperadorDelToken`, `F003_CA05_ClienteGestionaAcceso_Responde403SinRegistros` | |
+| CA-01 | Sí | App `F003_CA01_HabilitarClienteSinAcceso_CreaUsuarioYRegistraSolicitudYCompletado`, `…_VinculaElSubConElCliente`; Api `F003_CA01_HabilitarAcceso_Responde200ConClaveTemporal`, `…_RegistraAlOperadorDelToken`; Keycloak `F003_CA01_CrearAsync_UsuarioHabilitadoConClaveTemporalAccionesObligatoriasYMarca` | |
+| CA-02 | Sí | App `F003_CA02_HabilitarClienteHabilitado_RestableceConClaveDistintaYRegistraRestablecer`; Api `F003_CA02_HabilitarDosVeces_LaSegundaEsRestablecerConOtraClave`; Keycloak `F003_CA02_ReiniciarAcceso_BorraOtpCierraSesionesYPoneClaveTemporal`, `F003_CA02_Restablecer_ElClienteEntraConLaClaveNuevaYReinscribeElSegundoFactor` | |
+| CA-03 | Sí | App `F003_CA03_DeshabilitarClienteHabilitado_RegistraDeshabilitar`; Api `F003_CA03_DeshabilitarAcceso_Responde200YRegistraDeshabilitar`; E2E `F003_CA03_Deshabilitar_SesionNoSeRenuevaYNoPuedeIniciarSesion` | |
+| CA-04 | Sí | App y Api: `F003_CA04_HabilitarClienteInexistente_…`, `F003_CA04_DeshabilitarYaDeshabilitado_…` (la de Api cuenta filas antes y después), `F003_CA04_DeshabilitarClienteInexistente_…` | |
+| CA-05 | Sí | `F003_CA05_ClienteGestionaAcceso_Responde403SinRegistros` (teoría: habilitar y deshabilitar) | El nombre difiere un poco del plan (`ClienteHabilitaAcceso`). Es aceptable. |
+| CL-12 | Sí (paso 1, sin escribir nada) | `F003_CL12_HabilitarClienteInexistente_LanzaRecursoNoEncontrado`, `F003_CL12_…_RespondeNoEncontradoConSuCodigo` | |
+| CL-13 | Sí | `F003_CL13_ParaHabilitarConAccesoHabilitado_EsRestablecer`, `F003_CL13_HabilitarClienteHabilitado_NoCreaOtroVinculo` | |
+| CL-14 | Sí (`ParaDeshabilitar` lanza antes de crear la solicitud) | `F003_CL14_ParaDeshabilitarSinAccesoODeshabilitado_LanzaAccesoNoHabilitado`, `F003_CL14_DeshabilitarClienteSinAcceso_Responde422SinRegistros`, `F003_CL14_AccesoNoHabilitado_EsUnaReglaDeNegocio` | |
+| CL-15 | Sí (logout en Keycloak) | `F003_CL15_Restablecer_SesionNoSeRenueva` (E2E) | |
+| CL-16 | Sí | `F003_CL16_ParaHabilitarConAccesoDeshabilitado_EsHabilitar`, `F003_CL16_HabilitarClienteDeshabilitado_RegistraHabilitarYLoHabilita`, `F003_CL16_ReiniciarAcceso_DeUnUsuarioDeshabilitado_LoHabilita`, `F003_CL16_HabilitarUnAccesoDeshabilitado_ElClienteVuelveAEntrar` | |
+| RNF-03 (clave temporal y secreto) | Sí | `F003_RNF03_ClaveTemporal_ToStringNoRevelaElValor`, `F003_RNF03_AccesoHabilitadoDto_ToStringNoRevelaLaClave`, `F003_RNF03_HabilitarAcceso_NingunLogContieneLaClaveTemporal`, `F003_RNF03_HabilitarAcceso_RespondeNoStore`, `F003_RNF03_RealmClientes_NoContieneElSecretoDeServicio`, `F003_RNF03_ErrorAlCrear_NoIncluyeLaClaveTemporalEnElMotivo` | |
+| RNF-05 (acceso) | Sí (filtro en el grupo) | `F003_RNF05_GestionarAcceso_ElLogIncluyeElOperador`, `F003_RNF05_HabilitarClienteInexistente_ElLogDiceNoCompletada` | |
+| RNF-06 (acceso) | Sí (el contrato versionado lleva `security: Bearer` y todos los códigos) | `F003_RNF06_ContratoVersionado_DocumentaLasRespuestasDelAccesoDigital`, `F003_CA22_ContratoFueraDeDevelopment_IncluyeLasOperacionesDeAccesoDigital`, filas nuevas en `F002_RNF05_ContratoOpenApi_…` | |
+| RNF-08 (flujo completo) | Sí | `F003_RNF08_FlujoCompleto_OperadorHabilitaYClienteConsultaSusCuentas` (sin usar el admin de `master`) | |
+| ADR-0014 | Sí | `F003_ADR0014_CuentaDeServicio_SoloTieneManageUsersYViewUsers`, `…_NoPuedeModificarElRealm` (Keycloak real), `…_EsUnClienteConfidencialSoloDeServicio`, las cuatro de `TokenDeServicio_…` | Ver la sugerencia 1, sobre los roles de realm. |
+| ADR-0017 | Sí | Todas las de la tabla "Intención primero" del plan, más `F003_ADR0017_ReintentoTrasUnaRespuestaPerdida_CierraLaAnteriorYResponde200` (Api), `F003_ADR0017_ConsultaDocumentadaDeSolicitudesSinResultado_DevuelveLasPendientes`, las de traducción HTTP y `F003_ADR0017_RealmClientes_DefineLaMarcaSoloVisibleYEditablePorAdmin` | |
+
+**Integridad de las pruebas:**
+- **Cambios en `tests/` dentro del commit `feat`:** ninguno. `git diff --stat 40ee080 339ca97 -- tests/` sale vacío.
+- **Prefijos:** todas las pruebas nuevas llevan `F003_`. Las dos teorías de la 002 ampliadas (`F002_RNF05_ContratoOpenApi_…` y la base vacía) siguen lo que manda el plan (sección 7).
+- **Esqueletos:** en `src/` no queda ningún `// SDD: esqueleto creado por test-writer`. En el commit en rojo había 18.
+- **Alcance:** todos los archivos cambiados pertenecen a T15–T27 o al commit en rojo. No hay cambios fuera del plan.
+- **`learning.md`:** existe y tiene la parte de 003b, con el mapa, el recorrido, los conceptos y los ejercicios.
+
+## Hallazgos obligatorios
+
+Ninguno.
+
+## Sugerencias opcionales
+
+1. **[infra/keycloak/realms/clientes-realm.json:972-974] La cuenta de servicio hereda `default-roles-clientes`, y por tanto el rol de realm `cliente`.**
+   - ADR-0014 pide "solo `manage-users` y `view-users`" (menor privilegio).
+   - Hoy no se puede explotar: el token de la cuenta de servicio no lleva la audiencia `core-bancario-api`, así que la API lo rechaza con 401.
+   - Pero queda un rol que no necesita. Si algún día se añadiera el mapper de audiencia a un scope por defecto del realm, ese token entraría como Cliente.
+   - Arreglo: dejar `realmRoles: []` (o quitar `cliente` de esa cuenta) y ampliar `F003_ADR0014_CuentaDeServicio_NoTieneRolesDeRealmDeAdministracion` para que exija una lista vacía.
+   - Responsable: coder, con la prueba a cargo de test-writer.
+2. **[src/CoreBancario.Application/AccesosDigitales/DeshabilitarAccesoHandler.cs:34] `acceso.Usuario!`.** La skill `csharp-clean-code` pide no silenciar el análisis de nulos con `!`. La lógica es correcta, porque `ParaDeshabilitar` ya lanzó si no había usuario, pero la garantía queda implícita. Alternativa mínima: `var usuario = acceso.Usuario ?? throw new InvalidOperationException(...)`.
+3. **[src/CoreBancario.Domain/AccesosDigitales/SolicitudDeAcceso.cs:51-52] `Completar` no valida el largo de `motivo`; `Fallar` sí.** Hoy solo recibe una constante corta, pero un motivo de más de 200 caracteres fallaría en la base y no en el dominio. Basta con la misma guarda de longitud.
+4. **[src/CoreBancario.Infrastructure/Identidad/ProveedorDeIdentidadKeycloak.cs:157] `GetValue<string>()` lanza `InvalidOperationException` si el atributo no es un string.** Eso daría un 500, no un 502. El caso es improbable porque el perfil limita el atributo. Se podría usar `(string?)nodo` con `TryParse`.
+5. **[src/CoreBancario.Infrastructure/Identidad/TokenDeServicioHandler.cs:23] El `SemaphoreSlim` no se libera en `Dispose(bool)`.** Es menor: `IHttpClientFactory` rota el handler cada 2 min.
+6. **[specs/003-auth-api/learning.md:1] El título sigue diciendo "(bloque 003a: proteger la API)"**, aunque el documento ya cubre los dos bloques.
+
+## Desviaciones entre spec/plan y código
+
+- **Deshabilitar también adopta.** Si existe un usuario en Keycloak sin vínculo, `DeshabilitarAccesoHandler` crea el vínculo (líneas 37-39). Es coherente con "sigue los mismos pasos" (plan, sección 5, paso 7), pero el plan solo lo dice explícitamente para habilitar. Conviene añadir una línea en la sección 5.
+- **Nombres de prueba.** Hay pequeñas diferencias con la tabla "Dónde va cada CA". Por ejemplo, `F003_CA05_ClienteGestionaAcceso_…` frente a `ClienteHabilitaAcceso`, `F003_CA04_HabilitarClienteInexistente_NoRegistraNadaNiLlamaAlProveedor` frente a `…_LanzaNoEncontradoSin…`, y `F003_ADR0017_ObtenerUsuarioInexistente_DevuelveNull` frente a `…_UsuarioInexistente_…`. Los ID coinciden, así que la trazabilidad no se ve afectada. Para mantener la spec viva, convendría actualizar la tabla del plan.
+- **Riesgo 4 del plan (cookie SSO tras la inactividad).** El plan decía "se hace en 003b o se documenta como límite conocido", y no se hizo ninguna de las dos cosas. No es un CA de 003b, pero conviene cerrarlo por escrito, en el plan o en el README.
+- **Riesgos 1 y 2 de 003b del plan.** Se cumplió lo que la revisión de 003a pedía para 003b: las rutas nuevas declaran `RequireAuthorization(Politicas.Operador)` y aparecen con `security: Bearer` en el contrato.
+
+**RNF:**
+- **RNF-03:** está cubierto con pruebas: logs en memoria, `no-store`, `ToString`, marcador del secreto y motivo sin cuerpo. Lo que no se puede verificar en local es gitleaks en el CI, que se verá en el PR.
+- **RNF-05, RNF-06 y RNF-08:** hay evidencia en pruebas que pasan.
+- **RNF-07:** existe el commit en rojo `40ee080`, con esqueletos. No volví a ejecutar ese commit para ver el rojo.
+
+## Resultado de tests
+
+- `dotnet build`: compilación correcta, 0 advertencias y 0 errores. El contrato OpenAPI regenerado no cambia el árbol de trabajo.
+- `dotnet test` (con Docker): **890 correctas, 0 con error, 0 omitidas**, en 5 min 45 s.
+
+| Proyecto | Resultado | Duración |
+|---|---|---|
+| Domain.Tests | correcto | 6,5 s |
+| Application.Tests | correcto | 6,0 s |
+| Infrastructure.Tests | correcto | 1 min 16 s |
+| Api.Tests | correcto | 1 min 16 s |
+| Keycloak.Tests (Keycloak 26.3.3 real) | correcto | 5 min 41 s |
+
+- `dotnet format --verify-no-changes`: sin cambios.
+
+## Preguntas de comprensión para el autor
+
+1. Cuando Keycloak responde con un error (502), se escribe un resultado `Fallido`. Cuando no responde (503), no se escribe nada y la solicitud queda pendiente. ¿Por qué tratar un tiempo de espera agotado como `Fallido` rompería RN-20 en el caso "aplicó y no respondió"? ¿Qué prueba demuestra que el diseño lo evita?
+2. La marca `ultima_solicitud_de_acceso` se escribe en el **último** paso. Al deshabilitar, las sesiones se cierran **antes** de poner `enabled: false` y la marca. ¿Qué afirmaría el registro, de forma falsa, si el orden fuera el inverso y fallara el cierre de sesiones?
+3. El estado del acceso (habilitado, OTP inscrito) no se guarda en PostgreSQL, y el resultado va en otra tabla cuya PK es `solicitud_id` en vez de una columna `estado` en la solicitud. ¿Qué problema evita cada una de esas dos decisiones?
