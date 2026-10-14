@@ -161,6 +161,22 @@ public class ProveedorDeIdentidadKeycloakTests
         Assert.Equal(new UsuarioDeIdentidad(Sub, false, null), usuario);
     }
 
+    [Theory]
+    [InlineData("""{"id":"9d1f0c4e-5b1a-4c3e-8d0a-6f2b7a1c9e10","enabled":true,"attributes":{"ultima_solicitud_de_acceso":[123]}}""")]
+    [InlineData("""{"id":"9d1f0c4e-5b1a-4c3e-8d0a-6f2b7a1c9e10","enabled":true,"attributes":{"ultima_solicitud_de_acceso":[{"x":1}]}}""")]
+    [InlineData("""{"id":"9d1f0c4e-5b1a-4c3e-8d0a-6f2b7a1c9e10","enabled":true,"attributes":{"ultima_solicitud_de_acceso":[true]}}""")]
+    public async Task F003_ADR0017_ObtenerAsyncConMarcaQueNoEsTexto_LanzaErrorDelProveedor(string cuerpo)
+    {
+        // Arrange: una respuesta inesperada de Keycloak debe ser un 502, no un 500 por InvalidOperationException.
+        var manejador = new ManejadorHttpDeGuion(_ => Json(HttpStatusCode.OK, cuerpo));
+
+        // Act
+        var accion = () => CrearProveedor(manejador).ObtenerAsync(Sub, Ct);
+
+        // Assert
+        await Assert.ThrowsAsync<ErrorDelProveedorDeIdentidadException>(accion);
+    }
+
     // ---- Crear: una sola petición ----
 
     [Fact]

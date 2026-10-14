@@ -246,6 +246,20 @@ public class SolicitudDeAccesoTests
     }
 
     [Fact]
+    public void F003_RN20_CompletarConMotivoDeMasDe200Caracteres_LanzaArgumentException()
+    {
+        // Arrange
+        var solicitud = SolicitudDeAcceso.ParaHabilitar(ClienteId, Operador, EstadoDeAcceso.SinAcceso, Fecha);
+        var motivo = new string('m', ResultadoDeSolicitud.LongitudMaximaDelMotivo + 1);
+
+        // Act: igual que Fallar, para que la base no sea la primera en rechazarlo.
+        var accion = () => solicitud.Completar(Fecha.AddSeconds(2), motivo);
+
+        // Assert
+        Assert.ThrowsAny<ArgumentException>(accion);
+    }
+
+    [Fact]
     public void F003_RN20_Completar_NoModificaLaSolicitud()
     {
         // Arrange

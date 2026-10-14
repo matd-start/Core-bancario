@@ -55,6 +55,20 @@ public class ConfiguracionDeCuentaDeServicioTests
     }
 
     [Fact]
+    public void F003_ADR0014_CuentaDeServicio_NoTieneNingunRolDeRealm()
+    {
+        // Arrange
+        var usuario = UsuarioDeLaCuentaDeServicio();
+        Assert.NotNull(usuario);
+
+        // Act: sin default-roles-clientes (que incluye "cliente") la cuenta de servicio no es un Cliente de la API.
+        var rolesDeRealm = usuario["realmRoles"]?.AsArray().Select(r => (string)r!).ToList() ?? [];
+
+        // Assert
+        Assert.Empty(rolesDeRealm);
+    }
+
+    [Fact]
     public void F003_ADR0014_CuentaDeServicio_EsUnClienteConfidencialSoloDeServicio()
     {
         // Arrange / Act

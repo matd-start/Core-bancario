@@ -232,6 +232,28 @@ public class AdaptadorDeKeycloakTests(KeycloakFixture kc)
     // ---- ADR-0014: menor privilegio ----
 
     [Fact]
+    public async Task F003_ADR0014_CuentaDeServicio_ElTokenNoTraeElRolCliente()
+    {
+        // Arrange
+        using var http = new HttpClient { BaseAddress = new Uri(kc.UrlDeKeycloak) };
+        using var token = await http.PostAsync($"/realms/{KeycloakFixture.RealmDeClientes}/protocol/openid-connect/token",
+            new FormUrlEncodedContent(new Dictionary<string, string>
+            {
+                ["grant_type"] = "client_credentials",
+                ["client_id"] = "core-bancario-api-admin",
+                ["client_secret"] = kc.SecretoDeServicio,
+            }), Ct);
+        Assert.Equal(HttpStatusCode.OK, token.StatusCode);
+        var accessToken = (string)(await token.Content.ReadFromJsonAsync<JsonNode>(Ct))!["access_token"]!;
+
+        // Act
+        var roles = CuerpoDelJwt(accessToken)["realm_access"]?["roles"]?.AsArray().Select(r => (string)r!).ToList() ?? [];
+
+        // Assert: un token con el rol "cliente" y la audiencia correcta se aceptaria como Cliente en la API.
+        Assert.DoesNotContain("cliente", roles);
+    }
+
+    [Fact]
     public async Task F003_ADR0014_CuentaDeServicio_NoPuedeModificarElRealm()
     {
         // Arrange: el token de la cuenta de servicio (client credentials con el secreto del fixture).
