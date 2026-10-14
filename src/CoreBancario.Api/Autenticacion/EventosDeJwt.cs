@@ -38,8 +38,9 @@ public sealed class EventosDeJwt(string rolEnKeycloak, string rolDeLaApi) : JwtB
         foreach (var rolDelToken in identidad.FindAll(ClaimTypes.Role).ToList())
             identidad.RemoveClaim(rolDelToken);
 
+        // Se concede con el mismo tipo que consultan las políticas (RoleClaimType), el que se acaba de vaciar.
         if (RolesDeRealm(principal).Contains(rolEnKeycloak, StringComparer.Ordinal))
-            identidad.AddClaim(new Claim(ClaimTypes.Role, rolDeLaApi));
+            identidad.AddClaim(new Claim(identidad.RoleClaimType, rolDeLaApi));
 
         return Task.CompletedTask;
     }
