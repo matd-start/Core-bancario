@@ -129,6 +129,7 @@ IDs globales de `docs/producto/spec-fase-1.md`. RN-19 a RN-24 se añadieron all�
 
 - CA-14 (RF-05, CL-18): Dado un cliente con una cuenta Activa y una Cerrada, cuando consulta "mis cuentas", entonces obtiene las dos con número, moneda, estado y saldo, y ninguna cuenta de otro cliente.
 - CA-15 (RF-05, RN-12, CL-17): Dadas una cuenta de otro cliente y un id de cuenta inexistente, cuando el cliente consulta cada una, entonces las dos respuestas son idénticas (no encontrado), salvo el identificador de correlación.
+  - **Aclaración (2026-10-14, Review 003a).** "Idénticas" se lee, en palabras del autor, como *"misma semántica observable para recursos inexistentes y ajenos (mismo comportamiento, mismo código y mismo cuerpo funcionalmente relevante), permitiendo diferencias mecánicas como traceId o la propia ruta reflejada en instance"*. Una diferencia se permite solo si no depende de que el recurso exista o sea del cliente: el `traceId` cambia en cada petición, y la ruta de `instance` repite el id que escribió quien hace la petición. El tiempo de respuesta es un límite conocido (sección 9).
 - CA-16 (RF-05): Dada una cuenta propia, cuando el cliente la consulta por su id, entonces obtiene número, moneda, estado, saldo y fechas.
 - CA-17 (RF-05, CL-18): Dado un cliente sin cuentas, cuando consulta "mis cuentas", entonces obtiene una lista vacía.
 
@@ -145,6 +146,7 @@ IDs globales de `docs/producto/spec-fase-1.md`. RN-19 a RN-24 se añadieron all�
 - Recuperar la clave olvidada sin el operador (por correo o SMS). La recuperación es el restablecimiento de RF-13.
 - Entregar la clave temporal por un canal que el operador no ve (correo, SMS, sobre). Es un **límite conocido** (sección 11).
 - El vencimiento de la clave temporal a las 72 h (CL-05). Es un **límite conocido** (enmienda 2026-10-13): Keycloak 26 no lo trae. Se deja como mejora futura un proceso en segundo plano de la API que deshabilite los accesos con clave temporal de más de 72 h, junto al proceso de reconciliación de ADR-0017.
+- Igualar el tiempo de respuesta de CA-15. Es un **límite conocido** (Review 003a): una cuenta ajena y una inexistente siguen la misma consulta, con el filtro por dueño dentro de ella (ADR-0016), así que su tiempo no debería diferir de forma medible. Pero ninguna prueba lo mide, y un atacante que pudiera distinguirlas por tiempo sabría qué ids existen (*timing attack*).
 - Códigos de respaldo del segundo factor y otros factores (SMS, correo, llaves de seguridad o passkeys).
 - Gestionar operadores desde la API, un rol Administrador y cualquier rol más allá de Cliente y Operador.
 - Revocación inmediata de las credenciales de acceso (RNF-01).
