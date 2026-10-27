@@ -37,6 +37,51 @@ jobs:
       - name: Pruebas
         run: dotnet test --no-build --configuration Release
 
+  # Prueba de humo del docker-compose.yml con volúmenes nuevos, como quien clona el repo. Ninguna prueba de .NET lo
+  # cubre: KeycloakFixture usa Testcontainers sin el volumen. Detecta, por ejemplo, un volumen de Keycloak montado en
+  # una carpeta que no existe en la imagen: nace de root y Keycloak no puede escribir su base.
+  entorno-local:
+    name: Entorno local arranca
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      # Las variables de entorno mandan sobre .env. Los valores se generan aquí, se ocultan en el log y solo existen
+      # en este job; van a GITHUB_ENV porque cada docker compose (también el de los logs) las exige.
+      - name: Preparar .env
+        run: |
+          cp .env.example .env
+          clave="$(openssl rand -hex 16)"
+          secreto="$(openssl rand -hex 32)"
+          echo "::add-mask::$clave"
+          echo "::add-mask::$secreto"
+          {
+            echo "KC_BOOTSTRAP_ADMIN_USERNAME=admin-ci"
+            echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$clave"
+            echo "KC_CLIENTES_API_SECRET=$secreto"
+          } >> "$GITHUB_ENV"
+
+      - name: Levantar PostgreSQL y Keycloak
+        run: docker compose up -d --wait
+
+      - name: Esperar a que Keycloak importe los realms
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:8080/realms/clientes/.well-known/openid-configuration > /dev/null &&
+               curl -sf http://localhost:8080/realms/empleados/.well-known/openid-configuration > /dev/null; then
+              echo "Keycloak arrancó e importó los realms."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Keycloak no respondió en 5 minutos."
+          exit 1
+
+      - name: Logs de Keycloak
+        if: failure()
+        run: docker compose logs keycloak
+
   secrets:
     name: Escaneo de secretos
     runs-on: ubuntu-latest
