@@ -380,6 +380,30 @@ public partial class SesionDelBffTests(KeycloakFixture kc)
         Assert.Equal(1, await kc.Admin.SesionesAbiertasAsync(segundo.Realm, segundo.Sub));
     }
 
+    [Fact]
+    public async Task F004_RN26_RegresoDeOtraSesion_LaCookieAnteriorNoAbreLaNueva()
+    {
+        // Arrange: el mismo escenario. Fijacion de sesion: quien conserve la cookie de A no debe poder abrir la sesion de B.
+        var (_, _, primero) = await kc.CrearClienteConAccesoAsync();
+        var (_, _, segundo) = await kc.CrearClienteConAccesoAsync();
+        using var navegadorDeB = kc.NuevoNavegadorDelBff();
+        var pantallaDeB = await navegadorDeB.IniciarSesionAsync("clientes");
+        using var navegadorDeA = kc.NuevoNavegadorDelBff();
+        await navegadorDeA.IniciarSesionCompletaAsync(primero, "clientes");
+        navegadorDeB.CopiarCookieDeSesionDe(navegadorDeA);
+        var (emitida, _) = await navegadorDeB.ConducirAsync(pantallaDeB, segundo);
+        await navegadorDeB.EntregarRegresoAsync(emitida.Url);
+
+        // Act: A todavia tiene su cookie antigua en su "ventana".
+        var conLaCookieAnterior = await navegadorDeA.GetAsync("/bff/sesion");
+        var sesionDeB = await navegadorDeB.ObtenerSesionAsync();
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, conLaCookieAnterior.Estado);
+        Assert.Equal("sin-sesion", NavegadorDelBff.CodigoDe(conLaCookieAnterior));
+        Assert.Equal(segundo.NombreDeUsuario, (string?)sesionDeB?["usuario"], ignoreCase: true);
+    }
+
     // ---- CA-16 / CL-12: revocacion ----
 
     [Fact]
