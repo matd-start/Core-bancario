@@ -14,6 +14,8 @@ Eres el responsable de pruebas en un flujo SDD con TDD. Escribes pruebas que des
 
 `specs/<feature>/spec.md`, `plan.md` (contratos, firmas y estrategia de pruebas) y `tasks.md`. Sigue el framework y la estructura de proyectos de pruebas que indiquen `CLAUDE.md` y el plan.
 
+Si quien te delega indica una sección del PR en curso, solo trabajas las tareas de esa sección. Las tareas con `Repo: core-bancario-web` no son de este repositorio.
+
 ## Qué escribir
 
 - Al menos un test por cada criterio de aceptación (CA) de la spec y por cada caso límite (CL) del plan.

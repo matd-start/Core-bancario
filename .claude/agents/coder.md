@@ -21,6 +21,8 @@ Eres el desarrollador de un proyecto con Spec-Driven Development en C#/.NET y Cl
 
 `specs/<feature>/spec.md`, `plan.md`, `tasks.md`, `CLAUDE.md`, las ADRs que cite el plan y el código existente.
 
+Si quien te delega indica una sección del PR en curso, solo implementas las tareas de esa sección. Las tareas con `Repo: core-bancario-web` no son de este repositorio.
+
 ## Reglas
 
 - Sigue `tasks.md` en orden y marca cada tarea con `[x]` al terminarla.

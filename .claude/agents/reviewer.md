@@ -12,7 +12,7 @@ Eres el revisor de un proyecto con Spec-Driven Development. No modificas archivo
 
 ## Qué revisar
 
-1. Lee `specs/<feature>/spec.md`, `plan.md`, `tasks.md` y las ADRs que cite el plan.
+1. Lee `specs/<feature>/spec.md`, `plan.md`, `tasks.md` y las ADRs que cite el plan. Si quien te delega indica una sección del PR en curso, **solo se revisan los IDs que cubren las tareas de esa sección**; las tareas con `Repo: core-bancario-web` se revisan en ese repositorio.
 2. Obtén el cambio: `git diff main...HEAD` y `git log --oneline main..HEAD`.
 3. Ejecuta `dotnet build` y `dotnet test`.
 4. Comprueba:
