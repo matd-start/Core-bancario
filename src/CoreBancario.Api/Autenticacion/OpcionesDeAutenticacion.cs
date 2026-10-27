@@ -15,4 +15,8 @@ public sealed class OpcionesDeEmisor
 {
     /// <summary>URL del realm, igual al "iss" de sus tokens: http://localhost:8080/realms/clientes.</summary>
     public string Emisor { get; set; } = "";
+
+    // SDD: esqueleto creado por test-writer. T02 hace que ConfigurarEsquema use esta propiedad como jwt.MetadataAddress.
+    /// <summary>Documento de descubrimiento por el canal trasero (compose). null: se deriva de Emisor. No cambia ValidIssuer.</summary>
+    public string? Metadatos { get; set; }
 }
