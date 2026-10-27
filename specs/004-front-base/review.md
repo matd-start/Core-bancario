@@ -1,4 +1,140 @@
-# Revisión — 004-front-base, PR 1 de 004a (repo `core-bancario`, T01–T11)
+# Revisión — 004-front-base, PR 1 de 004a (repo `core-bancario`, T01–T11), segundo ciclo
+
+## Veredicto: APROBADO
+
+El único hallazgo obligatorio del primer ciclo (fijación de sesión) está resuelto. Primero llegó una prueba que reproduce el ataque, en un commit `test(004)` (`8eba056`). Después, el arreglo en un commit `fix(004)` (`f93ebf6`). Todas las pruebas pasan: 1166 de 1166, una más que en el primer ciclo, y es justo la nueva. La integridad de las pruebas se mantiene. Hay una sugerencia que recomiendo atender antes del merge: el `Dispose` del `SemaphoreSlim` abre una carrera muy improbable. No la marco como obligatoria; el porqué va en "Sugerencias".
+
+## Comprobación del hallazgo del ciclo anterior
+
+**Fijación de sesión: resuelto.**
+
+- **Prueba.** `F004_RN26_RegresoDeOtraSesion_LaCookieAnteriorNoAbreLaNueva` (`tests/CoreBancario.Keycloak.Tests/SesionDelBffTests.cs:384`) monta el escenario completo contra Keycloak real:
+  - A inicia sesión.
+  - Su cookie se planta en el navegador de B.
+  - B termina su inicio de sesión.
+  - La prueba exige que la cookie de A responda 401 `sin-sesion` y que el navegador de B tenga la sesión de B. La prueba llegó en un commit `test(004)` propio.
+- **Arreglo** (`src/CoreBancario.Bff/InicioDeSesion/EventosDeOidc.cs:66-105`):
+  - `TicketReceived` ya no llama a `AuthenticateAsync` sobre la cookie. Lee la clave con `TicketDataFormat.Unprotect`.
+  - Borra la sesión anterior del almacén en los dos caminos:
+    - con otro `sid` u otra área, la borra con `CerrarAsync`, que también la cierra en Keycloak;
+    - con el mismo `sid`, la borra con `Eliminar`.
+  - Por eso, cuando `CookieAuthenticationHandler.HandleSignInAsync` llama a `EnsureCookieTicket`, `RetrieveAsync` devuelve null y `_sessionKey` queda vacío. Entonces el manejador llama a `StoreAsync` y la sesión nueva recibe una clave nueva.
+  - El razonamiento es correcto y está bien explicado en el comentario y en `learning.md` §4. Esa sección incluye el detalle de que `SignOutAsync` no limpia la clave recordada.
+- **Segunda barrera.** `AlmacenDeSesiones.RenewAsync` (`src/CoreBancario.Bff/Sesiones/AlmacenDeSesiones.cs:65-75`) solo reemplaza la sesión si el ticket trae el mismo `sid` y la misma área. Es la defensa en profundidad que se pidió.
+- **Requisitos.** Así se cumplen RNF-01 y lo que dice ADR-0020: "la anterior se cierra … antes de guardar la nueva".
+
+**Sugerencias del ciclo anterior:**
+- 1 y 5 (operadores `!`): resueltas.
+- 3 (`ForwardedHeaders`): resuelta con `Bff:RedesDeConfianza` y un comentario honesto sobre el supuesto.
+- 4 (`Dispose` del semáforo): aplicada, pero introduce la carrera descrita en "Sugerencias".
+- 2 (`Api.Url` se lee al mapear la ruta): se dejó así. Es aceptable (KISS).
+
+## Trazabilidad
+
+Solo los IDs que cubren T01–T11. CA-03, CA-08, CA-11, CA-12 (navegador), CA-17…CA-20, CA-35 y CA-36 son del PR web y quedan fuera.
+
+| ID | Implementado | Test | Nota |
+|---|---|---|---|
+| RF-14 | Sí | `F004_RF14_*`, `F004_CA01_*`, `F004_CA02_*` | |
+| RF-15 | Sí | `F004_CA21_*` (Bff y Keycloak) | |
+| RN-19 | Sí | `F004_CL04_LectorDeRol_*`, `F004_CA02_*` | |
+| RN-21, RN-24 | Sí | Recorridos de Keycloak.Tests con OTP | CA-03 es del web |
+| RN-22 | Sí | `F004_RN22_*` | Ver sugerencia 3 |
+| RN-25 | Sí | `F004_RN25_*` | |
+| RN-26 | Sí, corregido | `F004_RN26_RegresoDeOtraSesion_CierraLaAnteriorEnKeycloak`, `F004_RN26_RegresoDeOtraSesion_LaCookieAnteriorNoAbreLaNueva`, `F004_CA14_*`, `F004_CL10_*` | Hallazgo del ciclo 1 resuelto |
+| RNF-01 | Sí | `F004_RNF01_*`, `F004_CA05_*`, la nueva `F004_RN26_…NoAbreLaNueva` | |
+| RNF-02 | Sí | `F004_CA06_*`, `F004_RNF02_*` | Lo real entre orígenes es del web |
+| RNF-04 | Sí | `F004_RNF04_*` | |
+| RNF-05 | Sí | `F004_RNF05_*`, `F004_CA04_*` | |
+| RNF-06 | Sí | `F004_RNF06_*`, `F004_CA07_*` | |
+| RNF-12 | Sí | `F004_RNF12_*` | |
+| RNF-14 | Sí | Historial (`7a0c936`) | |
+| RNF-16 | Sí | Job `entorno-local` del CI | Sin prueba local del compose completo |
+| CL-01…CL-05, CL-08…CL-12 | Sí | `F004_CL0x_*`, `F004_CL1x_*` y los CA asociados | Sin cambios desde el ciclo 1 |
+| CA-01, CA-02, CA-04…CA-07, CA-09, CA-10, CA-13, CA-14, CA-16, CA-21, CA-34 | Sí | `F004_CAxx_*` | Sin cambios desde el ciclo 1 |
+| ADR-0020 | Sí | `F004_ADR0020_*` | |
+
+La única prueba nueva lleva el prefijo `F004_` y el ID que le corresponde.
+
+## Hallazgos obligatorios
+
+Ninguno.
+
+## Sugerencias opcionales
+
+1. **[src/CoreBancario.Bff/Sesiones/AlmacenDeSesiones.cs:168-174] El `Dispose` del semáforo abre una carrera (TOCTOU). Recomiendo quitarlo antes del merge.**
+   - **Qué pasa:** `QuitarCandado` mira `CurrentCount > 0` y después hace `Dispose()`. Entre `GetOrAdd` y `WaitAsync` en `ConCandadoAsync`, o entre la comprobación y el `Dispose`, otra petición puede tomar el semáforo. Por ejemplo:
+     1. P (el proxy) necesita renovar el token y obtiene el semáforo con `GetOrAdd`.
+     2. Q (`/bff/salir`) lo quita y ve que está libre (count 1).
+     3. P lo toma.
+     4. Q lo libera con `Dispose`.
+     5. P no encuentra la sesión y lanza `SesionTerminadaException`.
+     6. En el `finally`, `Release()` lanza `ObjectDisposedException`, que tapa la excepción anterior. P responde 500 en vez de 401 `sin-sesion`.
+   - **Por qué no es obligatorio:** la ventana es de unas pocas instrucciones y solo ocurre con una sesión que está cerrándose. No afecta a datos, a la seguridad ni a ningún CA concreto.
+   - **Corrección más simple (KISS/YAGNI):** volver a `_candados.TryRemove(clave, out _)` sin `Dispose`. Un `SemaphoreSlim` cuyo `AvailableWaitHandle` nunca se usó no tiene recursos no administrados, y el recolector lo recupera. Hay que ajustar también la última viñeta de `learning.md` §4, que hoy presenta el `Dispose` como seguro.
+   - **Responsable:** coder.
+2. **[src/CoreBancario.Bff/InicioDeSesion/EventosDeOidc.cs:104] `Principal.Claims.FirstOrDefault()` supone que el ticket de la cookie solo trae el claim de la clave.** Hoy es cierto porque el manejador con `SessionStore` solo guarda ese claim. Filtrar por su tipo (`"Microsoft.AspNetCore.Authentication.Cookies-SessionId"`, una constante privada del manejador) lo haría explícito y resistente a cambios.
+3. **Falta una prueba de que el camino "mismo `sid`" conserva el `Inicio` (RN-22).** Este ciclo cambió ese camino: ahora pasa por `Eliminar` y `StoreAsync`. `F004_CA21_CambiarClavePorElBff_…` comprueba que la sesión sigue, pero no que `segundosHastaVidaMaxima` no se reinicie tras cambiar la clave. Bastaría una aserción en una prueba `test(004)`. Responsable: test-writer.
+4. **Falta una prueba unitaria de la segunda barrera de `RenewAsync`.** Debería comprobar que un ticket con otro `sid` no reemplaza la sesión de la clave existente. Hoy esa barrera solo está cubierta de forma indirecta.
+
+## Desviaciones entre spec/plan y código
+
+- **Métodos públicos fuera de las firmas del plan.** Siguen sin reflejarse en la sección 3.3 del plan (`specs/004-front-base/plan.md:295-322`) cuatro cosas:
+  - `AlmacenDeSesiones.ObtenerParaEvaluar`, con la retención de 1 minuto;
+  - `PropiedadesDeSesion.LeerClaveAsync`;
+  - la semántica nueva de `RenewAsync`, que solo admite la misma identidad;
+  - la rotación de clave en `TicketReceived`.
+
+  Están bien documentados en `learning.md`. Conviene una línea en el plan, la fuente de verdad del diseño, sobre todo para la rotación de clave, porque es una garantía de seguridad.
+- **`Bff:RedesDeConfianza`** es una configuración nueva que no está en el plan. Es opcional y no cambia el comportamiento por defecto.
+- **Se mantienen las desviaciones ya registradas en el ciclo 1:**
+  - CL-09 con reautenticación;
+  - el mapper `preferred_username`;
+  - `.dockerignore`;
+  - las ediciones de spec y plan después de su aprobación, trazadas en commits `docs(004)`.
+- **`9e0397e`** renombra `OpenApi/` a `openapi/`. Es una corrección justificada para el CI en Linux y no cambia el alcance.
+
+## RNF
+
+- **RNF-01, RNF-02, RNF-04, RNF-05, RNF-06:** las pruebas del BFF y las de Keycloak real los demuestran. La parte de navegador real (CA-05, y CA-06 entre orígenes) se verifica en el PR web.
+- **RNF-16:** no levanté `--profile app` en local. Depende de que el job `entorno-local` del CI salga en verde.
+- **Otras comprobaciones:**
+  - Integridad de las pruebas: el commit en rojo es `7a0c936`. Después, `tests/` solo cambia en `d1e84a4` y `8eba056`, los dos `test(004)`. `c8f2148` (`feat`), `9e0397e` y `f93ebf6` (`fix`) no tocan `tests/`.
+  - No queda ningún `// SDD: esqueleto creado por test-writer` en `src/`.
+  - Arquitectura: el BFF sigue sin referenciar Application ni Domain.
+  - `specs/004-front-base/learning.md` existe y está actualizado.
+
+## Resultado de tests
+
+- `dotnet build`: correcto, 0 advertencias y 0 errores.
+- `dotnet format --verify-no-changes`: sin cambios.
+- `dotnet test` (Docker 29.9.2): **1166 correctas, 0 errores, 0 omitidas**, en 9 min 26 s.
+
+| Proyecto | Duración |
+|---|---|
+| Domain | 5 s |
+| Application | 30 s |
+| Bff | 51 s |
+| Api | 1 min 39 s |
+| Infrastructure | 2 min 10 s |
+| Keycloak | 9 min 21 s |
+
+## Preguntas de comprensión para el autor
+
+1. Con el arreglo, cada regreso de Keycloak recibe una clave nueva, también al cambiar la clave, aunque sea la misma persona y el mismo `sid`. ¿Por qué es más seguro rotar la clave siempre que reutilizarla "cuando es la misma persona"? ¿Qué gana un atacante que tenga una cookie vieja si la clave no rota tras una reautenticación?
+2. El arreglo funciona porque `TicketReceived` borra la sesión anterior del almacén **antes** de que el manejador de cookies la busque. ¿Qué pasaría si alguien, más adelante, volviera a llamar a `AuthenticateAsync` sobre la cookie dentro de `TicketReceived`? ¿Qué prueba lo detectaría?
+3. Las peticiones a `/api/*` renuevan el token pero nunca cuentan como actividad; solo `POST /bff/actividad` mueve `UltimaActividad`. ¿Por qué no basta el reloj de inactividad de Keycloak para cumplir RN-25 si la pestaña refresca datos sola cada minuto?
+
+Archivos clave:
+- C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Bff\InicioDeSesion\EventosDeOidc.cs
+- C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Bff\Sesiones\AlmacenDeSesiones.cs
+- C:\Users\miguel\source\repos\core-bancario\tests\CoreBancario.Keycloak.Tests\SesionDelBffTests.cs
+- C:\Users\miguel\source\repos\core-bancario\specs\004-front-base\learning.md
+- C:\Users\miguel\source\repos\core-bancario\specs\004-front-base\plan.md
+
+---
+
+# (Ciclo 1) Revisión — 004-front-base, PR 1 de 004a (repo `core-bancario`, T01–T11)
 
 ## Veredicto: CAMBIOS REQUERIDOS
 

@@ -552,6 +552,21 @@ public static class ProxyDeLaApi
 }
 ```
 
+**Añadidos del Build (004a) fuera de las firmas de arriba** (aprobados por el autor tras `/sdd-review`, 2026-10-27):
+
+- `AlmacenDeSesiones.ObtenerParaEvaluar(string clave)` devuelve la sesión aunque haya pasado su `Inicio + VidaMaxima`. `Obtener` devuelve `null` en ese instante exacto, pero la entrada se conserva 1 minuto más (la libera el temporizador). Así `ServicioDeSesion` y `RetrieveAsync` pueden responder `sesion-vencida-por-vida-maxima` a la petición que llega justo después, y no un genérico `sin-sesion`.
+- `PropiedadesDeSesion.LeerClaveAsync(HttpContext)` lee `Items[Clave]` del ticket de la cookie, o devuelve `null`. La comparten los endpoints, el *proxy* y `EventosDeOidc`.
+- **Rotación de la clave en cada inicio de sesión (contra la fijación de sesión, RNF-01; hallazgo del ciclo 1 de `review.md`):**
+  - Cada regreso OIDC recibe una clave nueva.
+  - `TicketReceived` lee la clave de la cookie anterior **sin pasar por el manejador de cookies**. Si el manejador autenticara la cookie, recordaría la clave y llamaría a `RenewAsync` con ella en vez de a `StoreAsync`.
+  - Después borra esa sesión del almacén:
+    - con el mismo `sid`, conserva el `Inicio` y no cierra Keycloak;
+    - con otro `sid` u otra área, llama a `CerrarAsync`.
+  - `StoreAsync` guarda entonces la sesión nueva con una clave nueva, y la cookie anterior deja de servir.
+  - `RenewAsync` solo reemplaza una sesión bajo una clave existente si es de la misma identidad (mismo `sid` y misma área) y el ticket trae tokens.
+  - Lo demuestra `F004_RN26_RegresoDeOtraSesion_LaCookieAnteriorNoAbreLaNueva`.
+- `Bff:RedesDeConfianza` (opcional) es la lista de redes CIDR de las que se aceptan los encabezados `X-Forwarded-*`. Sin valor, se confía en cualquier origen, porque el BFF no publica puertos y solo lo alcanza el contenedor web.
+
 **`Program.cs` del BFF, en orden:**
 
 1. `AddSesionDelNavegador`, `AddHttpForwarder`, `AddOpenApi` (con `CodigosDelBffEnOpenApi`), `AddProblemDetails` y `AddForwardedHeaders` (detrás de nginx).
