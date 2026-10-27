@@ -82,6 +82,12 @@ La API no emite credenciales: las emite **Keycloak** (ADR-0014) y la API solo va
 2. `docker compose up -d`. El primer arranque de Keycloak tarda varios minutos (compila su configuración y crea los realms).
 3. Abre `http://localhost:8080` (o el `KEYCLOAK_PORT` de tu `.env`) y entra a la consola de administración con ese usuario.
 
+**Volumen de Keycloak antiguo.** El volumen `keycloak-data` se montaba en `/opt/keycloak/data/h2` y ahora se monta en `/opt/keycloak/data`. Si el tuyo tiene `keycloakdb.mv.db` en la raíz y no una carpeta `h2/` (`docker run --rm -v core-bancario_keycloak-data:/v alpine ls /v`), Keycloak **no da error**: crea una base nueva en silencio y pierdes los usuarios de prueba. Antes de arrancar, recrea el volumen ("Recargar un realm modificado") o mueve la base a `h2/`:
+
+```bash
+docker run --rm -v core-bancario_keycloak-data:/v alpine sh -c "mkdir /v/h2 && mv /v/keycloakdb.* /v/h2/ && chown -R 1000:0 /v"
+```
+
 En `Development` la API espera a Keycloak en `http://localhost:8080` (sección `Autenticacion` de `appsettings.Development.json`). Si cambias `KEYCLOAK_PORT`, ajusta `Autenticacion:Clientes:Emisor` y `Autenticacion:Empleados:Emisor` con user-secrets: el emisor debe ser **exactamente** el `iss` de los tokens.
 
 ### Crear un operador (realm `empleados`)

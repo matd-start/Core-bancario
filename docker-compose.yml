@@ -32,7 +32,10 @@ services:
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
-      - keycloak-data:/opt/keycloak/data/h2
+      # Se monta en data y no en data/h2: h2 no existe en la imagen y un volumen nuevo nacería de root, sin permiso
+      # de escritura para Keycloak (uid 1000). data sí existe con dueño keycloak, y Docker copia ese dueño al volumen
+      # solo cuando el volumen está vacío (la primera vez). Un volumen de antes de este cambio: ver README.
+      - keycloak-data:/opt/keycloak/data
       - ./infra/keycloak/realms:/opt/keycloak/data/import:ro
       - ./infra/keycloak/themes/core-bancario:/opt/keycloak/themes/core-bancario:ro
       - ./infra/keycloak/themes/core-bancario-clientes:/opt/keycloak/themes/core-bancario-clientes:ro
