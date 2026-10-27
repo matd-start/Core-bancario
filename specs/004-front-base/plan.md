@@ -848,6 +848,7 @@ export function DialogoDeClaveTemporal(props: { accion: 'Habilitar' | 'Restablec
 | `attributes."post.logout.redirect.uris"` | `""` | `""` | El cierre es por el canal trasero |
 | `attributes."pkce.code.challenge.method"` | `S256` | `S256` | Se conserva (RNF-05) |
 | `standardFlowEnabled`, `directAccessGrantsEnabled`, scopes y mapper de audiencia | sin cambios | sin cambios | — |
+| `protocolMappers`: `preferred-username-en-token-de-identidad` (`oidc-usermodel-property-mapper`, `username` → `preferred_username`, solo `id.token.claim`) | nuevo | nuevo | **Añadido en el Build (2026-10-27, aprobado por el autor).** Con los scopes `basic` y `roles`, el token de identidad no trae `preferred_username`, y `SesionDelNavegador` lo exige. Va solo en el token de identidad, que se queda en el BFF; no viaja a la API ni a `userinfo`. Se descartó el scope `profile` porque añade nombre, correo y otros datos personales que no se usan |
 
 **`docker-compose.yml`, servicio `keycloak`:**
 
