@@ -9,7 +9,7 @@ Core bancario simplificado (backend) con cuentas en COP y USD, transferencias in
 - Persistencia: PostgreSQL (ADR-0003); EF Core para escribir y migrar, Dapper solo para lecturas que lo justifiquen (ADR-0004).
 - Pruebas: xUnit v3 sobre Microsoft Testing Platform (ADR-0006); integración contra PostgreSQL real con Testcontainers. Al añadir la primera prueba a un proyecto de tests, quitar su `--ignore-exit-code 8`.
 - Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API. Qué se hace en cada repo: "Dos repositorios, una sola fuente de verdad", más abajo.
-- Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-09 construcción del frontend (004), D-12 sesión del navegador sin tokens legibles desde JavaScript (004), D-11 despliegue (fase 4).
+- Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-11 despliegue (fase 4).
 
 ## Estructura
 
