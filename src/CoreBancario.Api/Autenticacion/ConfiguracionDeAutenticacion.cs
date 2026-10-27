@@ -30,9 +30,9 @@ public static class ConfiguracionDeAutenticacion
             .AddJwtBearer(EsquemasDeAutenticacion.Empleados, _ => { });
 
         ConfigurarEsquema(services, EsquemasDeAutenticacion.Clientes, entorno,
-            opciones => opciones.Clientes.Emisor, new EventosDeJwt(Roles.ClienteEnKeycloak, Roles.Cliente));
+            opciones => opciones.Clientes, new EventosDeJwt(Roles.ClienteEnKeycloak, Roles.Cliente));
         ConfigurarEsquema(services, EsquemasDeAutenticacion.Empleados, entorno,
-            opciones => opciones.Empleados.Emisor, new EventosDeJwt(Roles.OperadorEnKeycloak, Roles.Operador));
+            opciones => opciones.Empleados, new EventosDeJwt(Roles.OperadorEnKeycloak, Roles.Operador));
 
         services.AddAuthorizationBuilder()
             .AddPolicy(Politicas.Cliente, politica => politica.RequireAuthenticatedUser().RequireRole(Roles.Cliente))
@@ -44,13 +44,17 @@ public static class ConfiguracionDeAutenticacion
     }
 
     private static void ConfigurarEsquema(IServiceCollection services, string esquema, IHostEnvironment entorno,
-        Func<OpcionesDeAutenticacion, string> emisorDe, EventosDeJwt eventos) =>
+        Func<OpcionesDeAutenticacion, OpcionesDeEmisor> emisorDe, EventosDeJwt eventos) =>
         services.AddOptions<JwtBearerOptions>(esquema).Configure<IOptions<OpcionesDeAutenticacion>>((jwt, opcionesDeAutenticacion) =>
         {
             var opciones = opcionesDeAutenticacion.Value;
-            var emisor = emisorDe(opciones);
+            var opcionesDelEmisor = emisorDe(opciones);
+            var emisor = opcionesDelEmisor.Emisor;
 
             jwt.Authority = emisor;
+            // ADR-0020: en compose el "iss" es el que ve el navegador, pero el descubrimiento se baja por la red interna.
+            if (opcionesDelEmisor.Metadatos is not null)
+                jwt.MetadataAddress = opcionesDelEmisor.Metadatos;
             jwt.RequireHttpsMetadata = !entorno.IsDevelopment();
             jwt.MapInboundClaims = false;
             jwt.IncludeErrorDetails = false;

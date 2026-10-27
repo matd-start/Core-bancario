@@ -10,10 +10,29 @@ namespace CoreBancario.Bff.Sesiones;
 public sealed class SesionDelNavegador
 {
     /// <exception cref="ArgumentException">clave, sub, usuario o sid vacíos, o ultimaActividad &lt; inicio.</exception>
-    // SDD: esqueleto creado por test-writer
     public SesionDelNavegador(string clave, AreaDeSesion area, string sub, string usuario, string sid, RolDeSesion? rol,
-        DateTimeOffset inicio, DateTimeOffset ultimaActividad, TokensDeLaSesion tokens, ClaimsPrincipal principal) =>
-        throw new NotImplementedException();
+        DateTimeOffset inicio, DateTimeOffset ultimaActividad, TokensDeLaSesion tokens, ClaimsPrincipal principal)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(clave);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(usuario);
+        ArgumentException.ThrowIfNullOrWhiteSpace(sid);
+        ArgumentNullException.ThrowIfNull(tokens);
+        ArgumentNullException.ThrowIfNull(principal);
+        if (ultimaActividad < inicio)
+            throw new ArgumentException("La última actividad no puede ser anterior al inicio de la sesión.", nameof(ultimaActividad));
+
+        Clave = clave;
+        Area = area;
+        Sub = sub;
+        Usuario = usuario;
+        Sid = sid;
+        Rol = rol;
+        Inicio = inicio;
+        UltimaActividad = ultimaActividad;
+        Tokens = tokens;
+        Principal = principal;
+    }
 
     public string Clave { get; }
 
@@ -38,9 +57,15 @@ public sealed class SesionDelNavegador
     public ClaimsPrincipal Principal { get; }
 
     /// <summary>Nunca retrocede: si ahora &lt; UltimaActividad, no cambia.</summary>
-    // SDD: esqueleto creado por test-writer
-    public void RegistrarActividad(DateTimeOffset ahora) => throw new NotImplementedException();
+    public void RegistrarActividad(DateTimeOffset ahora)
+    {
+        if (ahora > UltimaActividad)
+            UltimaActividad = ahora;
+    }
 
-    // SDD: esqueleto creado por test-writer
-    public void ReemplazarTokens(TokensDeLaSesion tokens) => throw new NotImplementedException();
+    public void ReemplazarTokens(TokensDeLaSesion tokens)
+    {
+        ArgumentNullException.ThrowIfNull(tokens);
+        Tokens = tokens;
+    }
 }

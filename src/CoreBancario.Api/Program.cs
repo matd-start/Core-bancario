@@ -14,6 +14,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddOpenApi(opciones =>
 {
     opciones.AddDocumentTransformer<EsquemaDeSeguridadEnOpenApi>();
+    opciones.AddDocumentTransformer<CodigosDeErrorEnOpenApi>();
     opciones.AddOperationTransformer<RequisitoDeSeguridadEnOpenApi>();
 });
 builder.Services.AddHealthChecks();

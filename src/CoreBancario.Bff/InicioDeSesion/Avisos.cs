@@ -11,6 +11,5 @@ public static class Avisos
     public const string ClaveSinCambios = "clave-sin-cambios";
 
     /// <summary>"{PrefijoDeLaSpa(area)}?aviso={aviso}" (Clientes: "/?aviso=…").</summary>
-    // SDD: esqueleto creado por test-writer
-    public static string UrlDe(AreaDeSesion area, string aviso) => throw new NotImplementedException();
+    public static string UrlDe(AreaDeSesion area, string aviso) => $"{AreasDeSesion.PrefijoDeLaSpa(area)}?aviso={aviso}";
 }

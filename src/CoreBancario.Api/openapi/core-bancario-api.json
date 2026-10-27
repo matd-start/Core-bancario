@@ -1173,6 +1173,31 @@
           }
         }
       },
+      "CodigoDeError": {
+        "enum": [
+          "acceso-no-habilitado",
+          "conflicto-de-concurrencia",
+          "datos-invalidos",
+          "documento-duplicado",
+          "error-inesperado",
+          "identidad-error",
+          "identidad-sin-respuesta",
+          "monedas-distintas",
+          "monto-negativo",
+          "monto-no-positivo",
+          "no-autenticado",
+          "no-encontrado",
+          "operacion-no-permitida",
+          "precision-excedida",
+          "prohibido",
+          "regla-de-negocio",
+          "saldo-distinto-de-cero",
+          "saldo-insuficiente",
+          "transicion-no-permitida"
+        ],
+        "type": "string",
+        "description": "Identificadores estables del contrato de errores (ADR-0011). Nunca se renombran."
+      },
       "CuentaDto": {
         "required": [
           "id",

@@ -11,8 +11,7 @@ public sealed class OpcionesDelBff
 
     public OpcionesDeArea Empleados { get; set; } = new();
 
-    // SDD: esqueleto creado por test-writer
-    public OpcionesDeArea De(AreaDeSesion area) => throw new NotImplementedException();
+    public OpcionesDeArea De(AreaDeSesion area) => area == AreaDeSesion.Clientes ? Clientes : Empleados;
 }
 
 public sealed class OpcionesDeLaApi

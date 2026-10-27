@@ -29,9 +29,9 @@ jobs:
       - name: Compilar
         run: dotnet build --no-restore --configuration Release -warnaserror
 
-      # ADR-0019: compilar regenera el contrato OpenAPI; si cambió y no se versionó, falla.
+      # ADR-0019: compilar regenera los contratos OpenAPI (API y BFF); si cambió y no se versionó, falla.
       - name: Contrato OpenAPI al día
-        run: git diff --exit-code -- src/CoreBancario.Api/openapi
+        run: git diff --exit-code -- src/CoreBancario.Api/openapi src/CoreBancario.Bff/openapi
 
       # Las pruebas de integración usan Testcontainers: el runner de Ubuntu ya trae Docker.
       - name: Pruebas
@@ -43,7 +43,7 @@ jobs:
   entorno-local:
     name: Entorno local arranca
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -54,12 +54,18 @@ jobs:
           cp .env.example .env
           clave="$(openssl rand -hex 16)"
           secreto="$(openssl rand -hex 32)"
+          secreto_web_clientes="$(openssl rand -hex 32)"
+          secreto_web_empleados="$(openssl rand -hex 32)"
           echo "::add-mask::$clave"
           echo "::add-mask::$secreto"
+          echo "::add-mask::$secreto_web_clientes"
+          echo "::add-mask::$secreto_web_empleados"
           {
             echo "KC_BOOTSTRAP_ADMIN_USERNAME=admin-ci"
             echo "KC_BOOTSTRAP_ADMIN_PASSWORD=$clave"
             echo "KC_CLIENTES_API_SECRET=$secreto"
+            echo "KC_WEB_CLIENTES_SECRET=$secreto_web_clientes"
+            echo "KC_WEB_EMPLEADOS_SECRET=$secreto_web_empleados"
           } >> "$GITHUB_ENV"
 
       - name: Levantar PostgreSQL y Keycloak
@@ -78,9 +84,30 @@ jobs:
           echo "Keycloak no respondió en 5 minutos."
           exit 1
 
-      - name: Logs de Keycloak
+      # T10 (RNF-16): la API y el BFF, construidos desde sus Dockerfiles y sin puertos publicados. Solo se pueden alcanzar
+      # desde un contenedor de la red de compose: la API responde /health y el BFF, sin sesión, responde 401.
+      - name: Levantar la API y el BFF (perfil app)
+        run: docker compose --profile app up -d --build --wait
+
+      - name: Comprobar la API y el BFF desde la red de compose
+        run: |
+          red="$(docker inspect -f '{{range $nombre, $_ := .NetworkSettings.Networks}}{{$nombre}}{{end}}' core-bancario-api)"
+          estado() { docker run --rm --network "$red" curlimages/curl:8.11.1 -s -o /dev/null -w '%{http_code}' "$@"; }
+          for i in $(seq 1 30); do
+            api="$(estado http://api:8080/health || true)"
+            bff="$(estado -H 'X-CSRF: 1' http://bff:8080/bff/sesion || true)"
+            if [ "$api" = "200" ] && [ "$bff" = "401" ]; then
+              echo "La API responde 200 en /health y el BFF responde 401 sin sesión."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "La API o el BFF no respondieron como se esperaba (API: $api, BFF: $bff)."
+          exit 1
+
+      - name: Logs de los contenedores
         if: failure()
-        run: docker compose logs keycloak
+        run: docker compose --profile app logs
 
   secrets:
     name: Escaneo de secretos

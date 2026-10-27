@@ -5,9 +5,9 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>7d3e5b2a-4c1f-4e8a-b6d9-0a1f2c3b4d5e</UserSecretsId>
-    <!-- SDD: esqueleto creado por test-writer. T03 añade OpenApiDocumentsDirectory=openapi y el nombre de archivo core-bancario-bff,
-         y activa la generación del contrato (hoy el Program del esqueleto no registra AddOpenApi). -->
-    <OpenApiGenerateDocuments>false</OpenApiGenerateDocuments>
+    <!-- ADR-0019: el contrato OpenAPI se genera al compilar y se versiona en Git (el CI comprueba que está al día). -->
+    <OpenApiDocumentsDirectory>openapi</OpenApiDocumentsDirectory>
+    <OpenApiGenerateDocumentsOptions>--file-name core-bancario-bff</OpenApiGenerateDocumentsOptions>
   </PropertyGroup>
 
   <ItemGroup>

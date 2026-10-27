@@ -12,6 +12,12 @@ public static class CodigosDelBff
     public const string PeticionNoConfiable = "peticion-no-confiable";
     public const string IdentidadSinRespuesta = "identidad-sin-respuesta";
 
-    // SDD: esqueleto creado por test-writer
-    public static string De(MotivoDeCierre motivo) => throw new NotImplementedException();
+    public static string De(MotivoDeCierre motivo) => motivo switch
+    {
+        MotivoDeCierre.SinSesion => SinSesion,
+        MotivoDeCierre.Inactividad => SesionVencidaPorInactividad,
+        MotivoDeCierre.VidaMaxima => SesionVencidaPorVidaMaxima,
+        MotivoDeCierre.Revocada => SesionRevocada,
+        _ => throw new ArgumentOutOfRangeException(nameof(motivo), motivo, null),
+    };
 }

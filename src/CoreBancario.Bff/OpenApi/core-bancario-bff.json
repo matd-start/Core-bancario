@@ -1,0 +1,227 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "CoreBancario.Bff | v1",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/bff/iniciar-sesion/{area}": {
+      "get": {
+        "tags": [
+          "EndpointsDelBff"
+        ],
+        "operationId": "IniciarSesion",
+        "parameters": [
+          {
+            "name": "area",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "regreso",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Found"
+          },
+          "404": {
+            "description": "Not Found"
+          }
+        }
+      }
+    },
+    "/bff/cambiar-clave": {
+      "get": {
+        "tags": [
+          "EndpointsDelBff"
+        ],
+        "operationId": "CambiarClave",
+        "responses": {
+          "302": {
+            "description": "Found"
+          }
+        }
+      }
+    },
+    "/bff/sesion": {
+      "get": {
+        "tags": [
+          "EndpointsDelBff"
+        ],
+        "operationId": "ObtenerSesion",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bff/actividad": {
+      "post": {
+        "tags": [
+          "EndpointsDelBff"
+        ],
+        "operationId": "RegistrarActividad",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SesionDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bff/salir": {
+      "post": {
+        "tags": [
+          "EndpointsDelBff"
+        ],
+        "operationId": "CerrarSesion",
+        "responses": {
+          "204": {
+            "description": "No Content"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CodigoDeErrorDelBff": {
+        "enum": [
+          "identidad-sin-respuesta",
+          "peticion-no-confiable",
+          "sesion-revocada",
+          "sesion-vencida-por-inactividad",
+          "sesion-vencida-por-vida-maxima",
+          "sin-sesion"
+        ],
+        "type": "string",
+        "description": "Identificadores estables de los errores del BFF (campo codigo de sus respuestas). Nunca se renombran."
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "title": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "status": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "null",
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "detail": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "instance": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "SesionDto": {
+        "required": [
+          "area",
+          "usuario",
+          "rol",
+          "segundosHastaInactividad",
+          "segundosHastaVidaMaxima"
+        ],
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "usuario": {
+            "type": "string"
+          },
+          "rol": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "segundosHastaInactividad": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "segundosHastaVidaMaxima": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "EndpointsDelBff"
+    }
+  ]
+}

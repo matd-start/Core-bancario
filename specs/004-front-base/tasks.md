@@ -48,7 +48,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Configuración de Keycloak
 
-- [ ] T01 — Cliente `core-bancario-web` confidencial y Keycloak alcanzable desde los contenedores:
+- [x] T01 — Cliente `core-bancario-web` confidencial y Keycloak alcanzable desde los contenedores:
   - en los dos realm JSON, los ajustes de la tabla de la sección 4 del plan: `publicClient: false`, `clientAuthenticatorType: client-secret`, `secret` con el marcador `${KC_WEB_CLIENTES_SECRET}` / `${KC_WEB_EMPLEADOS_SECRET}`, `redirectUris` exactas a `/bff/signin-oidc/{area}`, `webOrigins: []`, `post.logout.redirect.uris` vacío y PKCE `S256` conservado. Hay que actualizar la descripción;
   - en `docker-compose.yml`, servicio `keycloak`: las dos variables nuevas (obligatorias con `:?`), `KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8080}` y `KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"`;
   - en `.env.example`, las dos variables sin valor, con el comentario de que el mismo valor va en los user-secrets del BFF (`Bff:Clientes:ClientSecret` y `Bff:Empleados:ClientSecret`);
@@ -58,7 +58,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Api
 
-- [ ] T02 — Contrato y compose:
+- [x] T02 — Contrato y compose:
   - `OpcionesDeEmisor.Metadatos` (opcional) y, en `ConfiguracionDeAutenticacion.ConfigurarEsquema`, `jwt.MetadataAddress = Metadatos` si no es null (no cambia `ValidIssuer`);
   - `CodigosDeErrorEnOpenApi : IOpenApiDocumentTransformer` (*enum* `CodigoDeError` por reflexión sobre `CodigosDeError`), registrado en `AddOpenApi`;
   - regenerar y versionar `src/CoreBancario.Api/openapi/core-bancario-api.json`.
@@ -67,7 +67,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Bff (proyecto nuevo `src/CoreBancario.Bff`)
 
-- [ ] T03 — Esqueleto del host:
+- [x] T03 — Esqueleto del host:
   - `CoreBancario.Bff.csproj` (Web SDK, `net10.0`, nullable, `UserSecretsId`, `OpenApiDocumentsDirectory=openapi`, `--file-name core-bancario-bff`, y los paquetes de la sección 3.3 del plan);
   - `MarcadorDelBff`, `AreaDeSesion`, `AreasDeSesion` y `OpcionesDelBff`/`OpcionesDeLaApi`/`OpcionesDeArea`;
   - `appsettings.json`: `Bff:Clientes` 00:05:00/00:30:00, `Bff:Empleados` 00:15:00/09:00:00, `ClientId`, logs de `Microsoft.AspNetCore` y `Yarp` en `Warning`;
@@ -78,7 +78,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/{CoreBancario.Bff.csproj,Program.cs,MarcadorDelBff.cs,appsettings.json,appsettings.Development.json,Properties/launchSettings.json}`, `src/CoreBancario.Bff/Configuracion/{AreaDeSesion,AreasDeSesion,OpcionesDelBff}.cs`, `CoreBancario.slnx` · Cubre: RN-22, RNF-04 (logs), D-12 · Pruebas en verde: `F004_RN22_TiemposDelBff_CoincidenConLosRealms`
 
-- [ ] T04 — Reglas puras de la sesión:
+- [x] T04 — Reglas puras de la sesión:
   - `TokensDeLaSesion` (con `ToString` oculto) y `RolDeSesion`;
   - `SesionDelNavegador`, con guardas, `RegistrarActividad` que nunca retrocede y `ReemplazarTokens`;
   - `EstadoDeSesion`, `PlazosDeSesion` y `PoliticaDeSesion` ("≥" en el límite; vida máxima manda; plazos nunca negativos);
@@ -87,7 +87,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/Sesiones/{TokensDeLaSesion,RolDeSesion,SesionDelNavegador,EstadoDeSesion,PlazosDeSesion,PoliticaDeSesion,LectorDeRol}.cs`, `src/CoreBancario.Bff/InicioDeSesion/RutaDeRegreso.cs` · Cubre: RN-19, RN-22, RNF-06, CL-04, CL-07, CL-08, CA-07, CA-09, CA-13, CA-15
 
-- [ ] T05 — Frontera con Keycloak:
+- [x] T05 — Frontera con Keycloak:
   - `IClienteDeIdentidad`, `TokensRenovados`, `RenovacionRechazadaException` e `IdentidadSinRespuestaException`;
   - `ClienteDeIdentidadKeycloak`:
     - endpoints sacados del `ConfigurationManager` del esquema OIDC del área;
@@ -99,7 +99,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Se registra con `AddHttpClient` en T07 · Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/Identidad/{IClienteDeIdentidad,TokensRenovados,RenovacionRechazadaException,IdentidadSinRespuestaException,ClienteDeIdentidadKeycloak}.cs` · Cubre: RF-14, CL-05, CL-12, CA-16
 
-- [ ] T06 — Almacén y servicio de sesión:
+- [x] T06 — Almacén y servicio de sesión:
   - `AlmacenDeSesiones : ITicketStore`:
     - `NuevaClave` de 256 bits;
     - `StoreAsync` construye la `SesionDelNavegador` desde el ticket y no deja los tokens en el ticket guardado;
@@ -111,7 +111,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/Sesiones/{AlmacenDeSesiones,MotivoDeCierre,SesionTerminadaException,SesionDto,ServicioDeSesion}.cs`, `src/CoreBancario.Bff/InicioDeSesion/PropiedadesDeSesion.cs` · Cubre: RN-22, RN-25, RNF-01, RNF-06, CL-09, CL-12, CA-05, CA-07, CA-10, CA-16 · Pruebas en verde: `F004_CA07_…`, `F004_CA09_…`, `F004_CL12_RenovacionRechazada_…`, `F004_RNF06_…`, `F004_RNF01_TokensDeLaSesion_…`
 
-- [ ] T07 — Inicio de sesión OIDC:
+- [x] T07 — Inicio de sesión OIDC:
   - `ConfiguracionDeSesion.AddSesionDelNavegador`, con exactamente las opciones de su resumen (sección 3.3 del plan): cookie `cb-sesion`/`__Host-cb-sesion`, dos esquemas OIDC, `ResponseMode` `query`, PAR desactivado, PKCE, `SaveTokens`, solo `openid` y correlación `Lax`;
   - `EventosDeOidc`: `prompt=login` o `kc_action`; `iss` en `MessageReceived`; aviso de cambio de clave según `kc_action_status` en `TokenValidated`; RN-26 en `TicketReceived` (mismo `sid` conserva `Inicio`, otro `sid` cierra la anterior); `RemoteFailure` sin errores técnicos;
   - `Avisos`;
@@ -119,14 +119,14 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/InicioDeSesion/{ConfiguracionDeSesion,EventosDeOidc,Avisos}.cs` · Cubre: RF-14, RF-15, RN-19, RN-21, RN-24, RN-26, RNF-01, RNF-05, CL-01, CL-02, CL-03, CL-08, CL-09, CL-10, CA-01, CA-02, CA-04, CA-10, CA-13, CA-14, CA-21
 
-- [ ] T08 — Seguridad y errores:
+- [x] T08 — Seguridad y errores:
   - `ProteccionCsrf`, con su lista exacta de exenciones (iniciar sesión, cambiar clave y los dos `CallbackPath`), `X-CSRF: 1` y `Sec-Fetch-Site` igual a `same-origin`;
   - `EncabezadosDeSeguridad` (`no-store`, `nosniff`);
   - `CodigosDelBff` y `RespuestasDelBff` (`ProblemDetails` con `codigo` y `traceId`, sin `detail`).
 
   Repo: core-bancario · Capa: Bff · Archivos: `src/CoreBancario.Bff/Seguridad/{ProteccionCsrf,EncabezadosDeSeguridad}.cs`, `src/CoreBancario.Bff/Errores/{CodigosDelBff,RespuestasDelBff}.cs` · Cubre: RNF-02, RNF-12, CL-11, CA-06, CA-12
 
-- [ ] T09 — Endpoints, *proxy* y cableado:
+- [x] T09 — Endpoints, *proxy* y cableado:
   - `EndpointsDelBff`: las cinco rutas de la sección 3.1, con `WithName`. `iniciar-sesion` hace estas comprobaciones en orden: área válida → sesión de otra área → sesión de la misma área → `EstaDisponibleAsync` → `Challenge`. `cambiar-clave` exige sesión de clientes. `actividad` y `salir` solo aceptan `POST`;
   - `ProxyDeLaApi`: paso previo que resuelve el token o responde 401/503 sin reenviar, y después `MapForwarder` con las transformaciones de su resumen;
   - `CodigosDelBffEnOpenApi`;
@@ -137,7 +137,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Operación y cierre
 
-- [ ] T10 — Compose con perfiles y Dockerfiles:
+- [x] T10 — Compose con perfiles y Dockerfiles:
   - `src/CoreBancario.Api/Dockerfile` y `src/CoreBancario.Bff/Dockerfile` (multietapa `sdk:10.0` → `aspnet:10.0`, puerto 8080, sin generar OpenAPI en la imagen: `-p:OpenApiGenerateDocuments=false`);
   - en `docker-compose.yml`, servicios `api` y `bff` (perfil `app`) y `web` (perfil `web`, `build: ${CORE_BANCARIO_WEB_DIR:-../core-bancario-web}`, `5173:8080`), con la configuración de la tabla "Compose" del plan. `api` y `bff` **sin puertos publicados**;
   - en `.env.example`: `CORE_BANCARIO_WEB_DIR` comentado;
@@ -145,7 +145,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario · Capa: Operación · Archivos: `src/CoreBancario.Api/Dockerfile`, `src/CoreBancario.Bff/Dockerfile`, `docker-compose.yml`, `.env.example`, `.github/workflows/ci.yml` · Cubre: RNF-01 (API no expuesta), RNF-02 (sin CORS), RNF-16
 
-- [ ] T11 — Documentación y verificación del PR:
+- [x] T11 — Documentación y verificación del PR:
   - README, sección nueva "Aplicación web y BFF":
     - arquitectura (navegador → nginx/Vite → BFF → API, y BFF ↔ Keycloak);
     - por qué no hay tokens en el navegador;
