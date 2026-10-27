@@ -26,12 +26,12 @@ public sealed class ServicioDeSesion(AlmacenDeSesiones almacen, IClienteDeIdenti
     /// </summary>
     public async Task<SesionDto> RegistrarActividadAsync(string? clave, CancellationToken cancellationToken)
     {
-        await ObtenerVigenteAsync(clave, cancellationToken);
+        var existente = await ObtenerVigenteAsync(clave, cancellationToken);
 
-        return await almacen.ConCandadoAsync(clave!, async () =>
+        return await almacen.ConCandadoAsync(existente.Clave, async () =>
         {
             // Dentro del candado se vuelve a mirar: otra petición pudo cerrar la sesión mientras esperábamos.
-            var sesion = await ObtenerVigenteAsync(clave, cancellationToken);
+            var sesion = await ObtenerVigenteAsync(existente.Clave, cancellationToken);
             try
             {
                 await RenovarAsync(sesion, cancellationToken);
@@ -59,10 +59,10 @@ public sealed class ServicioDeSesion(AlmacenDeSesiones almacen, IClienteDeIdenti
         if (!NecesitaRenovar(sesion))
             return sesion.Tokens.AccessToken;
 
-        return await almacen.ConCandadoAsync(clave!, async () =>
+        return await almacen.ConCandadoAsync(sesion.Clave, async () =>
         {
             // Si otra petición ya renovó mientras esperábamos el candado, no se renueva dos veces (el refresh token rota).
-            var actual = await ObtenerVigenteAsync(clave, cancellationToken);
+            var actual = await ObtenerVigenteAsync(sesion.Clave, cancellationToken);
             if (NecesitaRenovar(actual))
                 await RenovarAsync(actual, cancellationToken);
 

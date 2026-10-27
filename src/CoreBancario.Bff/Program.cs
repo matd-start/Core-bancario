@@ -14,10 +14,17 @@ builder.Services.AddOpenApi(opciones => opciones.AddDocumentTransformer<CodigosD
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
 {
-    // Detrás de nginx: el BFF no tiene puertos publicados, así que su único cliente es el proxy de la red de compose.
     opciones.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     opciones.KnownIPNetworks.Clear();
     opciones.KnownProxies.Clear();
+
+    // Quién puede decir "vengo de https" o "mi IP es X": Bff:RedesDeConfianza (lista de redes CIDR, por ejemplo la de compose).
+    // Sin valor se confía en cualquier origen. Es un supuesto, no una protección: el BFF no publica puertos y solo lo alcanza
+    // el contenedor web (nginx), así que ese es el único que puede enviar estos encabezados. Si algún día se publica el 5180,
+    // hay que configurar esta lista.
+    var redes = builder.Configuration.GetSection("Bff:RedesDeConfianza").Get<string[]>() ?? [];
+    foreach (var red in redes)
+        opciones.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(red));
 });
 
 var app = builder.Build();

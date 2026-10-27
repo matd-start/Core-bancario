@@ -57,13 +57,19 @@ public sealed class AlmacenDeSesiones(TimeProvider reloj, IOptions<OpcionesDelBf
     }
 
     /// <summary>
-    /// El manejador de cookies llama a Renew (y no a Store) cuando el navegador ya traía una sesión al iniciar otra (RN-26).
-    /// Si el ticket trae tokens, reemplaza esa sesión. Los tickets que salen de Retrieve no los traen: nada que hacer.
+    /// El manejador de cookies llama a Renew (y no a Store) cuando ya conoce la clave de la petición. Como TicketReceived
+    /// descarta la sesión anterior antes de guardar la nueva, en un inicio de sesión normal esto no ocurre y se llama a Store con
+    /// una clave nueva. Si aun así llega un ticket con tokens, solo reemplaza la sesión de la MISMA identidad (mismo sid y
+    /// misma área): nunca guarda bajo una clave existente una sesión de otra persona. Los tickets de Retrieve no traen tokens.
     /// </summary>
     public Task RenewAsync(string key, AuthenticationTicket ticket)
     {
-        if (ticket.Properties.GetTokenValue(NombreDelTokenDeAcceso) is not null)
-            Agregar(Construir(key, ticket));
+        if (ticket.Properties.GetTokenValue(NombreDelTokenDeAcceso) is null)
+            return Task.CompletedTask;
+
+        var nueva = Construir(key, ticket);
+        if (ObtenerParaEvaluar(key) is { } actual && actual.Area == nueva.Area && actual.Sid == nueva.Sid)
+            Agregar(nueva);
 
         return Task.CompletedTask;
     }
@@ -127,7 +133,7 @@ public sealed class AlmacenDeSesiones(TimeProvider reloj, IOptions<OpcionesDelBf
         if (_entradas.TryRemove(clave, out var entrada))
             entrada.Temporizador?.Dispose();
 
-        _candados.TryRemove(clave, out _);
+        QuitarCandado(clave);
     }
 
     /// <summary>Serializa las operaciones sobre UNA sesión (renovaciones con rotación, maxReuse 0).</summary>
@@ -155,8 +161,16 @@ public sealed class AlmacenDeSesiones(TimeProvider reloj, IOptions<OpcionesDelBf
         if (_entradas.TryRemove(new KeyValuePair<string, Entrada>(clave, entrada)))
         {
             entrada.Temporizador?.Dispose();
-            _candados.TryRemove(clave, out _);
+            QuitarCandado(clave);
         }
+    }
+
+    private void QuitarCandado(string clave)
+    {
+        // Si alguien lo tiene tomado (por ejemplo, quien cierra la sesión desde dentro del candado), no se libera: esa
+        // persona hará Release sobre él y un SemaphoreSlim disponible no retiene nada que el recolector no recupere.
+        if (_candados.TryRemove(clave, out var candado) && candado.CurrentCount > 0)
+            candado.Dispose();
     }
 
     private SesionDelNavegador Construir(string clave, AuthenticationTicket ticket)

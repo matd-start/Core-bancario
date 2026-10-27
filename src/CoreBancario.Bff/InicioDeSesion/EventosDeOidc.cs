@@ -1,6 +1,7 @@
 using CoreBancario.Bff.Configuracion;
 using CoreBancario.Bff.Sesiones;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 
@@ -44,7 +45,7 @@ public sealed class EventosDeOidc(AreaDeSesion area) : OpenIdConnectEvents
     /// <summary>Con Items[Accion]: RedirectUri según kc_action_status. Siempre: Items[Area].</summary>
     public override Task TokenValidated(TokenValidatedContext context)
     {
-        var propiedades = context.Properties!;
+        var propiedades = context.Properties ??= new AuthenticationProperties();
         propiedades.Items[PropiedadesDeSesion.Area] = AreasDeSesion.Segmento(area);
 
         if (propiedades.Items.ContainsKey(PropiedadesDeSesion.Accion))
@@ -57,30 +58,50 @@ public sealed class EventosDeOidc(AreaDeSesion area) : OpenIdConnectEvents
         return Task.CompletedTask;
     }
 
-    /// <summary>RN-26: mismo sid conserva Inicio; otro sid cierra la sesión anterior.</summary>
+    /// <summary>
+    /// RN-26 y rotación de la clave: cada regreso con éxito recibe una clave NUEVA. La sesión que el navegador traía se
+    /// descarta antes de que el manejador de cookies guarde la nueva; si es de otro sid u otra área, además se cierra en Keycloak.
+    /// Con el mismo sid (por ejemplo tras cambiar la clave) la sesión nueva conserva el Inicio de la anterior (RN-22).
+    /// </summary>
     public override async Task TicketReceived(TicketReceivedContext context)
     {
-        var cookie = await context.HttpContext.AuthenticateAsync(ConfiguracionDeSesion.EsquemaDeCookie);
-        if (!cookie.Succeeded || cookie.Properties is null
-            || !cookie.Properties.Items.TryGetValue(PropiedadesDeSesion.Clave, out var clave) || clave is null)
-            return;
-
         var almacen = context.HttpContext.RequestServices.GetRequiredService<AlmacenDeSesiones>();
-        var anterior = almacen.Obtener(clave);
-        if (anterior is null)
+        var claveAnterior = LeerClaveDeLaCookie(context.HttpContext);
+        var anterior = claveAnterior is null ? null : almacen.ObtenerParaEvaluar(claveAnterior);
+        if (claveAnterior is null || anterior is null)
             return;
 
         var sidNuevo = context.Principal?.FindFirst("sid")?.Value;
         if (anterior.Area == area && anterior.Sid == sidNuevo)
         {
-            // Es la misma sesión de Keycloak: el inicio de la vida máxima no se reinicia (RN-22).
-            context.Properties!.Items[PropiedadesDeSesion.Inicio] = anterior.Inicio.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+            // Es la misma sesión de Keycloak: la vida máxima no se reinicia (RN-22) y Keycloak no se cierra (cerraría la nueva).
+            if (context.Properties is { } propiedades)
+                propiedades.Items[PropiedadesDeSesion.Inicio] = anterior.Inicio.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+
+            almacen.Eliminar(claveAnterior);
             return;
         }
 
-        // Una sola sesión por navegador (RN-26): la anterior se cierra en Keycloak antes de guardar la nueva.
+        // Una sola sesión por navegador (RN-26): la anterior se cierra en Keycloak y se borra antes de guardar la nueva.
         var servicio = context.HttpContext.RequestServices.GetRequiredService<ServicioDeSesion>();
-        await servicio.CerrarAsync(clave, context.HttpContext.RequestAborted);
+        await servicio.CerrarAsync(claveAnterior, context.HttpContext.RequestAborted);
+    }
+
+    /// <summary>
+    /// La clave de la sesión que trae la cookie de ESTA petición, leída sin pasar por el manejador de cookies. Es a propósito:
+    /// si el manejador autentica la cookie, recuerda la clave y, al iniciar sesión, llama a RenewAsync con esa misma clave en
+    /// vez de a StoreAsync. Leyéndola aquí y borrando la sesión del almacén, el manejador no encuentra nada y pide una clave
+    /// nueva, de modo que la cookie anterior deja de servir (fijación de sesión). El ticket de la cookie solo lleva esa clave.
+    /// </summary>
+    private static string? LeerClaveDeLaCookie(HttpContext contexto)
+    {
+        var cookie = contexto.RequestServices.GetRequiredService<IOptionsMonitor<CookieAuthenticationOptions>>()
+            .Get(ConfiguracionDeSesion.EsquemaDeCookie);
+        var valor = cookie.CookieManager.GetRequestCookie(contexto, cookie.Cookie.Name ?? "");
+        if (string.IsNullOrEmpty(valor))
+            return null;
+
+        return cookie.TicketDataFormat.Unprotect(valor)?.Principal.Claims.FirstOrDefault()?.Value;
     }
 
     /// <summary>CL-01/CL-02: HandleResponse(); con sesión vigente a su inicio; si no, al aviso inicio-fallido.</summary>
