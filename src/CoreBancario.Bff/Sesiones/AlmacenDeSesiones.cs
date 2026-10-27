@@ -133,7 +133,9 @@ public sealed class AlmacenDeSesiones(TimeProvider reloj, IOptions<OpcionesDelBf
         if (_entradas.TryRemove(clave, out var entrada))
             entrada.Temporizador?.Dispose();
 
-        QuitarCandado(clave);
+        // Sin Dispose: otra petición puede tener o estar a punto de tomar este semáforo, y su Release lanzaría
+        // ObjectDisposedException. Sin AvailableWaitHandle no retiene recursos no administrados: lo recupera el recolector.
+        _candados.TryRemove(clave, out _);
     }
 
     /// <summary>Serializa las operaciones sobre UNA sesión (renovaciones con rotación, maxReuse 0).</summary>
@@ -161,16 +163,8 @@ public sealed class AlmacenDeSesiones(TimeProvider reloj, IOptions<OpcionesDelBf
         if (_entradas.TryRemove(new KeyValuePair<string, Entrada>(clave, entrada)))
         {
             entrada.Temporizador?.Dispose();
-            QuitarCandado(clave);
+            _candados.TryRemove(clave, out _);
         }
-    }
-
-    private void QuitarCandado(string clave)
-    {
-        // Si alguien lo tiene tomado (por ejemplo, quien cierra la sesión desde dentro del candado), no se libera: esa
-        // persona hará Release sobre él y un SemaphoreSlim disponible no retiene nada que el recolector no recupere.
-        if (_candados.TryRemove(clave, out var candado) && candado.CurrentCount > 0)
-            candado.Dispose();
     }
 
     private SesionDelNavegador Construir(string clave, AuthenticationTicket ticket)

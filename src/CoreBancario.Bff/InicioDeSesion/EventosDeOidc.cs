@@ -10,6 +10,12 @@ namespace CoreBancario.Bff.InicioDeSesion;
 /// <summary>Eventos de los dos esquemas OIDC; uno por área.</summary>
 public sealed class EventosDeOidc(AreaDeSesion area) : OpenIdConnectEvents
 {
+    /// <summary>
+    /// Tipo del claim donde CookieAuthenticationHandler guarda la clave de sesión del SessionStore dentro de la cookie. Es la
+    /// constante privada SessionIdClaim de ese manejador (ASP.NET Core): si cambiara, la prueba de fijación de sesión fallaría.
+    /// </summary>
+    private const string TipoDeClaimDeLaClaveDeSesion = "Microsoft.AspNetCore.Authentication.Cookies-SessionId";
+
     private const string AccionCambiarClave = "UPDATE_PASSWORD";
     private const string EstadoDeLaAccionExitosa = "success";
 
@@ -101,7 +107,7 @@ public sealed class EventosDeOidc(AreaDeSesion area) : OpenIdConnectEvents
         if (string.IsNullOrEmpty(valor))
             return null;
 
-        return cookie.TicketDataFormat.Unprotect(valor)?.Principal.Claims.FirstOrDefault()?.Value;
+        return cookie.TicketDataFormat.Unprotect(valor)?.Principal.FindFirst(TipoDeClaimDeLaClaveDeSesion)?.Value;
     }
 
     /// <summary>CL-01/CL-02: HandleResponse(); con sesión vigente a su inicio; si no, al aviso inicio-fallido.</summary>
