@@ -1,0 +1,15 @@
+# El contexto de build de las imágenes es la raíz del repositorio: solo debe entrar el código fuente.
+# Sobre todo, .env (secretos) nunca debe llegar al daemon ni a una capa.
+**/bin/
+**/obj/
+.git/
+.github/
+.claude/
+.vs/
+.env
+.env.*
+TestResults/
+tests/
+docs/
+specs/
+infra/

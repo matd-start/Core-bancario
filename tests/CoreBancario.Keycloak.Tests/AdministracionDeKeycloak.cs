@@ -85,12 +85,12 @@ public sealed class AdministracionDeKeycloak(string urlBase, string usuario, str
         await AseguraExitoAsync(respuesta, $"actualizar el realm {realm}");
     }
 
-    /// <summary>Registra la URI de redireccion de las pruebas en el cliente core-bancario-web del realm.</summary>
-    public async Task RegistrarUriDeRedireccionAsync(string realm, string clientId, string uri)
+    /// <summary>Registra las URI de redireccion de las pruebas en el cliente core-bancario-web del realm (la de la 003 y la del BFF).</summary>
+    public async Task RegistrarUriDeRedireccionAsync(string realm, string clientId, params string[] uris)
     {
         var encontrados = await LeerAsync($"/admin/realms/{realm}/clients?clientId={Uri.EscapeDataString(clientId)}");
         var cliente = encontrados.AsArray().Single()!.AsObject();
-        cliente["redirectUris"] = new JsonArray(uri);
+        cliente["redirectUris"] = new JsonArray([.. uris.Select(u => (JsonNode)JsonValue.Create(u)!)]);
         cliente["webOrigins"] = new JsonArray("+");
 
         using var respuesta = await EnviarAsync(HttpMethod.Put, $"/admin/realms/{realm}/clients/{(string)cliente["id"]!}", cliente);

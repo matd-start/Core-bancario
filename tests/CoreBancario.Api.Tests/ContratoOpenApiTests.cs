@@ -134,6 +134,56 @@ public class ContratoOpenApiTests(ApiFixture api)
         Assert.Equal(codigosEsperados.Split(','), codigos);
     }
 
+    // ---- 004: RNF-12, el catalogo de codigos es un enum del contrato (fuente del tipo de la SPA) ----
+
+    [Fact]
+    public void F004_RNF12_ContratoOpenApi_EnumeraTodosLosCodigosDeError()
+    {
+        // Arrange: el oraculo son las constantes de CodigosDeError, leidas por reflexion en la prueba.
+        var contrato = ContratoVersionado();
+        var constantes = typeof(CoreBancario.Api.Errores.CodigosDeError)
+            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)
+            .Where(f => f.IsLiteral && f.FieldType == typeof(string))
+            .Select(f => (string)f.GetRawConstantValue()!)
+            .Order(StringComparer.Ordinal)
+            .ToList();
+
+        // Act
+        var esquema = contrato["components"]?["schemas"]?["CodigoDeError"];
+        var enumerados = esquema?["enum"]?.AsArray().Select(c => (string)c!).Order(StringComparer.Ordinal).ToList();
+
+        // Assert
+        Assert.NotEmpty(constantes);
+        Assert.NotNull(esquema);
+        Assert.Equal("string", (string?)esquema["type"]);
+        Assert.Equal(constantes, enumerados);
+    }
+
+    // ---- 004: regla del autor (RNF-02), ningun GET cambia datos ----
+
+    [Fact]
+    public void F004_RNF02_ContratoOpenApi_LosGetSonSoloConsultas()
+    {
+        // Arrange
+        var contrato = ContratoVersionado();
+        string[] prefijosDeConsulta = ["Obtener", "Listar", "Buscar", "Consultar"];
+
+        // Act
+        var getters = contrato["paths"]!.AsObject()
+            .SelectMany(ruta => ruta.Value!.AsObject().Where(m => m.Key == "get").Select(m => m.Value!))
+            .ToList();
+        var queNoSonConsultas = getters
+            .Select(g => (string?)g["operationId"] ?? "(sin operationId)")
+            .Where(id => !prefijosDeConsulta.Any(p => id.StartsWith(p, StringComparison.Ordinal)))
+            .ToList();
+        var conCuerpo = getters.Where(g => g["requestBody"] is not null).Select(g => (string?)g["operationId"]).ToList();
+
+        // Assert
+        Assert.NotEmpty(getters);
+        Assert.Empty(queNoSonConsultas);
+        Assert.Empty(conCuerpo);
+    }
+
     [Fact]
     public async Task F003_RNF06_OpenApiEnDevelopment_SeSirveSinSesionYDescribeElEsquemaBearer()
     {

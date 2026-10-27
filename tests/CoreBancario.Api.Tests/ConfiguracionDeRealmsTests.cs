@@ -184,23 +184,80 @@ public class ConfiguracionDeRealmsTests
         Assert.DoesNotContain("offline_access", Textos(cliente["optionalClientScopes"]));
     }
 
-    // ---- ADR-0014: el cliente de la SPA ----
+    // ---- ADR-0020: el cliente web lo usa el BFF, y es confidencial (sustituye a F003_ADR0014_ClienteWeb_EsPublico...) ----
 
     [Theory]
-    [InlineData("clientes")]
-    [InlineData("empleados")]
-    public void F003_ADR0014_ClienteWeb_EsPublicoYUsaCodigoConPkceS256(string realm)
+    [InlineData("clientes", "${KC_WEB_CLIENTES_SECRET}")]
+    [InlineData("empleados", "${KC_WEB_EMPLEADOS_SECRET}")]
+    public void F004_ADR0020_ClienteWeb_EsConfidencialConPkceS256YSecretoComoMarcador(string realm, string marcador)
     {
         // Arrange / Act
         var cliente = ClienteWeb(realm);
 
         // Assert
-        Assert.True((bool?)cliente["publicClient"]);
+        Assert.False((bool?)cliente["publicClient"]);
+        Assert.Equal("client-secret", (string?)cliente["clientAuthenticatorType"]);
+        Assert.Equal(marcador, (string?)cliente["secret"]);
         Assert.True((bool?)cliente["standardFlowEnabled"]);
         Assert.False((bool?)cliente["implicitFlowEnabled"]);
         Assert.False((bool?)cliente["serviceAccountsEnabled"]);
         Assert.Equal("S256", (string?)cliente["attributes"]?["pkce.code.challenge.method"]);
     }
+
+    [Theory]
+    [InlineData("clientes")]
+    [InlineData("empleados")]
+    public void F004_ADR0020_ClienteWeb_SoloAceptaElRegresoDelBffDeSuAreaYNoHablaConElNavegador(string realm)
+    {
+        // Arrange / Act
+        var cliente = ClienteWeb(realm);
+
+        // Assert: redirectUris exactas (sin comodin), sin CORS y sin redireccion de cierre (el cierre es por el canal trasero).
+        Assert.Equal([$"http://localhost:5173/bff/signin-oidc/{realm}"], Textos(cliente["redirectUris"]));
+        Assert.Empty(Textos(cliente["webOrigins"]));
+        Assert.Equal("", (string?)cliente["attributes"]?["post.logout.redirect.uris"]);
+    }
+
+    // ---- RN-22: los tiempos del BFF coinciden con los de los realms ----
+
+    [Theory]
+    [InlineData("clientes", "Clientes")]
+    [InlineData("empleados", "Empleados")]
+    public void F004_RN22_TiemposDelBff_CoincidenConLosRealms(string realm, string seccion)
+    {
+        // Arrange
+        var ruta = Path.Combine(AyudasDeAutenticacion.RaizDelRepositorio(), "src", "CoreBancario.Bff", "appsettings.json");
+        Assert.True(File.Exists(ruta), $"Falta {ruta} (T03).");
+        var bff = JsonNode.Parse(File.ReadAllText(ruta))!["Bff"]![seccion]!;
+        var json = Cargar(realm);
+
+        // Act
+        var inactividad = TimeSpan.Parse((string)bff["Inactividad"]!, System.Globalization.CultureInfo.InvariantCulture);
+        var vidaMaxima = TimeSpan.Parse((string)bff["VidaMaxima"]!, System.Globalization.CultureInfo.InvariantCulture);
+
+        // Assert
+        Assert.Equal(TimeSpan.FromSeconds((int)json["ssoSessionIdleTimeout"]!), inactividad);
+        Assert.Equal(TimeSpan.FromSeconds((int)json["ssoSessionMaxLifespan"]!), vidaMaxima);
+    }
+
+    [Theory]
+    [InlineData("Clientes", "00:05:00", "00:30:00")]
+    [InlineData("Empleados", "00:15:00", "09:00:00")]
+    public void F004_RN22_TiemposDelBff_SonLosDeLaSpecDeProducto(string seccion, string inactividad, string vidaMaxima)
+    {
+        // Arrange
+        var ruta = Path.Combine(AyudasDeAutenticacion.RaizDelRepositorio(), "src", "CoreBancario.Bff", "appsettings.json");
+        Assert.True(File.Exists(ruta), $"Falta {ruta} (T03).");
+
+        // Act
+        var bff = JsonNode.Parse(File.ReadAllText(ruta))!["Bff"]![seccion]!;
+
+        // Assert
+        Assert.Equal(inactividad, (string?)bff["Inactividad"]);
+        Assert.Equal(vidaMaxima, (string?)bff["VidaMaxima"]);
+    }
+
+    // ---- ADR-0014: el cliente de la SPA ----
 
     [Theory]
     [InlineData("clientes")]

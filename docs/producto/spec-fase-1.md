@@ -119,10 +119,12 @@ Cada regla tiene un identificador para citarla en pruebas, ADRs y commits; cada 
 | RN-22 | Una sesión termina por inactividad o por vida máxima, lo que ocurra primero. Cliente: 5 min de inactividad y 30 min de vida máxima. Operador: 15 min de inactividad y 9 h de vida máxima. |
 | RN-23 | Tras 5 intentos fallidos seguidos de inicio de sesión, la credencial se bloquea 15 min y luego se libera sola. |
 | RN-24 | El segundo factor es obligatorio para clientes y operadores: una clave dinámica de 6 dígitos generada por una app autenticadora (estándar TOTP), inscrita en el primer ingreso. |
+| RN-25 | La inactividad de RN-22 se mide por la interacción deliberada del usuario con la aplicación (clic, tecla o cambio de pantalla) en cualquiera de sus pestañas; mover el ratón o hacer scroll no cuenta, y las peticiones que la aplicación hace sola nunca cuentan como actividad. |
+| RN-26 | Un navegador tiene como máximo una sesión abierta a la vez: para entrar con otra credencial, primero se cierra la actual. |
 
 ## Requisitos funcionales
 
-Quince requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
+Dieciséis requisitos cierran la fase 1; cada criterio de aceptación se convierte en una prueba de integración.
 
 | ID | Requisito | Actor | Criterio de aceptación |
 | --- | --- | --- | --- |
@@ -141,6 +143,7 @@ Quince requisitos cierran la fase 1; cada criterio de aceptación se convierte e
 | RF-13 | Gestionar el acceso digital de un cliente | Operador | Habilitar o restablecer entrega una clave temporal que se muestra una sola vez; deshabilitar impide renovar la sesión; cada operación queda registrada con el operador y la fecha (RN-20). |
 | RF-14 | Iniciar y cerrar sesión | Cliente, Operador | Con usuario, clave y segundo factor (RN-24); con una clave temporal solo se puede cambiar la clave e inscribir el segundo factor (RN-21); un fallo no revela si el usuario existe. |
 | RF-15 | Cambiar la clave | Cliente | Exige la clave actual; después solo funciona la nueva. |
+| RF-16 | Consultar el estado del acceso digital de un cliente | Operador | La ficha del cliente indica si su acceso está Sin habilitar, Habilitado o Deshabilitado, para que el operador sepa si habilitar es en realidad restablecer (RN-20). |
 
 ## Requisitos no funcionales
 
@@ -178,7 +181,7 @@ Una sola aplicación React + TypeScript con dos áreas según el rol; debe ser c
 
 | Área | Pantalla | Qué demuestra |
 | --- | --- | --- |
-| Común | Inicio de sesión y rutas protegidas por rol | Manejo de tokens, expiración y redirecciones |
+| Común | Inicio de sesión y rutas protegidas por rol | Sesión sin tokens legibles desde JavaScript (D-12), expiración por inactividad real y redirecciones |
 | Cliente | Mis cuentas | Estado del servidor en caché, estados de carga, error y vacío |
 | Cliente | Detalle de cuenta con extracto | Paginación, filtros por fecha, formato de moneda por locale |
 | Cliente | Nueva transferencia | Formulario validado, vista previa de conversión con la tasa vigente, confirmación en dos pasos |
@@ -198,7 +201,7 @@ Prácticas que el frontend debe mostrar:
 
 ## Decisiones abiertas para Design
 
-Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-08 → ADR-0014, D-10 → ADR-0005.
+Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `docs/adr/` (numerado por orden de creación) con contexto, opciones, decisión y alternativa descartada. Resueltas: D-01 → ADR-0002, D-02 → ADR-0003 (base de datos; el mecanismo que protege el saldo se decide en el Sprint 4), D-03 → ADR-0004, D-06 → ADR-0009, D-07 → ADR-0007, D-08 → ADR-0014, D-09 → ADR-0022, D-10 → ADR-0005, D-12 → ADR-0020 (con ADR-0021 para la inactividad).
 
 | ID | Pregunta | Opciones a comparar |
 | --- | --- | --- |
@@ -213,3 +216,4 @@ Estas decisiones no se toman en la Spec: cada una se convierte en un ADR en `doc
 | D-09 | ¿Cómo se construye el frontend? | Herramienta de build, manejo de estado del servidor, formularios y generación de cliente desde OpenAPI |
 | D-10 | ¿Un repositorio o varios? | Monorepo backend + frontend · repositorios separados |
 | D-11 | ¿Dónde se despliega sin costo? | LocalStack · otras alternativas gratuitas; verificar condiciones vigentes antes de decidir |
+| D-12 | ¿Cómo mantiene el navegador la sesión sin que JavaScript pueda leer los tokens? (la spec 004 descartó los tokens en memoria de la SPA) | BFF propio en .NET (proyecto en este repositorio, dentro de la API o servicio aparte) · librería BFF de terceros (verificar licencia) · dónde se guardan los tokens en el servidor y cómo se protege frente a CSRF |

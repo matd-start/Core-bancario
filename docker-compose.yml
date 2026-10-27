@@ -29,6 +29,14 @@ services:
       # Secreto de la cuenta de servicio core-bancario-api-admin (003b). El realm clientes trae un marcador con este
       # mismo nombre y Keycloak lo resuelve con esta variable al importar: el secreto no está en el repositorio.
       KC_CLIENTES_API_SECRET: ${KC_CLIENTES_API_SECRET:?Define KC_CLIENTES_API_SECRET en .env}
+      # Secretos del cliente confidencial core-bancario-web de cada realm (004, ADR-0020): lo usa el BFF. Los realms
+      # traen un marcador con este mismo nombre y Keycloak lo resuelve al importar.
+      KC_WEB_CLIENTES_SECRET: ${KC_WEB_CLIENTES_SECRET:?Define KC_WEB_CLIENTES_SECRET en .env}
+      KC_WEB_EMPLEADOS_SECRET: ${KC_WEB_EMPLEADOS_SECRET:?Define KC_WEB_EMPLEADOS_SECRET en .env}
+      # El "iss" de los tokens queda fijo en la URL que ve el navegador, y los contenedores (API, BFF) pueden pedir el
+      # descubrimiento y los tokens por http://keycloak:8080 (ADR-0020). Cambiarlo exige recrear el volumen (README).
+      KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8080}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
     volumes:
@@ -39,6 +47,65 @@ services:
       - ./infra/keycloak/realms:/opt/keycloak/data/import:ro
       - ./infra/keycloak/themes/core-bancario:/opt/keycloak/themes/core-bancario:ro
       - ./infra/keycloak/themes/core-bancario-clientes:/opt/keycloak/themes/core-bancario-clientes:ro
+
+  # ── Perfil "app" (T10, RNF-16): la API y el BFF. Sin perfil, este archivo sigue levantando solo PostgreSQL y Keycloak.
+  # Ninguno publica puertos: la API solo la alcanza el BFF y el BFF solo lo alcanza nginx (perfil "web"), dentro de la red
+  # de compose (ADR-0020). Todo el repositorio: docker compose --profile app --profile web up -d --build --wait
+  # Los dos corren en Development: la cookie del BFF sin Secure (HTTP) y la API migra la base al arrancar.
+  api:
+    profiles: ["app"]
+    container_name: core-bancario-api
+    build:
+      context: .
+      dockerfile: src/CoreBancario.Api/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__CoreBancario: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Define POSTGRES_DB en .env};Username=${POSTGRES_USER:?Define POSTGRES_USER en .env};Password=${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+      # El "iss" que valida es el que ve el navegador; el descubrimiento lo baja por la red interna (ADR-0020).
+      Autenticacion__Clientes__Emisor: http://localhost:${KEYCLOAK_PORT:-8080}/realms/clientes
+      Autenticacion__Clientes__Metadatos: http://keycloak:8080/realms/clientes/.well-known/openid-configuration
+      Autenticacion__Empleados__Emisor: http://localhost:${KEYCLOAK_PORT:-8080}/realms/empleados
+      Autenticacion__Empleados__Metadatos: http://keycloak:8080/realms/empleados/.well-known/openid-configuration
+      Keycloak__Administracion__UrlBase: http://keycloak:8080
+      Keycloak__Administracion__ClientSecret: ${KC_CLIENTES_API_SECRET:?Define KC_CLIENTES_API_SECRET en .env}
+
+  bff:
+    profiles: ["app"]
+    container_name: core-bancario-bff
+    build:
+      context: .
+      dockerfile: src/CoreBancario.Bff/Dockerfile
+    depends_on:
+      api:
+        condition: service_started
+      keycloak:
+        condition: service_started
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Bff__Api__Url: http://api:8080
+      Bff__Clientes__Emisor: http://localhost:${KEYCLOAK_PORT:-8080}/realms/clientes
+      Bff__Clientes__Metadatos: http://keycloak:8080/realms/clientes/.well-known/openid-configuration
+      Bff__Clientes__ClientSecret: ${KC_WEB_CLIENTES_SECRET:?Define KC_WEB_CLIENTES_SECRET en .env}
+      Bff__Empleados__Emisor: http://localhost:${KEYCLOAK_PORT:-8080}/realms/empleados
+      Bff__Empleados__Metadatos: http://keycloak:8080/realms/empleados/.well-known/openid-configuration
+      Bff__Empleados__ClientSecret: ${KC_WEB_EMPLEADOS_SECRET:?Define KC_WEB_EMPLEADOS_SECRET en .env}
+
+  # ── Perfil "web": la SPA (repositorio core-bancario-web, clonado al lado) servida por nginx con CSP. Es lo único que
+  # se publica: el navegador entra por http://localhost:5173 y nginx reenvía /bff/ y /api/ al BFF. Necesita el perfil "app".
+  web:
+    profiles: ["web"]
+    container_name: core-bancario-web
+    build: ${CORE_BANCARIO_WEB_DIR:-../core-bancario-web}
+    depends_on:
+      bff:
+        condition: service_started
+    ports:
+      - "5173:8080"
 
 volumes:
   postgres-data:

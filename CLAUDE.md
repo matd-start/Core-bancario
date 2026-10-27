@@ -9,6 +9,7 @@ Core bancario simplificado (backend) con cuentas en COP y USD, transferencias in
 - Persistencia: PostgreSQL (ADR-0003); EF Core para escribir y migrar, Dapper solo para lecturas que lo justifiquen (ADR-0004).
 - Pruebas: xUnit v3 sobre Microsoft Testing Platform (ADR-0006); integración contra PostgreSQL real con Testcontainers. Al añadir la primera prueba a un proyecto de tests, quitar su `--ignore-exit-code 8`.
 - Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API. Qué se hace en cada repo: "Dos repositorios, una sola fuente de verdad", más abajo.
+- Sesión del navegador: BFF propio, sin tokens en JavaScript (ADR-0020, ADR-0021).
 - Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-11 despliegue (fase 4).
 
 ## Estructura
@@ -19,10 +20,12 @@ src/
   CoreBancario.Application/     casos de uso y puertos (interfaces)
   CoreBancario.Infrastructure/  implementación de los puertos: EF Core, Dapper, servicios externos
   CoreBancario.Api/             endpoints delgados que delegan a Application
+  CoreBancario.Bff/             BFF: sesión del navegador y proxy a la API (ADR-0020)
 infra/
   keycloak/                     realms (JSON de import) y temas de login de Keycloak (ADR-0014)
 tests/
   CoreBancario.<Capa>.Tests/    un proyecto de tests por capa
+  CoreBancario.Bff.Tests/       pruebas del BFF (un host propio, no una capa)
   CoreBancario.Keycloak.Tests/  excepción a "un proyecto por capa": pruebas contra Keycloak real (ADR-0018)
 docs/
   producto/                     spec de producto (fuente de verdad de RN y RF) y roadmap

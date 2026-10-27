@@ -1,15 +1,20 @@
 using System.Net.Http.Headers;
 using System.Text.Json.Nodes;
+using CoreBancario.Bff;
 using CoreBancario.Domain.AccesosDigitales;
 using CoreBancario.Domain.Clientes;
 using CoreBancario.Infrastructure.Identidad;
 using CoreBancario.Infrastructure.Persistencia;
 using DotNet.Testcontainers.Configurations;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Testcontainers.Keycloak;
 using Testcontainers.PostgreSql;
+using Yarp.ReverseProxy.Forwarder;
 
 [assembly: AssemblyFixture(typeof(CoreBancario.Keycloak.Tests.KeycloakFixture))]
 
@@ -30,6 +35,9 @@ public sealed class KeycloakFixture : IAsyncLifetime
     /// <summary>Inactividad de las sesiones durante las pruebas (en produccion: 5 y 15 min, RN-22).</summary>
     public static readonly TimeSpan InactividadEnLasPruebas = TimeSpan.FromSeconds(40);
 
+    /// <summary>Vida maxima de las sesiones durante las pruebas (en produccion: 30 min y 9 h, RN-22). La 004 tambien la baja.</summary>
+    public static readonly TimeSpan VidaMaximaEnLasPruebas = TimeSpan.FromSeconds(120);
+
     /// <summary>Espera del bloqueo durante las pruebas (en produccion: 15 min, RN-23).</summary>
     public static readonly TimeSpan EsperaDelBloqueoEnLasPruebas = TimeSpan.FromSeconds(10);
 
@@ -38,6 +46,9 @@ public sealed class KeycloakFixture : IAsyncLifetime
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17").Build();
     private KeycloakContainer? _keycloak;
+    private readonly Lazy<WebApplicationFactory<MarcadorDelBff>> _bff;
+
+    public KeycloakFixture() => _bff = new Lazy<WebApplicationFactory<MarcadorDelBff>>(CrearBff);
 
     public string UrlDeKeycloak { get; private set; } = "";
 
@@ -46,6 +57,14 @@ public sealed class KeycloakFixture : IAsyncLifetime
     /// por la variable KC_CLIENTES_API_SECRET y la API de las pruebas, por Keycloak:Administracion:ClientSecret.
     /// </summary>
     public string SecretoDeServicio { get; } = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24));
+
+    /// <summary>
+    /// Secretos del cliente core-bancario-web de cada realm (004, ADR-0020: el cliente es confidencial). Aleatorios en cada
+    /// ejecucion: los realms los reciben por KC_WEB_CLIENTES_SECRET y KC_WEB_EMPLEADOS_SECRET, y el BFF, por su configuracion.
+    /// </summary>
+    public string SecretoWebDeClientes { get; } = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24));
+
+    public string SecretoWebDeEmpleados { get; } = Convert.ToHexString(System.Security.Cryptography.RandomNumberGenerator.GetBytes(24));
 
     public AdministracionDeKeycloak Admin { get; private set; } = null!;
 
@@ -69,12 +88,14 @@ public sealed class KeycloakFixture : IAsyncLifetime
             await Admin.ActualizarRealmAsync(realm, new JsonObject
             {
                 ["ssoSessionIdleTimeout"] = (int)InactividadEnLasPruebas.TotalSeconds,
+                ["ssoSessionMaxLifespan"] = (int)VidaMaximaEnLasPruebas.TotalSeconds,
                 ["waitIncrementSeconds"] = (int)EsperaDelBloqueoEnLasPruebas.TotalSeconds,
                 ["maxFailureWaitSeconds"] = (int)EsperaDelBloqueoEnLasPruebas.TotalSeconds,
                 ["quickLoginCheckMilliSeconds"] = 1,
                 ["minimumQuickLoginWaitSeconds"] = 1,
             });
-            await Admin.RegistrarUriDeRedireccionAsync(realm, NavegadorSimulado.ClientId, NavegadorSimulado.UriDeRedireccion);
+            await Admin.RegistrarUriDeRedireccionAsync(realm, NavegadorSimulado.ClientId,
+                NavegadorSimulado.UriDeRedireccion, NavegadorDelBff.UriDeRedireccionDe(realm));
         }
 
         Api = new WebApplicationFactory<Program>().WithWebHostBuilder(constructor =>
@@ -95,6 +116,9 @@ public sealed class KeycloakFixture : IAsyncLifetime
     {
         if (Api is not null)
             await Api.DisposeAsync();
+
+        if (_bff.IsValueCreated)
+            await _bff.Value.DisposeAsync();
 
         Admin?.Dispose();
 
@@ -124,6 +148,9 @@ public sealed class KeycloakFixture : IAsyncLifetime
             .WithPassword(ClaveDelAdminDeMaster)
             // Los realms usan el marcador ${KC_CLIENTES_API_SECRET} (003b): Keycloak lo resuelve con esta variable.
             .WithEnvironment("KC_CLIENTES_API_SECRET", SecretoDeServicio)
+            // 004: el cliente core-bancario-web es confidencial; sus realms usan los marcadores ${KC_WEB_*_SECRET}.
+            .WithEnvironment("KC_WEB_CLIENTES_SECRET", SecretoWebDeClientes)
+            .WithEnvironment("KC_WEB_EMPLEADOS_SECRET", SecretoWebDeEmpleados)
             .WithResourceMapping(realms, "/opt/keycloak/data/import")
             .WithResourceMapping(temaBase, "/opt/keycloak/themes/core-bancario")
             .WithResourceMapping(temaDeClientes, "/opt/keycloak/themes/core-bancario-clientes")
@@ -145,7 +172,52 @@ public sealed class KeycloakFixture : IAsyncLifetime
     }
 
     /// <summary>Un navegador nuevo (cookies propias) apuntando a este Keycloak.</summary>
-    public NavegadorSimulado NuevoNavegador() => new(UrlDeKeycloak);
+    public NavegadorSimulado NuevoNavegador() => new(UrlDeKeycloak, SecretosWeb);
+
+    private IReadOnlyDictionary<string, string> SecretosWeb => new Dictionary<string, string>
+    {
+        [RealmDeClientes] = SecretoWebDeClientes,
+        [RealmDeEmpleados] = SecretoWebDeEmpleados,
+    };
+
+    /// <summary>
+    /// El BFF REAL (004) contra este Keycloak, con tiempos cortos (inactividad 40 s, vida maxima 120 s) y el proxy hacia la
+    /// API real en memoria. Se crea la primera vez que se usa: las pruebas de la 003 no lo necesitan.
+    /// </summary>
+    public WebApplicationFactory<MarcadorDelBff> Bff => _bff.Value;
+
+    /// <summary>Un navegador nuevo (cookies propias) que habla con el BFF en memoria y con este Keycloak, cada uno en su puerto.</summary>
+    public NavegadorDelBff NuevoNavegadorDelBff() => new(Bff.Server.CreateHandler(), UrlDeKeycloak);
+
+    private WebApplicationFactory<MarcadorDelBff> CrearBff() =>
+        new WebApplicationFactory<MarcadorDelBff>().WithWebHostBuilder(constructor =>
+        {
+            constructor.UseEnvironment("Development");
+            constructor.UseSetting("Bff:Api:Url", "http://api-de-pruebas");
+            constructor.UseSetting("Bff:Clientes:Emisor", $"{UrlDeKeycloak}/realms/{RealmDeClientes}");
+            constructor.UseSetting("Bff:Clientes:ClientId", NavegadorSimulado.ClientId);
+            constructor.UseSetting("Bff:Clientes:ClientSecret", SecretoWebDeClientes);
+            constructor.UseSetting("Bff:Clientes:Inactividad", Formato(InactividadEnLasPruebas));
+            constructor.UseSetting("Bff:Clientes:VidaMaxima", Formato(VidaMaximaEnLasPruebas));
+            constructor.UseSetting("Bff:Empleados:Emisor", $"{UrlDeKeycloak}/realms/{RealmDeEmpleados}");
+            constructor.UseSetting("Bff:Empleados:ClientId", NavegadorSimulado.ClientId);
+            constructor.UseSetting("Bff:Empleados:ClientSecret", SecretoWebDeEmpleados);
+            constructor.UseSetting("Bff:Empleados:Inactividad", Formato(InactividadEnLasPruebas));
+            constructor.UseSetting("Bff:Empleados:VidaMaxima", Formato(VidaMaximaEnLasPruebas));
+            constructor.ConfigureTestServices(servicios =>
+            {
+                // El proxy del BFF llama a la API real en memoria, no a la red.
+                servicios.RemoveAll<IForwarderHttpClientFactory>();
+                servicios.AddSingleton<IForwarderHttpClientFactory>(new FabricaHaciaLaApiEnMemoria(Api.Server.CreateHandler()));
+            });
+        });
+
+    private static string Formato(TimeSpan tiempo) => tiempo.ToString("c", System.Globalization.CultureInfo.InvariantCulture);
+
+    private sealed class FabricaHaciaLaApiEnMemoria(HttpMessageHandler manejador) : IForwarderHttpClientFactory
+    {
+        public HttpMessageInvoker CreateClient(ForwarderHttpClientContext context) => new(manejador, disposeHandler: false);
+    }
 
     /// <summary>Un cliente HTTP contra la API real, con el access token indicado (o sin credencial si es null).</summary>
     public HttpClient CrearClienteDeApi(string? accessToken = null)

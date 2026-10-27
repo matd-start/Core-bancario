@@ -157,7 +157,7 @@ Los temas sí se recargan en caliente: no hace falta borrar nada para ver un cam
 
 ### Contrato OpenAPI
 
-El contrato se genera al compilar y se versiona en [`src/CoreBancario.Api/openapi/core-bancario-api.json`](src/CoreBancario.Api/openapi/core-bancario-api.json) (ADR-0019). Si cambias un endpoint, compila y haz commit del archivo: el CI falla si el contrato versionado no está al día. En producción no se expone ninguna ruta de OpenAPI.
+El contrato se genera al compilar y se versiona en [`src/CoreBancario.Api/openapi/core-bancario-api.json`](src/CoreBancario.Api/openapi/core-bancario-api.json) (ADR-0019). El del BFF se explica en "Aplicación web y BFF". Si cambias un endpoint, compila y haz commit del archivo: el CI falla si el contrato versionado no está al día. En producción no se expone ninguna ruta de OpenAPI.
 
 ### Límites conocidos
 
@@ -168,6 +168,78 @@ Se aceptaron a propósito y están explicados en el [plan de la 003](specs/003-a
 - **Ventana de revocación de hasta 5 minutos.** La API valida el token sin consultar a Keycloak (270 s de vida + 30 s de tolerancia de reloj), así que un acceso deshabilitado o una sesión cerrada siguen sirviendo hasta que vence el token que ya se emitió.
 - **El aviso del número de documento se puede saltar.** El navegador avisa si la clave nueva contiene el número de documento, pero un cliente sin JavaScript o una petición hecha a mano lo evitan. El servidor sí rechaza la clave que contiene el usuario completo (por ejemplo `CC1234567`).
 - **El operador ve la clave temporal** que entrega al cliente.
+
+## Aplicación web y BFF
+
+La interfaz web vive en otro repositorio, [`core-bancario-web`](../core-bancario-web) (ADR-0005). Este repositorio pone el BFF (*backend for frontend*) que le da su sesión: [`src/CoreBancario.Bff`](src/CoreBancario.Bff), decidido en [ADR-0020](docs/adr/0020-bff-propio-en-net-para-la-sesion-del-navegador.md) y [ADR-0021](docs/adr/0021-inactividad-medida-por-el-bff-con-actividad-deliberada.md).
+
+### Arquitectura
+
+```
+navegador ──▶ nginx (o Vite en desarrollo) ──▶ BFF ──▶ API ──▶ PostgreSQL
+                  :5173, mismo origen            │
+                                                 └──▶ Keycloak (inicio de sesión, renovación y cierre por el canal trasero)
+```
+
+- El navegador solo habla con **un origen** (`http://localhost:5173`): la SPA, `/bff/*` y `/api/*`. No hay CORS.
+- El BFF inicia sesión con Keycloak como cliente **confidencial** (código de autorización con PKCE), guarda los tokens en el servidor y le entrega al navegador una cookie `HttpOnly` y `SameSite=Strict` que solo lleva una clave opaca.
+- Para `/api/*`, el BFF añade `Authorization: Bearer` y reenvía a la API con YARP. La API no cambia su forma de validar tokens y ya no se expone al navegador.
+- El BFF no tiene reglas de negocio ni referencia a Application o Domain: autentica, mide la sesión y reenvía.
+
+### Por qué no hay tokens en el navegador
+
+Un token que JavaScript puede leer lo puede robar cualquier script inyectado (XSS) y usarlo desde otro lugar durante los 5 minutos que vive. Aquí el token **nunca llega al navegador**: está en la memoria del BFF y el navegador solo tiene una cookie que JavaScript no puede leer. Contra el CSRF, la cookie es `SameSite=Strict` y todo `/api/*` y `/bff/*` exige además el encabezado `X-CSRF: 1` y un `Sec-Fetch-Site` igual a `same-origin`. Ningún `GET` cambia datos.
+
+La inactividad la mide el BFF, no Keycloak: solo cuenta la actividad deliberada de la persona (`POST /bff/actividad`), nunca las peticiones automáticas de la interfaz. Todo inicio de sesión pide credenciales (`prompt=login`).
+
+### Levantar todo con un comando
+
+Requisito: los dos repositorios clonados **uno al lado del otro** (`core-bancario` y `core-bancario-web`), o `CORE_BANCARIO_WEB_DIR` en `.env` con la ruta del web.
+
+```bash
+docker compose --profile app --profile web up -d --build --wait
+# http://localhost:5173
+```
+
+Sin perfiles, `docker compose up -d` sigue levantando solo PostgreSQL y Keycloak. El perfil `app` añade la API y el BFF (**sin puertos publicados**: solo se alcanzan desde la red de compose) y el perfil `web` añade nginx con la SPA, que es lo único publicado.
+
+### Al actualizar desde la 003: recrear el volumen de Keycloak
+
+La 004 cambia los realms (el cliente `core-bancario-web` pasa de público a **confidencial**, con redirecciones exactas hacia el BFF) y añade `KC_HOSTNAME`. Keycloak solo importa un realm si no existe, así que hay que **recrear el volumen** (esto borra los usuarios de prueba) y definir **dos secretos nuevos** en `.env`:
+
+```bash
+# 1. En .env, dos valores largos, aleatorios y distintos entre sí (por ejemplo: openssl rand -hex 32):
+#    KC_WEB_CLIENTES_SECRET=...
+#    KC_WEB_EMPLEADOS_SECRET=...
+# 2. Recrear el volumen y volver a levantar:
+docker compose down
+docker volume rm core-bancario_keycloak-data   # el prefijo es el nombre de la carpeta del proyecto
+docker compose up -d
+```
+
+Después, comprueba que el descubrimiento sigue publicando el emisor que ve el navegador: `curl http://localhost:8080/realms/clientes/.well-known/openid-configuration` debe traer `"issuer":"http://localhost:8080/realms/clientes"`.
+
+### BFF fuera de Docker (`dotnet run`)
+
+Con Vite en `http://localhost:5173` (su *proxy* envía `/bff` y `/api` al BFF en `http://localhost:5180`) y la API en `http://localhost:5096`. El secreto de cada realm es **el mismo valor** que pusiste en `.env`, y va en los user-secrets del BFF, nunca en `appsettings`:
+
+```bash
+dotnet user-secrets set "Bff:Clientes:ClientSecret" "<el valor de KC_WEB_CLIENTES_SECRET>" --project src/CoreBancario.Bff
+dotnet user-secrets set "Bff:Empleados:ClientSecret" "<el valor de KC_WEB_EMPLEADOS_SECRET>" --project src/CoreBancario.Bff
+dotnet run --project src/CoreBancario.Bff   # http://localhost:5180
+```
+
+Los tiempos de sesión (5 min de inactividad y 30 min de vida máxima para clientes; 15 min y 9 h para empleados) están en `src/CoreBancario.Bff/appsettings.json` y una prueba comprueba que coinciden con los de los realms.
+
+### Contrato OpenAPI del BFF
+
+Como el de la API, se genera al compilar y se versiona en [`src/CoreBancario.Bff/openapi/core-bancario-bff.json`](src/CoreBancario.Bff/openapi/core-bancario-bff.json) (ADR-0019). El CI falla si alguno de los dos contratos no está al día. Los contratos incluyen el catálogo de códigos de error (`CodigoDeError` y `CodigoDeErrorDelBff`) como *enum*, que es de donde el repositorio web saca sus tipos.
+
+### Límites conocidos de la sesión
+
+- **Las sesiones están en memoria.** Reiniciar el BFF cierra todas las sesiones, y no admite varias instancias (ADR-0020).
+- **Revocación de hasta 270 s.** Si el operador deshabilita a un cliente que **no** está haciendo nada, su sesión se cierra cuando vence el access token. Si está activo, se nota en el siguiente latido.
+- **Doble envío entre pestañas o por reintento de red (CL-15).** Dos pestañas o un reintento de red pueden abrir dos cuentas; lo cerrará la idempotencia de los sprints 4 y 5.
 
 ## Cómo se trabaja
 

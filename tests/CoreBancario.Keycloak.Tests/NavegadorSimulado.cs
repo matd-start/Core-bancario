@@ -115,15 +115,18 @@ public sealed class NavegadorSimulado : IDisposable
     public const string UriDeRedireccion = "http://localhost:3000/callback";
 
     private readonly Uri _urlBase;
+    private readonly IReadOnlyDictionary<string, string> _secretosPorRealm;
     private readonly HttpClient _http;
     private readonly GalletasManuales _galletas = new(new HttpClientHandler { AllowAutoRedirect = false, UseCookies = false });
     private readonly HtmlParser _analizador = new();
     private string _realm = "";
     private string _verificador = "";
 
-    public NavegadorSimulado(string urlBase)
+    /// <summary>Desde la 004 el cliente core-bancario-web es confidencial: el canje y la renovacion llevan su secreto (ADR-0020).</summary>
+    public NavegadorSimulado(string urlBase, IReadOnlyDictionary<string, string> secretosPorRealm)
     {
         _urlBase = new Uri(urlBase);
+        _secretosPorRealm = secretosPorRealm;
         _http = new HttpClient(_galletas) { Timeout = TimeSpan.FromMinutes(2) };
     }
 
@@ -237,6 +240,7 @@ public sealed class NavegadorSimulado : IDisposable
             {
                 ["grant_type"] = "authorization_code",
                 ["client_id"] = ClientId,
+                ["client_secret"] = _secretosPorRealm[_realm],
                 ["code"] = emitida.CodigoDeAutorizacion!,
                 ["redirect_uri"] = UriDeRedireccion,
                 ["code_verifier"] = _verificador,
@@ -254,6 +258,7 @@ public sealed class NavegadorSimulado : IDisposable
             {
                 ["grant_type"] = "authorization_code",
                 ["client_id"] = ClientId,
+                ["client_secret"] = _secretosPorRealm[realm],
                 ["code"] = codigo,
                 ["redirect_uri"] = UriDeRedireccion,
                 ["code_verifier"] = _verificador,
@@ -266,6 +271,7 @@ public sealed class NavegadorSimulado : IDisposable
             {
                 ["grant_type"] = "refresh_token",
                 ["client_id"] = ClientId,
+                ["client_secret"] = _secretosPorRealm[realm],
                 ["refresh_token"] = refreshToken,
             }), Ayudas.Ct);
 
@@ -312,7 +318,7 @@ public sealed class NavegadorSimulado : IDisposable
         };
     }
 
-    private static TipoDePagina TipoDe(IDocument documento)
+    internal static TipoDePagina TipoDe(IDocument documento)
     {
         if (documento.QuerySelector("input[name='totpSecret']") is not null)
             return TipoDePagina.ConfigurarOtp;
@@ -326,7 +332,7 @@ public sealed class NavegadorSimulado : IDisposable
         return TipoDePagina.Otra;
     }
 
-    private static IHtmlFormElement FormularioDe(Pagina pantalla, string[] camposQueDebeTener)
+    internal static IHtmlFormElement FormularioDe(Pagina pantalla, string[] camposQueDebeTener)
     {
         var formularios = pantalla.Documento!.QuerySelectorAll("form").OfType<IHtmlFormElement>();
         return formularios.FirstOrDefault(f => camposQueDebeTener.Any(c => f.QuerySelector($"[name='{c}']") is not null))
@@ -334,7 +340,7 @@ public sealed class NavegadorSimulado : IDisposable
     }
 
     /// <summary>Los campos del formulario tal como los enviaria un navegador (salvo los botones, de los que va uno).</summary>
-    private static List<KeyValuePair<string, string>> CamposDelFormulario(IHtmlFormElement formulario)
+    internal static List<KeyValuePair<string, string>> CamposDelFormulario(IHtmlFormElement formulario)
     {
         var campos = new List<KeyValuePair<string, string>>();
         foreach (var entrada in formulario.QuerySelectorAll("input[name]").OfType<IHtmlInputElement>())
@@ -361,7 +367,7 @@ public sealed class NavegadorSimulado : IDisposable
     /// Keycloak muestra en un campo oculto el secreto "crudo" (texto aleatorio) y a la app autenticadora le entrega ese mismo
     /// texto codificado en Base32 (es lo que lleva el codigo QR). El telefono de la prueba usa la forma Base32.
     /// </summary>
-    private static string SecretoBase32(string secretoCrudo) =>
+    internal static string SecretoBase32(string secretoCrudo) =>
         OtpNet.Base32Encoding.ToString(Encoding.UTF8.GetBytes(secretoCrudo));
 
     private static string Base64Url(byte[] bytes) =>

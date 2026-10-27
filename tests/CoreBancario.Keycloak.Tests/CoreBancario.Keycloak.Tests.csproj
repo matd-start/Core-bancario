@@ -28,6 +28,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\CoreBancario.Api\CoreBancario.Api.csproj" />
+    <ProjectReference Include="..\..\src\CoreBancario.Bff\CoreBancario.Bff.csproj" />
   </ItemGroup>
 
 </Project>
