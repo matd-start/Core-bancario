@@ -8,7 +8,7 @@ Core bancario simplificado (backend) con cuentas en COP y USD, transferencias in
 - Arquitectura: Clean Architecture (ADR-0002); los endpoints llaman a los handlers de Application directamente, sin mediador (ADR-0009).
 - Persistencia: PostgreSQL (ADR-0003); EF Core para escribir y migrar, Dapper solo para lecturas que lo justifiquen (ADR-0004).
 - Pruebas: xUnit v3 sobre Microsoft Testing Platform (ADR-0006); integración contra PostgreSQL real con Testcontainers. Al añadir la primera prueba a un proyecto de tests, quitar su `--ignore-exit-code 8`.
-- Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API.
+- Frontend en otro repositorio, `core-bancario-web` (ADR-0005); el contrato es el OpenAPI de la API. Qué se hace en cada repo: "Dos repositorios, una sola fuente de verdad", más abajo.
 - Pendiente de ADR (ver "Decisiones abiertas" en la spec de producto): D-02 mecanismo que protege el saldo (S4), D-04 dos agregados por transacción (S5), D-05 idempotencia (S5), D-11 despliegue (fase 4).
 
 ## Estructura
@@ -47,6 +47,20 @@ Las dependencias apuntan hacia dentro: Api e Infrastructure → Application → 
 - Ramas cortas, una por trabajo, y se borran tras el merge: `feature/NNN-slug` (features SDD), `fix/slug` (carril rápido) y `chore/slug` (configuración, infraestructura, dependencias).
 - Commits: `tipo(NNN): mensaje` con tipo `docs`, `test`, `feat`, `fix`, `refactor` o `chore`.
 - Qué toca cada sprint está en `docs/producto/roadmap.md`.
+
+### Dos repositorios, una sola fuente de verdad
+
+`core-bancario-web` (`C:\Users\miguel\source\repos\core-bancario-web`, clonado al lado de este) tiene su propio kit, pero solo para construir y revisar. Las decisiones viven aquí, también las del frontend.
+
+| Fase | Dónde | Qué produce |
+|---|---|---|
+| `/sdd-spec`, `/sdd-design`, ADRs, roadmap, spec de producto | **este repo** | `specs/NNN-slug/{spec,plan,tasks}.md`, `docs/adr/` |
+| `/sdd-build`, `/sdd-review` | el repo que diga el `Repo:` de la tarea en `tasks.md` | código, pruebas y su bitácora (aquí `specs/NNN-slug/`; en el web `construccion/NNN-slug/`) |
+
+- Regla corta: **decidir → aquí; construir o revisar → el `Repo:` de la tarea.**
+- Una feature que toca los dos repos agrupa `tasks.md` por PR ("PR N de NNNx — repo …"), con el backend antes que el web en cada bloque (ADR-0005).
+- Las casillas `[x]` de las tareas del web no se marcan desde el web: al empezar el siguiente PR de este repo, `/sdd-build` las copia desde `construccion/NNN-slug/avance.md` del web con un commit `docs(NNN)`.
+- Todo punto de retoma (Obsidian, resumen de cierre) empieza diciendo en qué repo, ruta y rama abrir Claude.
 
 ### IDs de la spec de producto
 

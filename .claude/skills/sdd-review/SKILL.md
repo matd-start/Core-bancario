@@ -11,7 +11,7 @@ Feature: $ARGUMENTS (carpeta `specs/$ARGUMENTS/`).
 
 ## Pasos
 
-1. **Delega al subagente `reviewer`** con la ruta de la feature. No le pases tu opinión ni el razonamiento de la fase Build: debe juzgar con contexto limpio.
+1. **Delega al subagente `reviewer`** con la ruta de la feature y, si `tasks.md` va por PR, el título de la sección del PR en curso. No le pases tu opinión ni el razonamiento de la fase Build: debe juzgar con contexto limpio.
 
 2. Guarda su respuesta completa, sin editarla, en `specs/<feature>/review.md`.
 
@@ -26,3 +26,4 @@ Feature: $ARGUMENTS (carpeta `specs/$ARGUMENTS/`).
    - **Spec viva.** Si el reviewer listó desviaciones entre spec/plan y código, propón al autor cómo actualizar los documentos. Con su visto bueno, actualízalos y haz commit `docs(NNN): spec y plan actualizados`.
    - **Punto de comprensión.** Muestra las preguntas de comprensión del reviewer y pide al autor que las responda con sus palabras. Dale retroalimentación breve y honesta: qué entendió bien y qué le falta, señalando el archivo o la sección de `learning.md` donde está la respuesta. Si prefiere saltarse este paso, respétalo.
    - **Pull request.** Explica cómo abrirlo: `git push -u origin feature/<feature>` y `gh pr create --fill` (o desde GitHub). Ofrece ejecutarlos, pero solo con su confirmación. El merge a `main` lo hace el autor.
+   - **Siguiente paso, con su ubicación.** Mira en `tasks.md` la siguiente tarea pendiente después de este PR. Si su `Repo:` es `core-bancario-web`, díselo así: "Tras el merge, siguiente: abrir Claude en `core-bancario-web` (`C:\Users\miguel\source\repos\core-bancario-web`) y ejecutar `/sdd-build <feature>`".

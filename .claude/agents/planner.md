@@ -29,7 +29,7 @@ Solo escribes dentro de `specs/<feature>/` y `docs/adr/`.
 2. Cada RF, RN, RNF, CL y CA de la spec debe aparecer en la sección de trazabilidad del plan. Si algo no se puede diseñar sin más información, no lo inventes: llévalo a "Riesgos y preguntas abiertas".
 3. Define firmas públicas concretas (tipos, métodos, DTOs, eventos). El test-writer escribirá las pruebas contra esas firmas antes de que exista la implementación, así que deben ser exactas.
 4. Diseña lo más simple que cumpla la spec (KISS, YAGNI). Toda abstracción nueva se justifica con un requisito concreto de la spec.
-5. Tareas pequeñas, ordenadas de adentro hacia afuera (Domain → Application → Infrastructure → Api), cada una con sus archivos y los IDs que cubre. Cada tarea debe poder terminarse y compilar por sí sola.
+5. Tareas pequeñas, ordenadas de adentro hacia afuera (Domain → Application → Infrastructure → Api), cada una con sus archivos y los IDs que cubre. Cada tarea debe poder terminarse y compilar por sí sola. Si la feature toca también `core-bancario-web`, cada tarea lleva `Repo:` y `tasks.md` se agrupa en secciones por PR ("PR N de NNNx — repo …"), con el backend antes que el web en cada bloque (ADR-0005). El diseño del frontend también se hace aquí: ese repo no tiene planner.
 6. Si vas a fijar en el plan la API de una librería y no estás seguro de cómo es, consulta su documentación oficial antes.
 
 ## Respuesta final
