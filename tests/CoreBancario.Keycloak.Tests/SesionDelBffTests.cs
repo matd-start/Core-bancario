@@ -301,11 +301,15 @@ public partial class SesionDelBffTests(KeycloakFixture kc)
         using var cliente = await ClienteConSesionAsync();
         cliente.Navegador.OlvidarCookiesDelBff();
 
-        // Act
+        // Act: prompt=login obliga a reautenticar. Keycloak 26 muestra la pantalla de clave (o la de usuario y clave), nunca el codigo.
         var pantalla = await cliente.Navegador.IniciarSesionAsync("clientes");
+        var (ultima, recorrido) = await cliente.Navegador.ConducirAsync(pantalla, cliente.Usuario);
 
         // Assert
-        Assert.Equal(TipoDePagina.Login, pantalla.Tipo);
+        Assert.True(pantalla.Tipo is TipoDePagina.Clave or TipoDePagina.Login, $"Primera pantalla: {pantalla.Tipo}");
+        Assert.NotEqual(TipoDePagina.CodigoEmitido, pantalla.Tipo);
+        Assert.Contains(TipoDePagina.Otp, recorrido);
+        Assert.Equal(TipoDePagina.CodigoEmitido, ultima.Tipo);
     }
 
     // ---- CA-13 / CL-08: la ruta de regreso ----
