@@ -394,7 +394,7 @@ public interface IClienteDeIdentidad
     /// <exception cref="IdentidadSinRespuestaException"/>
     Task<TokensRenovados> RenovarAsync(AreaDeSesion area, string refreshToken, CancellationToken cancellationToken);
 
-    /// <summary>POST end_session_endpoint con client_id, client_secret y refresh_token (canal trasero). Nunca lanza: registra un warning.</summary>
+    /// <summary>POST al logout del realm por el canal trasero (derivado de token_endpoint) con client_id, client_secret y refresh_token. Nunca lanza: registra un warning.</summary>
     Task CerrarSesionAsync(AreaDeSesion area, string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>GET al documento de descubrimiento del área con 3 s de espera máxima (CL-05). Nunca lanza.</summary>
@@ -1182,6 +1182,7 @@ Se plantean con conceptos, opciones y recomendación en la respuesta del planner
 
 1. **El cierre por el canal trasero con `refresh_token`.** La documentación de Keycloak 26 lo describe como el *logout* "heredado" con autenticación del cliente. Una fuente externa dice que cierra la sesión del **cliente** y no la de **todo el usuario**. Con un solo cliente por realm debería dar igual, pero el Build lo verifica en `F004_CA01_…KeycloakSinSesiones` (la Admin API devuelve 0 sesiones del usuario). Si quedara una sesión SSO viva, `prompt=login` mantiene CL-09 y se documenta.
 2. **`KC_HOSTNAME` + `KC_HOSTNAME_BACKCHANNEL_DYNAMIC`.** Hay un caso reportado de esquema incorrecto en el descubrimiento. Hay que verificar en el Build que, desde `keycloak:8080`, el emisor sigue siendo `http://localhost:8080/realms/…`, que el `token_endpoint` usa `keycloak:8080` y que la cuenta de servicio de la API (003b) sigue funcionando por `keycloak:8080`. Plan B: la API y el BFF con `network_mode: host` en compose (solo Linux), o un alias `host.docker.internal` documentado.
+   - **Se materializó en el cierre (fix tras el PR #2 del web).** Keycloak publica `end_session_endpoint` con la dirección **frontal** (`localhost:8080`), porque lo trata como endpoint de navegador, aunque `token_endpoint` salga por `keycloak:8080`. Dentro del contenedor del BFF, `localhost` es el propio BFF, así que el cierre respondía 404 y la sesión SSO seguía viva. El BFF deriva ahora la dirección de cierre de `token_endpoint` (`…/protocol/openid-connect/token` → `…/logout`) y solo usa el `end_session_endpoint` publicado si la ruta no es la de Keycloak. Pruebas: Bff.Tests `F004_RF14_CerrarSesionAsync_EnviaClienteSecretoYRefreshTokenAlEndSessionPorElCanalTrasero` y `F004_RF14_CerrarSesionAsync_TokenEndpointSinRutaDeKeycloak_UsaElEndSessionPublicado`. Keycloak.Tests no lo veía porque corre fuera de Docker.
 3. **`kc_action_status` en el regreso de "Cambiar clave".** Se asume que Keycloak 26.3.3 lo envía (`success` o `cancelled`). Si no, el BFF muestra siempre `clave-actualizada`, y la prueba de CA-21 comprueba de todas formas que solo sirve la clave nueva.
 4. **ICU y el formato es-CO.** El símbolo (`$`, `US$`) y el espacio duro pueden variar entre Node, Chromium y Safari. Las pruebas Vitest corren en Node y las de CA-19 también en Chromium. Si difieren, se normaliza el espacio en las pruebas y no en el código.
 5. **TypeScript 5.9 por compatibilidad con `openapi-typescript`** (ADR-0022). Riesgo de quedarse atrás. Hay que revisarlo en cada `chore` de dependencias.

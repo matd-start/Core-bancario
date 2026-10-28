@@ -18,7 +18,11 @@ namespace CoreBancario.Bff.Tests;
 public class ClienteDeIdentidadKeycloakTests
 {
     private const string EndpointDeToken = "http://keycloak:8080/realms/clientes/protocol/openid-connect/token";
-    private const string EndpointDeCierre = "http://keycloak:8080/realms/clientes/protocol/openid-connect/logout";
+
+    // Como lo publica Keycloak con KC_HOSTNAME + KC_HOSTNAME_BACKCHANNEL_DYNAMIC: el token por la direccion trasera,
+    // pero el end_session con la del navegador, que dentro del contenedor del BFF es el propio BFF.
+    private const string EndpointDeCierrePublicado = "http://localhost:8080/realms/clientes/protocol/openid-connect/logout";
+    private const string EndpointDeCierreTrasero = "http://keycloak:8080/realms/clientes/protocol/openid-connect/logout";
 
     private sealed record Envio(HttpMethod Metodo, Uri Uri, string Cuerpo);
 
@@ -39,13 +43,13 @@ public class ClienteDeIdentidadKeycloakTests
     private sealed record Escenario(ClienteDeIdentidadKeycloak Cliente, ManejadorFalso Manejador, FakeTimeProvider Reloj, ProveedorDeLogsEnMemoria Logs);
 
     private static Escenario Crear(Func<HttpRequestMessage, CancellationToken, Task<HttpResponseMessage>> responder,
-        string? metadatos = null)
+        string? metadatos = null, string tokenEndpoint = EndpointDeToken)
     {
         var configuracion = new OpenIdConnectConfiguration
         {
             Issuer = BffFixture.EmisorDeClientes,
-            TokenEndpoint = EndpointDeToken,
-            EndSessionEndpoint = EndpointDeCierre,
+            TokenEndpoint = tokenEndpoint,
+            EndSessionEndpoint = EndpointDeCierrePublicado,
         };
         var oidc = new ServiceCollection()
             .AddOptions<OpenIdConnectOptions>("OidcClientes")
@@ -180,12 +184,25 @@ public class ClienteDeIdentidadKeycloakTests
         // Assert
         var envio = Assert.Single(e.Manejador.Envios);
         Assert.Equal(HttpMethod.Post, envio.Metodo);
-        Assert.Equal(EndpointDeCierre, envio.Uri.ToString());
+        Assert.Equal(EndpointDeCierreTrasero, envio.Uri.ToString());
         var campos = System.Web.HttpUtility.ParseQueryString(envio.Cuerpo);
         Assert.Equal("core-bancario-web", campos["client_id"]);
         Assert.Equal("secreto-de-pruebas-clientes", campos["client_secret"]);
         Assert.Equal("r1", campos["refresh_token"]);
         Assert.Null(campos["id_token_hint"]);
+    }
+
+    [Fact]
+    public async Task F004_RF14_CerrarSesionAsync_TokenEndpointSinRutaDeKeycloak_UsaElEndSessionPublicado()
+    {
+        // Arrange: termina en /token, pero no en la ruta de Keycloak, asi que no se puede derivar el cierre.
+        var e = Crear((_, _) => Json(HttpStatusCode.NoContent, ""), tokenEndpoint: "http://keycloak:8080/oauth/token");
+
+        // Act
+        await e.Cliente.CerrarSesionAsync(AreaDeSesion.Clientes, "r1", Ayudas.Ct);
+
+        // Assert
+        Assert.Equal(EndpointDeCierrePublicado, Assert.Single(e.Manejador.Envios).Uri.ToString());
     }
 
     [Fact]
