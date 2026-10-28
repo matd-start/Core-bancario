@@ -14,9 +14,9 @@ jobs:
     name: Build, formato y pruebas
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v5
         with:
           global-json-file: global.json
 
@@ -30,8 +30,16 @@ jobs:
         run: dotnet build --no-restore --configuration Release -warnaserror
 
       # ADR-0019: compilar regenera los contratos OpenAPI (API y BFF); si cambió y no se versionó, falla.
+      # git diff no ve los archivos nuevos sin versionar (así pasó OpenApi/ frente a openapi/): git status sí.
       - name: Contrato OpenAPI al día
-        run: git diff --exit-code -- src/CoreBancario.Api/openapi src/CoreBancario.Bff/openapi
+        run: |
+          git diff --exit-code -- src/CoreBancario.Api/openapi src/CoreBancario.Bff/openapi
+          sin_versionar="$(git status --porcelain -- src/CoreBancario.Api/openapi src/CoreBancario.Bff/openapi)"
+          if [ -n "$sin_versionar" ]; then
+            echo "Contratos OpenAPI sin versionar:"
+            echo "$sin_versionar"
+            exit 1
+          fi
 
       # Las pruebas de integración usan Testcontainers: el runner de Ubuntu ya trae Docker.
       - name: Pruebas
@@ -45,7 +53,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # Las variables de entorno mandan sobre .env. Los valores se generan aquí, se ocultan en el log y solo existen
       # en este job; van a GITHUB_ENV porque cada docker compose (también el de los logs) las exige.
@@ -113,7 +121,7 @@ jobs:
     name: Escaneo de secretos
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 

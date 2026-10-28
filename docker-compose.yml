@@ -37,8 +37,19 @@ services:
       # descubrimiento y los tokens por http://keycloak:8080 (ADR-0020). Cambiarlo exige recrear el volumen (README).
       KC_HOSTNAME: http://localhost:${KEYCLOAK_PORT:-8080}
       KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # /health/ready en el puerto de gestión (9000, no se publica). Sin esto, `up --wait` daba a Keycloak por listo
+      # en cuanto arrancaba el contenedor, unos 90 s antes de que respondiera.
+      KC_HEALTH_ENABLED: "true"
     ports:
       - "${KEYCLOAK_PORT:-8080}:8080"
+    # La imagen no trae curl: la petición HTTP se hace a mano con /dev/tcp de bash. "ready" llega después de importar
+    # los realms. start_period cubre el primer arranque (unos 140 s con un volumen nuevo).
+    healthcheck:
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q 'HTTP/1.1 200' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 120s
     volumes:
       # Se monta en data y no en data/h2: h2 no existe en la imagen y un volumen nuevo nacería de root, sin permiso
       # de escritura para Keycloak (uid 1000). data sí existe con dueño keycloak, y Docker copia ese dueño al volumen
