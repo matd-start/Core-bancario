@@ -54,7 +54,7 @@ public sealed class ClienteDeIdentidadKeycloak(HttpClient http, IOptionsMonitor<
                 ["refresh_token"] = refreshToken,
             });
 
-            using var respuesta = await EnviarAsync(configuracion.EndSessionEndpoint, cuerpo, area, cancellationToken);
+            using var respuesta = await EnviarAsync(DireccionDeCierre(configuracion), cuerpo, area, cancellationToken);
             if (!respuesta.IsSuccessStatusCode)
                 log.LogWarning("Keycloak ({Area}) no cerró la sesión: estado {Estado}.", AreasDeSesion.Segmento(area), (int)respuesta.StatusCode);
         }
@@ -98,6 +98,20 @@ public sealed class ClienteDeIdentidadKeycloak(HttpClient http, IOptionsMonitor<
             log.LogWarning("No se pudo leer el descubrimiento OIDC de {Area}: {TipoDeError}.", AreasDeSesion.Segmento(area), ex.GetType().Name);
             throw new IdentidadSinRespuestaException(ex);
         }
+    }
+
+    /// <summary>
+    /// Keycloak publica end_session_endpoint con la dirección del navegador (KC_HOSTNAME), porque es de front-channel;
+    /// dentro de un contenedor esa dirección no llega a Keycloak. token_endpoint sí sale por la dirección trasera, y en
+    /// Keycloak los dos comparten ruta (…/protocol/openid-connect/token y …/logout). Sin esa ruta, el publicado.
+    /// </summary>
+    private static string? DireccionDeCierre(OpenIdConnectConfiguration configuracion)
+    {
+        const string rutaDeToken = "/protocol/openid-connect/token";
+        var token = configuracion.TokenEndpoint;
+        return token is not null && token.EndsWith(rutaDeToken, StringComparison.Ordinal)
+            ? $"{token[..^"token".Length]}logout"
+            : configuracion.EndSessionEndpoint;
     }
 
     private async Task<HttpResponseMessage> EnviarAsync(string? direccion, HttpContent cuerpo, AreaDeSesion area,

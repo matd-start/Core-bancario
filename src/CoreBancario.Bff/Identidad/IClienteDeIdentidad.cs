@@ -13,7 +13,7 @@ public interface IClienteDeIdentidad
     /// <exception cref="IdentidadSinRespuestaException"/>
     Task<TokensRenovados> RenovarAsync(AreaDeSesion area, string refreshToken, CancellationToken cancellationToken);
 
-    /// <summary>POST end_session_endpoint con client_id, client_secret y refresh_token (canal trasero). Nunca lanza.</summary>
+    /// <summary>POST al logout del realm por el canal trasero (derivado de token_endpoint) con client_id, client_secret y refresh_token. Nunca lanza.</summary>
     Task CerrarSesionAsync(AreaDeSesion area, string refreshToken, CancellationToken cancellationToken);
 
     /// <summary>GET al documento de descubrimiento del área con 3 s de espera máxima (CL-05). Nunca lanza.</summary>

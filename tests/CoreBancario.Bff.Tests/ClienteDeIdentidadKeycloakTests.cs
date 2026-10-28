@@ -195,8 +195,8 @@ public class ClienteDeIdentidadKeycloakTests
     [Fact]
     public async Task F004_RF14_CerrarSesionAsync_TokenEndpointSinRutaDeKeycloak_UsaElEndSessionPublicado()
     {
-        // Arrange: un token_endpoint que no sigue la ruta de Keycloak no permite derivar el cierre.
-        var e = Crear((_, _) => Json(HttpStatusCode.NoContent, ""), tokenEndpoint: "http://keycloak:8080/oauth2/emitir");
+        // Arrange: termina en /token, pero no en la ruta de Keycloak, asi que no se puede derivar el cierre.
+        var e = Crear((_, _) => Json(HttpStatusCode.NoContent, ""), tokenEndpoint: "http://keycloak:8080/oauth/token");
 
         // Act
         await e.Cliente.CerrarSesionAsync(AreaDeSesion.Clientes, "r1", Ayudas.Ct);
