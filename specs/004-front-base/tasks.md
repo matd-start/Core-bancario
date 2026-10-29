@@ -297,10 +297,11 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 - [ ] T25 — Buscar y registrar:
   - `BuscarCliente` en `/backoffice`, que sustituye a `InicioDelBackoffice`: tipo y número, con o sin puntos, y el número solo en el estado del componente. Con éxito → `/backoffice/clientes/{id}`. Con 404 → CL-22 con "Registrarlo";
+  - instalar `react-hook-form` y `zod` con versiones exactas (ADR-0022; 004a no los instaló por YAGNI, plan 3.4, desviación 5);
   - `FormularioDeRegistro` con `esquemaDeRegistro` (RHF + Zod): un 400 `errors` → `setError` en cada campo; 409 `documento-duplicado` → "Ir a la ficha"; con éxito → ficha nueva;
   - `backoffice/consultas.ts`.
 
-  Uso desde 1280 px · Repo: core-bancario-web · Capa: pantallas · Archivos: `src/backoffice/{BuscarCliente,FormularioDeRegistro}.tsx`, `src/backoffice/{esquemaDeRegistro,consultas}.ts`, `src/app/rutas.tsx` · Cubre: RF-01, RF-12, RNF-04, RNF-08, RNF-09, CL-22, CL-23, CL-24, CA-22, CA-23, CA-33, CA-35, CA-36
+  Uso desde 1280 px · Repo: core-bancario-web · Capa: pantallas · Archivos: `src/backoffice/{BuscarCliente,FormularioDeRegistro}.tsx`, `src/backoffice/{esquemaDeRegistro,consultas}.ts`, `src/app/rutas.tsx`, `package.json`, `package-lock.json` · Cubre: RF-01, RF-12, RNF-04, RNF-08, RNF-09, CL-22, CL-23, CL-24, CA-22, CA-23, CA-33, CA-35, CA-36
 
 - [ ] T26 — Ficha y cuentas:
   - `accionesDeCuenta` (RN-14);
