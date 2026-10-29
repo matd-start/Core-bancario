@@ -123,7 +123,7 @@ public class AdaptadorDeKeycloakTests(KeycloakFixture kc)
         var usuario = await proveedor.ObtenerAsync(sub, Ct);
 
         // Assert
-        Assert.Equal(new UsuarioDeIdentidad(sub, true, marca), usuario);
+        Assert.Equal(new UsuarioDeIdentidad(sub, true, marca, PrimerIngresoPendiente: true), usuario);
     }
 
     [Fact]
