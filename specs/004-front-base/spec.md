@@ -49,7 +49,7 @@ La app no tiene datos propios. Muestra los de la API y guarda solo el estado mí
 | Entidad | Campo | Tipo | Obligatorio | Reglas |
 |---|---|---|---|---|
 | Estado del acceso digital (RF-16) | Estado | Sin habilitar · Habilitado · Deshabilitado | Sí | "Sin habilitar": el cliente nunca tuvo acceso. Lo calcula la API; la app no lo deduce. |
-| Estado del acceso digital (RF-16) | Primer ingreso pendiente | Sí · No | Solo si está Habilitado | Indica si la clave temporal aún no se usó (propuesto; Design confirma si se puede obtener). |
+| Estado del acceso digital (RF-16) | Primer ingreso pendiente | Sí · No | Solo si está Habilitado | Indica si la clave temporal aún no se usó: Keycloak conserva `UPDATE_PASSWORD` o `CONFIGURE_TOTP` (confirmado en Design y probado contra Keycloak real en el Build). |
 | Dinero mostrado | Monto | Texto (`DineroDto.monto`) | Sí | Llega como texto y **nunca se convierte a número de coma flotante**. Se muestra exacto con el formato es-CO: COP sin decimales (`$ 1.234.567`) y USD con 2 (`US$ 1.234,56`). |
 | Sesión en el navegador | Área | Cliente · Backoffice | Sí | Una sola a la vez por navegador (RN-26). |
 | Sesión en el navegador | Última actividad real | Instante | Sí | Solo la actualiza una interacción deliberada (RN-25). La comparten todas las pestañas. |

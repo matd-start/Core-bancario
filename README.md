@@ -122,6 +122,8 @@ Ya no hace falta crear al cliente a mano en la consola ni vincularlo con SQL:
 
 Llamar otra vez a `habilitar` sobre un acceso ya habilitado lo **restablece**: clave temporal nueva, segundo factor borrado y sesiones cerradas. `POST /clientes/{id}/acceso-digital/deshabilitar` lo deshabilita y cierra sus sesiones.
 
+Para consultar el estado, `GET /clientes/{id}/acceso-digital` (operador; solo lectura, no escribe ni reconcilia) responde `estado` (`SinAcceso`, `Habilitado` o `Deshabilitado`) y, solo si está `Habilitado`, `primerIngresoPendiente` (`true` mientras Keycloak conserve la acción obligatoria de cambiar la clave o inscribir el OTP). Responde 404 si el cliente no existe y 502/503 si Keycloak falla.
+
 ### Solicitudes de acceso sin resultado
 
 Cada habilitar o deshabilitar deja primero una **solicitud** en la base y después un **resultado** en otra fila; nada se edita ni se borra (RN-20, ADR-0017). Una solicitud sin resultado es una operación cuyo desenlace no se confirmó (por ejemplo, Keycloak no respondió). El siguiente intento sobre el mismo cliente las cierra solo, mirando la marca del usuario en Keycloak. Para auditar las que sigan abiertas:

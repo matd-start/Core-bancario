@@ -136,6 +136,7 @@ public class ErroresApiTests(ApiFixture api)
     [InlineData("ObtenerMiCuenta", "200,401,403,404,500")]
     [InlineData("HabilitarAccesoDigital", "200,401,403,404,409,500,502,503")]
     [InlineData("DeshabilitarAccesoDigital", "200,401,403,404,409,422,500,502,503")]
+    [InlineData("ObtenerEstadoDeAccesoDigital", "200,401,403,404,500,502,503")]
     public async Task F002_RNF05_ContratoOpenApi_DescribeCadaOperacionYSusErrores(string operationId, string codigosEsperados)
     {
         // Arrange

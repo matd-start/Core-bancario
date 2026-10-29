@@ -1,10 +1,14 @@
-# Aprendizaje — 004 Front base, bloque 004a (PR 1: repo `core-bancario`, tareas T01 a T11)
+# Aprendizaje — 004 Front base (repo `core-bancario`)
+
+Dos partes: el **bloque 004a** (PR 1, el BFF) y el **bloque 004b** (PR 3, RF-16). Lo construido en `core-bancario-web` (PR 2 y PR 4) está en `construccion/004-front-base/learning.md` de ese repositorio.
+
+## Bloque 004a (PR 1, tareas T01 a T11)
 
 Este documento explica lo que se construyó en el repositorio `core-bancario` para el bloque 004a: el **BFF** (*backend for frontend*) que da sesión segura al navegador. Está pensado para alguien que ve estos patrones por primera vez. Lo que se construye en `core-bancario-web` (PR 2) no está aquí.
 
-## 1. Mapa del código
+### 1. Mapa del código
 
-### Configuración y operación
+#### Configuración y operación
 
 | Archivo | Qué hace |
 |---|---|
@@ -13,14 +17,14 @@ Este documento explica lo que se construyó en el repositorio `core-bancario` pa
 | `src/CoreBancario.{Api,Bff}/Dockerfile`, `.dockerignore` | Las imágenes de la API y el BFF (multietapa: el SDK compila, el runtime ejecuta). |
 | `.github/workflows/ci.yml` | Genera los secretos nuevos, levanta la API y el BFF y comprueba que la API responde `200` en `/health` y el BFF `401` sin sesión, desde dentro de la red de compose. Compara también el contrato del BFF. |
 
-### Api (`src/CoreBancario.Api`) — cambios pequeños
+#### Api (`src/CoreBancario.Api`) — cambios pequeños
 
 | Archivo | Qué hace |
 |---|---|
 | `Autenticacion/OpcionesDeAutenticacion.cs`, `ConfiguracionDeAutenticacion.cs` | `Metadatos` opcional por emisor: de dónde se baja el documento de descubrimiento (dentro de Docker es `http://keycloak:8080/...`), sin cambiar el `iss` que se valida (`http://localhost:8080/...`). |
 | `OpenApi/CodigosDeErrorEnOpenApi.cs` | Añade al contrato OpenAPI un *enum* `CodigoDeError` con todas las constantes de `CodigosDeError`, leídas por reflexión. |
 
-### Bff (`src/CoreBancario.Bff`, proyecto nuevo)
+#### Bff (`src/CoreBancario.Bff`, proyecto nuevo)
 
 | Archivo | Capa conceptual | Qué hace |
 |---|---|---|
@@ -41,9 +45,9 @@ Este documento explica lo que se construyó en el repositorio `core-bancario` pa
 | `Proxy/ProxyDeLaApi.cs` | Entrada | `/api/{**resto}`: obtiene el token y reenvía a la API con YARP. |
 | `OpenApi/CodigosDelBffEnOpenApi.cs`, `openapi/core-bancario-bff.json` | Contrato | El *enum* de códigos del BFF y el contrato versionado. |
 
-## 2. Recorrido de una petición
+### 2. Recorrido de una petición
 
-### A. Iniciar sesión (de punta a punta)
+#### A. Iniciar sesión (de punta a punta)
 
 1. La SPA navega a `GET /bff/iniciar-sesion/clientes?regreso=/mis-cuentas/abc`. Pasa por `EncabezadosDeSeguridad` y `ProteccionCsrf` (esta ruta está exenta: es una navegación).
 2. `EndpointsDelBff.IniciarSesionAsync` hace las comprobaciones **en este orden**: ¿el área existe? → ¿hay sesión de la *otra* área? → ¿ya hay sesión de esta área (entonces solo redirige)? → ¿Keycloak responde (`ClienteDeIdentidadKeycloak.EstaDisponibleAsync`, 3 s)? Si todo va bien, `Challenge` al esquema `OidcClientes`.
@@ -52,50 +56,50 @@ Este documento explica lo que se construyó en el repositorio `core-bancario` pa
 5. `EventosDeOidc.TokenValidated` anota el área. `TicketReceived` aplica RN-26 (una sola sesión por navegador). El manejador de cookies llama a `AlmacenDeSesiones.StoreAsync`: construye la `SesionDelNavegador`, la guarda **con los tokens**, y le devuelve a la cookie solo la clave.
 6. El navegador recibe una redirección a la ruta de regreso (`RutaDeRegreso.Normalizar` la validó) y la cookie `HttpOnly` + `SameSite=Strict`.
 
-### B. Pedir datos (`GET /api/mis-cuentas`)
+#### B. Pedir datos (`GET /api/mis-cuentas`)
 
 1. `ProteccionCsrf` exige `X-CSRF: 1` y `Sec-Fetch-Site: same-origin`; si falta, `403 peticion-no-confiable` y la API ni se entera.
 2. `ProxyDeLaApi.PasoPrevioAsync` lee la clave de la cookie y llama a `ServicioDeSesion.ObtenerAccessTokenAsync`: evalúa `PoliticaDeSesion`; si el token vence en menos de 30 s lo renueva (con candado por sesión); **nunca** registra actividad.
 3. Si la sesión terminó, responde `401` con su código; si hacía falta renovar y Keycloak no responde, `503`. En los dos casos **no** llama a la API.
 4. Si todo va bien, YARP reenvía sin el prefijo `/api`, sin `Cookie` ni `X-CSRF`, con `Authorization: Bearer <access token>`, y quita cualquier `Set-Cookie` de la respuesta. `EncabezadosDeSeguridad` añade `no-store` al final.
 
-### C. El latido (`POST /bff/actividad`)
+#### C. El latido (`POST /bff/actividad`)
 
 La SPA lo envía cuando la persona hace clic, pulsa una tecla o cambia de pantalla (como mucho uno cada 15 s). `ServicioDeSesion.RegistrarActividadAsync` renueva los tokens (para que el reloj de Keycloak se alinee) y **después** mueve `UltimaActividad`. Es lo único que mantiene viva la sesión.
 
-## 3. Conceptos clave
+### 3. Conceptos clave
 
-### BFF con cookie opaca: el navegador nunca ve un token
+#### BFF con cookie opaca: el navegador nunca ve un token
 
 - **Qué problema resuelve:** si un token vive en JavaScript, cualquier script inyectado (XSS) lo puede robar. Aquí los tokens viven en el servidor y el navegador solo tiene una clave que no puede leer.
 - **Dónde está:** `AlmacenDeSesiones` (guarda), `ConfiguracionDeSesion` (cookie `HttpOnly`, `SameSite=Strict`, `SessionStore`), `ProxyDeLaApi` (pone el `Bearer`), `TokensDeLaSesion.ToString` (ni en un log por descuido).
 - **Analogía:** el guardarropa de un teatro. Entregas tu abrigo (el token) y recibes una ficha numerada (la cookie). La ficha no sirve para nada fuera del guardarropa, y quien la pierde no pierde el abrigo.
 
-### CSRF: tres defensas juntas
+#### CSRF: tres defensas juntas
 
 - **Qué problema resuelve:** una página maliciosa podría hacer que tu navegador envíe una petición al BFF *con tu cookie*. Si la petición cambia datos, sería un ataque.
 - **Dónde está:** `ProteccionCsrf` (encabezado `X-CSRF: 1` y `Sec-Fetch-Site`), la cookie `SameSite=Strict` y la regla de que ningún `GET` cambia datos (`/bff/actividad` y `/bff/salir` solo aceptan `POST`).
 - **Analogía:** para retirar dinero no basta con tener la tarjeta (la cookie): hay que decir también una palabra secreta que solo la propia app sabe poner (el encabezado), y el cajero comprueba de dónde viene la persona (`Sec-Fetch-Site`).
 
-### Reglas puras con reloj inyectado
+#### Reglas puras con reloj inyectado
 
 - **Qué problema resuelve:** las reglas de tiempo (5 min de inactividad, 30 min de vida máxima, "≥" en el límite exacto) son fáciles de equivocar y lentas de probar con tiempo real. Una función pura que recibe la hora se prueba en milisegundos con un reloj falso.
 - **Dónde está:** `PoliticaDeSesion`, `SesionDelNavegador.RegistrarActividad` (nunca retrocede), `RutaDeRegreso`, `LectorDeRol`; `TimeProvider` en `AlmacenDeSesiones`, `ServicioDeSesion` y `ClienteDeIdentidadKeycloak`.
 - **Analogía:** un árbitro que mira el cronómetro que le dan, en vez de llevar uno propio: en el entrenamiento le pasas un cronómetro que corre a la velocidad que quieras.
 
-### Candado por sesión (renovación con rotación)
+#### Candado por sesión (renovación con rotación)
 
 - **Qué problema resuelve:** Keycloak rota el *refresh token*: cada renovación invalida el anterior. Si dos peticiones renuevan a la vez, una usa un token ya gastado y la sesión se cierra por error.
 - **Dónde está:** `AlmacenDeSesiones.ConCandadoAsync` (un `SemaphoreSlim` por clave) y `ServicioDeSesion`, que **vuelve a mirar dentro del candado** si otra petición ya renovó.
 - **Analogía:** una sola ventanilla por cliente: quien llega segundo espera, y cuando le toca comprueba si el primero ya hizo el trámite.
 
-### Frontera con un sistema externo (puerto y adaptador)
+#### Frontera con un sistema externo (puerto y adaptador)
 
 - **Qué problema resuelve:** el BFF depende de Keycloak, que puede rechazar, no responder o estar caído. Una interfaz permite provocar esos casos en las pruebas sin Keycloak real.
 - **Dónde está:** `IClienteDeIdentidad` (el puerto) y `ClienteDeIdentidadKeycloak` (el adaptador); en las pruebas, `ClienteDeIdentidadFalso`.
 - **Analogía:** el enchufe de la pared: tu lámpara no sabe si detrás hay una central eléctrica o un generador de pruebas.
 
-## 4. Decisiones no obvias
+### 4. Decisiones no obvias
 
 - **El almacén conserva la sesión un minuto más allá de la vida máxima** (`ObtenerParaEvaluar`). `Obtener` ya dice "no existe" en el instante exacto, pero el servicio necesita saber que *venció* para responder `sesion-vencida-por-vida-maxima` en vez de un genérico `sin-sesion`.
 - **Cada inicio de sesión recibe una clave nueva (fijación de sesión).** Si alguien planta en el navegador de otra persona una cookie suya (por ejemplo con un XSS) y la víctima termina un inicio de sesión, la sesión de la víctima no puede quedar bajo la clave de esa cookie: quien tuviera la copia entraría como ella. Cómo funciona el arreglo:
@@ -111,8 +115,66 @@ La SPA lo envía cuando la persona hace clic, pulsa una tecla o cambia de pantal
 - **El cierre en Keycloak no usa `end_session_endpoint` (fix `core-bancario#14`).** Keycloak publica cada dirección del descubrimiento según quién la usa. `token_endpoint` es de servidor a servidor y, con `KC_HOSTNAME_BACKCHANNEL_DYNAMIC`, sale con la dirección por la que se pidió (`keycloak:8080`). `end_session_endpoint` lo trata como de navegador y sale siempre con `KC_HOSTNAME` (`localhost:8080`). Dentro del contenedor del BFF, `localhost` es el propio BFF: el cierre respondía 404 y la sesión SSO seguía viva. `ClienteDeIdentidadKeycloak.DireccionDeCierre` deriva el logout de `token_endpoint` (`…/protocol/openid-connect/token` → `…/logout`), y solo usa el publicado si la ruta no es la de Keycloak.
   - Por qué no lo vio Keycloak.Tests: corre fuera de Docker, donde `localhost:8080` **sí** es Keycloak (el puerto publicado). Lo detectó el job `e2e-real` del web, que corre el BFF en su contenedor. Lección: `localhost` significa "la máquina del proceso que llama", y un fallo de red solo aparece en una prueba que corre en el mismo entorno que producción.
 
-## 5. Para practicar (Copiar → Modificar → Recrear)
+### 5. Para practicar (Copiar → Modificar → Recrear)
 
 1. **Una regla pura nueva.** *Copiar* `RutaDeRegreso` y su teoría `F004_CL08_RutaDeRegreso_Normalizar`. *Modificar*: añade la regla "no se acepta una ruta que contenga `..`" escribiendo primero un caso en la teoría (verás cómo falla) y luego el cambio mínimo. *Recrear*: borra tu cambio y escríbelo de nuevo de memoria, empezando por la prueba.
 2. **Un código de error nuevo en el BFF.** *Copiar* cómo `CodigosDelBff.De(MotivoDeCierre)` traduce un motivo a un código. *Modificar*: imagina el motivo `Bloqueada` con el código `sesion-bloqueada`; sigue los errores del compilador hasta el contrato OpenAPI y observa cómo cambia `core-bancario-bff.json` y qué prueba lo exige. *Recrear*: explica con tus palabras por qué el *enum* del contrato es la fuente de los tipos de la SPA.
 3. **Seguir una petición con un log.** *Copiar* el recorrido B de este documento. *Modificar*: en `ServicioDeSesion.ObtenerAccessTokenAsync`, añade un log que diga si renovó o no (sin imprimir ningún token), y ejecuta `F004_CL12_ProxyConTokenPorVencer_RenuevaYReenviaElNuevo`. *Recrear*: dibuja de memoria el recorrido B y marca en qué punto una petición podría llegar a la API sin pasar por `ProteccionCsrf` (pista: no puede).
+
+---
+
+## Bloque 004b (PR 3, tareas T21 a T23)
+
+Este PR añade RF-16: que el backoffice pueda **preguntar** en qué estado está el acceso digital de un cliente. Es la primera operación de solo lectura sobre el acceso (las anteriores, habilitar y deshabilitar, escribían).
+
+### 1. Mapa del código
+
+| Archivo | Capa | Qué hace |
+|---|---|---|
+| `Application/AccesosDigitales/ObtenerEstadoDeAccesoConsulta.cs` | Application | El "pedido": solo trae el `ClienteId`. Se llama *Consulta* y no *Comando* porque no cambia nada. |
+| `Application/AccesosDigitales/EstadoDeAccesoDto.cs` | Application | La respuesta: `Estado` (texto) y `PrimerIngresoPendiente` (`bool?`, puede ser nulo). |
+| `Application/AccesosDigitales/ObtenerEstadoDeAccesoHandler.cs` | Application | El caso de uso: busca el cliente (404 si no existe), le pide el acceso a `LocalizadorDeAcceso` y arma el DTO. No guarda nada. |
+| `Application/AccesosDigitales/UsuarioDeIdentidad.cs` | Application | Gana el campo `PrimerIngresoPendiente` (por defecto `false`, así lo anterior no se rompe). |
+| `Application/DependencyInjection.cs` | Application | Registra el handler como *Scoped*. |
+| `Infrastructure/Identidad/ProveedorDeIdentidadKeycloak.cs` | Infrastructure | `ComoUsuario` traduce el JSON de Keycloak; ahora lee `requiredActions`. |
+| `Api/AccesosDigitales/EndpointsDeAccesoDigital.cs` | Api | El `GET /clientes/{id}/acceso-digital`. Delgado: solo llama al handler. |
+| `Api/openapi/core-bancario-api.json` | Contrato | Se regenera con `dotnet build`; el web genera sus tipos desde aquí. |
+
+### 2. Recorrido de una petición
+
+`GET /clientes/{id}/acceso-digital` con el token de un operador:
+
+1. La política `Operador` del grupo valida el token (sin esto, 401/403).
+2. El endpoint llama a `ObtenerEstadoDeAccesoHandler.EjecutarAsync`.
+3. El handler pide el cliente a `IClienteRepositorio`. Si no existe lanza `RecursoNoEncontradoException` (404) **antes** de hablar con Keycloak.
+4. `LocalizadorDeAcceso` busca el usuario en Keycloak (por el vínculo guardado, o por nombre de usuario si hay un habilitar interrumpido).
+5. `ProveedorDeIdentidadKeycloak.ComoUsuario` convierte el JSON en `UsuarioDeIdentidad`, mirando `enabled` y `requiredActions`.
+6. `AccesoLocalizado.Estado` decide `SinAcceso`, `Habilitado` o `Deshabilitado`.
+7. El handler pone `PrimerIngresoPendiente` solo si está `Habilitado`, y el endpoint responde `200`. Si Keycloak falla, el manejador global de errores lo convierte en 502 o 503.
+
+### 3. Conceptos clave
+
+#### Consulta frente a comando
+**Problema:** habilitar y deshabilitar dejan rastro (solicitud y resultado en la base). Mirar el estado no debe dejar ninguno. **Dónde:** el handler no recibe repositorios de escritura ni unidad de trabajo; por eso es imposible que guarde algo por accidente. **Analogía:** preguntar el saldo en ventanilla frente a hacer un retiro.
+
+#### Keycloak como fuente de la verdad (ADR-0017)
+**Problema:** la base local y Keycloak pueden discrepar. **Aquí:** el estado se lee de Keycloak, y la consulta *no reconcilia* (no cierra solicitudes pendientes aunque la marca coincida). Quien reconcilia es el siguiente habilitar o deshabilitar. **Analogía:** un fotógrafo que retrata la escena sin ordenar la habitación.
+
+#### Dato que solo existe en ciertos estados (`bool?`)
+**Problema:** "primer ingreso pendiente" no significa nada si no hay acceso o está deshabilitado. `false` mentiría ("ya ingresó"). **Aquí:** `null` = "no aplica", `true`/`false` solo si `Habilitado`. **Analogía:** en un formulario, dejar en blanco una casilla que no te corresponde, en vez de marcar "No".
+
+#### Filtro por endpoint, no por grupo
+**Problema:** `RegistroDeOperacionDelOperador` registra operaciones que escriben. Aplicado al grupo, también se ejecutaría en el `GET`. **Aquí:** se añade a cada `POST`. **Analogía:** el libro de visitas se firma al entrar a la bóveda, no en el vestíbulo.
+
+### 4. Decisiones no obvias
+
+- `PrimerIngresoPendiente = true` si `requiredActions` contiene `UPDATE_PASSWORD` o `CONFIGURE_TOTP`: son las acciones que `habilitar` deja puestas, y Keycloak las quita cuando el cliente las completa. Otras acciones (por ejemplo `VERIFY_EMAIL`) no cuentan.
+- Un valor de `requiredActions` que no es texto simplemente no cuenta; no se trata como error porque no afecta a la decisión.
+- El campo nuevo de `UsuarioDeIdentidad` tiene valor por defecto para no tocar las llamadas existentes (YAGNI).
+- `dotnet build` también reescribe `openapi/core-bancario-bff.json` con cambios solo de saltos de línea (ruido de Windows); no se versionó.
+
+### 5. Para practicar (Copiar → Modificar → Recrear)
+
+1. **Otra acción obligatoria.** *Copiar* `TieneAccionesObligatorias`. *Modificar*: haz que `VERIFY_EMAIL` también cuente (primero añade el caso a una prueba de Infrastructure y míralo fallar). *Recrear*: reescribe el método de memoria usando solo `JsonArray` y `Any`.
+2. **Una consulta nueva.** *Copiar* `ObtenerEstadoDeAccesoHandler` y su consulta. *Modificar*: crea `ObtenerUltimaSolicitudDeAccesoHandler` que devuelva la fecha de la última solicitud (necesitarás leer el repositorio de registro). *Recrear*: explica por qué ese handler tampoco debería recibir `IUnidadDeTrabajo`.
+3. **Seguir el contrato.** *Copiar* la entrada `ObtenerEstadoDeAccesoDigital` de `core-bancario-api.json`. *Modificar*: cambia el `WithSummary` del endpoint, ejecuta `dotnet build` y observa el diff del JSON. *Recrear*: dibuja qué parte del web depende de ese archivo y qué prueba falla si el contrato cambia sin versionarlo.

@@ -28,6 +28,7 @@ internal sealed class EscenarioDeAcceso
             Registro, Unidad, Datos.Reloj);
         Deshabilitar = new DeshabilitarAccesoHandler(Clientes, localizador, reconciliador, Proveedor, Vinculos,
             Registro, Unidad, Datos.Reloj);
+        ObtenerEstado = new ObtenerEstadoDeAccesoHandler(Clientes, localizador);
     }
 
     public UnidadDeTrabajoEspia Unidad { get; }
@@ -46,6 +47,10 @@ internal sealed class EscenarioDeAcceso
 
     public DeshabilitarAccesoHandler Deshabilitar { get; }
 
+    public ObtenerEstadoDeAccesoHandler ObtenerEstado { get; }
+
+    public ObtenerEstadoDeAccesoConsulta ConsultaDeEstado() => new(Cliente.Id);
+
     /// <summary>El cliente registrado sobre el que opera el escenario.</summary>
     public Cliente Cliente { get; } = Datos.Cliente();
 
@@ -58,9 +63,11 @@ internal sealed class EscenarioDeAcceso
 
     /// <summary>Un usuario que ya existía en el proveedor, con o sin su vínculo guardado en la base.</summary>
     public ProveedorDeIdentidadEnMemoria.UsuarioSimulado SembrarUsuario(
-        bool habilitado = true, bool otpInscrito = false, bool conVinculo = true, Guid? marca = null)
+        bool habilitado = true, bool otpInscrito = false, bool conVinculo = true, Guid? marca = null,
+        bool primerIngresoPendiente = false)
     {
-        var usuario = Proveedor.Sembrar(NombreDeUsuario, habilitado, otpInscrito, marca, claveTemporal: "clave-anterior-1234");
+        var usuario = Proveedor.Sembrar(NombreDeUsuario, habilitado, otpInscrito, marca, claveTemporal: "clave-anterior-1234",
+            primerIngresoPendiente: primerIngresoPendiente);
         if (conVinculo)
             Vinculos.Sembrar(AccesoDigital.Vincular(Cliente.Id, usuario.Sub, Datos.Ahora.AddDays(-1)));
 

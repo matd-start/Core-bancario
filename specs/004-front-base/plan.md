@@ -645,7 +645,7 @@ public sealed class ObtenerEstadoDeAccesoHandler(IClienteRepositorio clientes, L
 
 // EndpointsDeAccesoDigital: grupo "/clientes/{clienteId:guid}/acceso-digital" con RequireAuthorization(Operador) y
 // DocumentarErroresComunes; RegistroDeOperacionDelOperador pasa a cada POST. Nuevo:
-//   grupo.MapGet("", …) → TypedResults.Ok(EstadoDeAccesoDto), WithName("ObtenerEstadoDeAccesoDigital"),
+//   grupo.MapGet("/", …) → TypedResults.Ok(EstadoDeAccesoDto), WithName("ObtenerEstadoDeAccesoDigital"),
 //   ProducesProblem 404, 502, 503.
 ```
 
@@ -846,6 +846,29 @@ export function DialogoDeClaveTemporal(props: { accion: 'Habilitar' | 'Restablec
 
 **Clave de consulta de la ficha:** `['ficha', clienteId]` y `['acceso', clienteId]`. Tras cada acción de cuenta o de acceso se invalidan (CL-16).
 
+**Añadidos y desviaciones del Build (004a, PR 2 del web)** (las 7 de `construccion/004-front-base/review.md` en `core-bancario-web#2`; el código manda sobre las firmas de arriba):
+
+1. **`Sesion` tiene dos campos más:**
+   - `area: AreaDeLaApp`, el área que muestra esta parte de la app, que puede no ser la de la sesión (CL-10);
+   - `cerrarYContinuar(regreso?)`, que cierra la sesión de la otra área y va a iniciar sesión en esta (CL-10).
+
+   `Sesion` y `useSesion` viven en `src/sesion/contextoDeSesion.ts` y no en `ProveedorDeSesion.tsx`. La regla `react-refresh` pide que un archivo de componentes solo exporte componentes.
+2. **`crearClienteDeLaApi` y `crearMiddlewareDeSesion` aceptan `alSerProhibido?: () => void`.** Un 403 de la API (la autoridad, ADR-0015) lleva a `SinPermiso`: es CL-04 por la vía de la API. El cliente del BFF no lo necesita.
+3. **RN-25 con el aviso de sesión abierto.** Mientras se ve `AvisoDeSesion` (reloj en `aviso-inactividad` o `aviso-vida-maxima`), la SPA **deja de escuchar** clics y teclas. Solo "Seguir conectado" cuenta, porque envía su propio latido (CL-06). Mover el foco con Tab dentro del diálogo no significa "sigo aquí". Es una precisión de RN-25 ("clic o tecla"): fuera del aviso, la regla se aplica tal cual.
+4. **Piezas que el plan no nombraba:**
+   - `comun/dinero.ts`: `formatearSaldo(dinero)` para un `DineroDto`, cuya moneda llega como texto libre. Con una moneda desconocida muestra el monto tal cual, en vez de lanzar.
+   - `api/errores.ts`:
+     - `FalloDeLaApi`, la excepción que lleva el `ErrorDeLaApi` ya interpretado;
+     - `exigirDatos(respuesta)`, que devuelve los datos o lanza `FalloDeLaApi`;
+     - `comoErrorDeLaApi(causa)`, que convierte cualquier error de una consulta (una caída de red es el estado 0).
+   - `app/clienteDeConsultas.ts`: `crearClienteDeConsultas()`, con la configuración de TanStack Query de arriba.
+   - `sesion/coordinadorDeSesion.ts`: guarda el cierre de una sola vez y el canal entre pestañas en un cierre (*closure*) y no en `useRef`, porque los clientes HTTP lo usan al crearse durante el render.
+   - `sesion/useAvisoDeLaUrl.ts`: lee `?aviso=` una vez y lo quita de la URL (CA-21).
+   - `comun/componentes/Pagina.tsx`, `sesion/BotonCerrarSesion.tsx` y `app/areas.tsx` (`AreaDelCliente`, `AreaDelBackoffice`, `RedireccionAMisCuentas`, `ErrorDelArea`).
+5. **Paquetes de ADR-0022 (T12):** faltan `react-hook-form` y `zod`. 004a no tiene formularios, así que instalarlos ahora sería YAGNI. **Llegan en T25** con `esquemaDeRegistro`, con versiones exactas.
+6. **`aPlazosLocales` acepta `number | string` en los segundos del `SesionDto`.** .NET 10 declara así los enteros del contrato. Un valor que no es un número finito cuenta como 0, es decir, la sesión se da por vencida: si no se entiende el plazo, cerrar es lo seguro.
+7. **RNF-13 en el CI del web:** el paso "Contratos y tipos al día" (`contratos:sincronizar` + `tipos` + `git diff --exit-code`) va en el job de verificación existente, no en `e2e-real`. Cumple T19.
+
 ## 4. Modelo de datos y persistencia
 
 - **Base de datos:** sin cambios, sin migraciones. RF-16 lee lo que ya existe (`accesos_digitales`) y Keycloak.
@@ -1022,7 +1045,7 @@ Cada bloque y repositorio tiene su commit en rojo: `test(004): pruebas en rojo d
 | CA-26 | `F004_CA26_CerrarConSaldo_MensajeDeNegocioYSigueActiva` | Vitest |
 | CA-27 | `F004_CA27_Conflicto409_MensajeYLaFichaSeRecarga` | Vitest |
 | CA-28 | `F004_CA28_AccionesDeAcceso_SegunEstado` (teoría) · `F004_CA28_Ficha_MuestraEstadoYAccionesDelAcceso` | Vitest |
-| CA-29 | `F004_CA29_EstadoDeAcceso_SinAccesoHabilitadoYDeshabilitado`, `F004_CA29_ClienteInexistente_LanzaNoEncontradoSinLlamarAlProveedor`, `F004_RF16_PrimerIngresoPendiente_SoloSiHabilitado` · `F004_RF16_UsuarioConAccionesObligatorias_PrimerIngresoPendiente` · `F004_CA29_OperadorConsultaElEstado_Responde200`, `F004_CA29_ClienteInexistente_Responde404`, `F004_CA29_RolCliente_Responde403`, fila del contrato · `F004_RF16_EstadoDeAcceso_ReflejaElPrimerIngresoReal` | Application · Infrastructure · Api · Keycloak.Tests |
+| CA-29 | Application: `F004_CA29_ClienteSinUsuarioEnElProveedor_EstadoSinAcceso`, `F004_CA29_ClienteConUsuarioHabilitado_EstadoHabilitado`, `F004_CA29_ClienteConUsuarioDeshabilitado_EstadoDeshabilitado`, `F004_CA29_UsuarioSinVinculoEnLaBase_SeAdoptaParaElEstado`, `F004_CA29_ClienteInexistente_LanzaNoEncontradoSinLlamarAlProveedor`, `F004_RF16_HabilitadoConAccionesObligatorias_PrimerIngresoPendienteTrue`, `F004_RF16_HabilitadoSinAccionesObligatorias_PrimerIngresoPendienteFalse`, `F004_RF16_DeshabilitadoConAccionesObligatorias_PrimerIngresoPendienteNull`, `F004_RF16_SinAcceso_PrimerIngresoPendienteNull`, `F004_RF16_Consulta_NoEscribeNiGuardaNiLlamaOperacionesQueCambian`, `F004_RF16_ConSolicitudPendiente_NoLaReconcilia`, `F004_RF16_VinculoSinUsuarioEnElProveedor_LanzaInvalidOperation` · Infrastructure: `F004_RF16_UsuarioConAccionesObligatorias_PrimerIngresoPendiente`, `F004_RF16_UsuarioSinLasAccionesDelPrimerIngreso_NoPendiente`, `F004_RF16_UsuarioSinRequiredActions_NoPendiente`, `F004_RF16_BuscarPorNombreDeUsuario_TambienLeeLasAccionesObligatorias` · Api: `F004_CA29_OperadorConsultaClienteSinAcceso_Responde200SinAcceso`, `F004_CA29_OperadorConsultaClienteHabilitadoSinEntrar_Responde200ConPrimerIngresoPendiente`, `F004_CA29_OperadorConsultaClienteDeshabilitado_Responde200Deshabilitado`, `F004_RF16_ClienteHabilitadoQueYaCompletoElPrimerIngreso_PrimerIngresoPendienteFalse`, `F004_RF16_ConsultarElEstado_NoRegistraSolicitudesNiVinculos`, `F004_CA29_ClienteInexistente_Responde404ConSuCodigo`, `F004_CA29_RolCliente_Responde403`, fila `ObtenerEstadoDeAccesoDigital` del contrato · Keycloak: `F004_RF16_EstadoDeAcceso_ReflejaElPrimerIngresoReal` | Application · Infrastructure · Api · Keycloak.Tests |
 | CA-30 | `F004_CA30_DialogoDeClave_NoSeCierraConEscNiClicFuera`, `F004_CA30_YaLaEntregue_LaClaveDesapareceDelDomYDeLaCache` · `F004_CA30_ClaveTemporal_NoQuedaEnUrlNiAlmacenamiento` | Vitest · Web simulado |
 | CA-31 | `F004_CA31_Restablecer_ConfirmacionExplicaConsecuenciasYDialogoDiceRestablecido`, `F004_CL21_BotonHabilitarPeroApiRestablece_DialogoDiceRestablecido` | Vitest |
 | CA-32 | `F004_CA32_EstadoNoDisponible_FichaVisibleYAccionesDesactivadas`, `F004_CL19_FallaAlHabilitar_DiceQuePuedeReintentarSinRiesgo` · `F004_CL20_IdentidadSinRespuesta_EstadoResponde503`, `F004_CL20_ErrorDeIdentidad_EstadoResponde502` | Vitest · Api.Tests |

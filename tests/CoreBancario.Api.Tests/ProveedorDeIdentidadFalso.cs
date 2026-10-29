@@ -28,6 +28,12 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
     /// <summary>Se puede cambiar entre dos peticiones: por ejemplo, para que el reintento sí tenga respuesta.</summary>
     public FallaDelProveedor Falla { get; set; } = falla;
 
+    /// <summary>
+    /// Cómo fallan las LECTURAS (RF-16, CL-20): ConError lanza ErrorDelProveedorDeIdentidadException (502), SinRespuesta
+    /// lanza ProveedorDeIdentidadSinRespuestaException (503). AplicaYNoResponde no tiene sentido al leer: se trata como SinRespuesta.
+    /// </summary>
+    public FallaDelProveedor FallaAlLeer { get; set; } = FallaDelProveedor.Ninguna;
+
     public sealed class UsuarioFalso(string sub, string nombreDeUsuario)
     {
         public string Sub { get; } = sub;
@@ -43,6 +49,9 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
         public Guid? Marca { get; set; }
 
         public int SesionesCerradas { get; set; }
+
+        /// <summary>true mientras tenga UPDATE_PASSWORD o CONFIGURE_TOTP pendientes (RF-16). Crear y reiniciar lo ponen en true.</summary>
+        public bool PrimerIngresoPendiente { get; set; }
     }
 
     private readonly ConcurrentDictionary<string, UsuarioFalso> _usuarios = new();
@@ -53,23 +62,40 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
         _usuarios.Values.SingleOrDefault(u => u.NombreDeUsuario == nombreDeUsuario.ToLowerInvariant());
 
     /// <summary>Prepara un usuario que ya existía antes de la operación (por ejemplo, ya con el segundo factor inscrito).</summary>
-    public UsuarioFalso Sembrar(string nombreDeUsuario, bool habilitado = true, bool otpInscrito = false)
+    public UsuarioFalso Sembrar(string nombreDeUsuario, bool habilitado = true, bool otpInscrito = false,
+        bool primerIngresoPendiente = false)
     {
-        var usuario = new UsuarioFalso(Guid.NewGuid().ToString(), nombreDeUsuario) { Habilitado = habilitado, OtpInscrito = otpInscrito };
+        var usuario = new UsuarioFalso(Guid.NewGuid().ToString(), nombreDeUsuario)
+        {
+            Habilitado = habilitado,
+            OtpInscrito = otpInscrito,
+            PrimerIngresoPendiente = primerIngresoPendiente,
+        };
         _usuarios[usuario.Sub] = usuario;
         return usuario;
     }
 
-    public Task<UsuarioDeIdentidad?> BuscarPorNombreDeUsuarioAsync(string nombreDeUsuario, CancellationToken cancellationToken) =>
-        Task.FromResult(Representar(PorNombre(nombreDeUsuario)));
+    public Task<UsuarioDeIdentidad?> BuscarPorNombreDeUsuarioAsync(string nombreDeUsuario, CancellationToken cancellationToken)
+    {
+        FallarSiNoSePuedeLeer();
+        return Task.FromResult(Representar(PorNombre(nombreDeUsuario)));
+    }
 
-    public Task<UsuarioDeIdentidad?> ObtenerAsync(string sub, CancellationToken cancellationToken) =>
-        Task.FromResult(Representar(_usuarios.GetValueOrDefault(sub)));
+    public Task<UsuarioDeIdentidad?> ObtenerAsync(string sub, CancellationToken cancellationToken)
+    {
+        FallarSiNoSePuedeLeer();
+        return Task.FromResult(Representar(_usuarios.GetValueOrDefault(sub)));
+    }
 
     public Task<string> CrearAsync(string nombreDeUsuario, ClaveTemporal claveTemporal, Guid marca, CancellationToken cancellationToken)
     {
         var sub = Guid.NewGuid().ToString();
-        Cambiar(() => _usuarios[sub] = new UsuarioFalso(sub, nombreDeUsuario) { ClaveTemporal = claveTemporal.Valor, Marca = marca });
+        Cambiar(() => _usuarios[sub] = new UsuarioFalso(sub, nombreDeUsuario)
+        {
+            ClaveTemporal = claveTemporal.Valor,
+            Marca = marca,
+            PrimerIngresoPendiente = true,
+        });
         return Task.FromResult(sub);
     }
 
@@ -82,6 +108,7 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
             usuario.OtpInscrito = false;
             usuario.SesionesCerradas++;
             usuario.Habilitado = true;
+            usuario.PrimerIngresoPendiente = true;
             usuario.Marca = marca;
         });
         return Task.CompletedTask;
@@ -97,6 +124,18 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
             usuario.Marca = marca;
         });
         return Task.CompletedTask;
+    }
+
+    private void FallarSiNoSePuedeLeer()
+    {
+        switch (FallaAlLeer)
+        {
+            case FallaDelProveedor.ConError:
+                throw new ErrorDelProveedorDeIdentidadException("HTTP 500 al leer");
+            case FallaDelProveedor.SinRespuesta:
+            case FallaDelProveedor.AplicaYNoResponde:
+                throw new ProveedorDeIdentidadSinRespuestaException();
+        }
     }
 
     private void Cambiar(Action aplicar)
@@ -117,5 +156,5 @@ public sealed class ProveedorDeIdentidadFalso(FallaDelProveedor falla = FallaDel
     }
 
     private static UsuarioDeIdentidad? Representar(UsuarioFalso? usuario) =>
-        usuario is null ? null : new UsuarioDeIdentidad(usuario.Sub, usuario.Habilitado, usuario.Marca);
+        usuario is null ? null : new UsuarioDeIdentidad(usuario.Sub, usuario.Habilitado, usuario.Marca, usuario.PrimerIngresoPendiente);
 }

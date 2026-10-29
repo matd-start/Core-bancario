@@ -169,4 +169,24 @@ public class GestionarAccesoDePuntaAPuntaTests(KeycloakFixture kc)
         Assert.NotEqual(primera.ClaveTemporal, nueva.ClaveTemporal);
         Assert.False(string.IsNullOrEmpty(tokens.AccessToken));
     }
+
+    // ---- RF-16, CA-29: el estado refleja el primer ingreso real ----
+
+    [Fact]
+    public async Task F004_RF16_EstadoDeAcceso_ReflejaElPrimerIngresoReal()
+    {
+        // Arrange: el operador habilita el acceso; el cliente todavía no ha entrado.
+        var (operador, cliente) = await OperadorYClienteRegistradoAsync();
+        var acceso = await HabilitarAsync(operador, cliente);
+        var antes = await operador.GetFromJsonAsync<EstadoDeAccesoDto>($"/clientes/{cliente.Id}/acceso-digital", Ct);
+
+        // Act: el cliente completa su primer ingreso (cambia la clave e inscribe el segundo factor) en Keycloak real.
+        using var navegador = kc.NuevoNavegador();
+        await kc.IniciarSesionAsync(navegador, UsuarioDe(cliente, acceso.ClaveTemporal));
+        var despues = await operador.GetFromJsonAsync<EstadoDeAccesoDto>($"/clientes/{cliente.Id}/acceso-digital", Ct);
+
+        // Assert
+        Assert.Equal(new EstadoDeAccesoDto(cliente.Id, "Habilitado", true), antes);
+        Assert.Equal(new EstadoDeAccesoDto(cliente.Id, "Habilitado", false), despues);
+    }
 }
