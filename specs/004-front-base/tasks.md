@@ -169,7 +169,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Contratos y API
 
-- [ ] T12 — Contratos y tipos:
+- [x] T12 — Contratos y tipos:
   - `contratos/core-bancario-api.json` y `contratos/core-bancario-bff.json`, copiados de `../core-bancario` (`main`);
   - el script `contratos:sincronizar` (copia desde `${CORE_BANCARIO_DIR:-../core-bancario}`);
   - el script `tipos` (`openapi-typescript` 7.13.0 → `src/api/generado/api.d.ts` y `bff.d.ts`);
@@ -178,7 +178,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario-web · Capa: contratos · Archivos: `contratos/*.json`, `src/api/generado/*.d.ts`, `package.json`, `package-lock.json` · Cubre: RNF-13, D-09
 
-- [ ] T13 — Clientes HTTP y errores:
+- [x] T13 — Clientes HTTP y errores:
   - `crearClienteDeLaApi`, `crearClienteDelBff` y `crearMiddlewareDeSesion` (`X-CSRF: 1`, 401 → motivo, sin reintentos);
   - `MENSAJES_DE_ERROR: Record<CodigoDeError, string>` (incluido "La cuenta cambió mientras tanto" y el de reintentar sin riesgo de CL-19), `MENSAJE_GENERICO` e `interpretarError` (nunca `detail`);
   - `clienteDeConsultas.ts` con la configuración de la sección 3.4 del plan.
@@ -187,14 +187,14 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Módulos puros y componentes comunes
 
-- [ ] T14 — Comunes:
+- [x] T14 — Comunes:
   - `formatearDinero` (texto a `Intl.NumberFormat`, nunca `number`);
   - componentes `Boton` (`enCurso` → `disabled` + `aria-busy`), `Dialogo` y `DialogoDeConfirmacion` sobre React Aria, `MensajeDeError` (con "Reintentar" opcional y el `traceId`), `Cargando` y `EstadoVacio`;
   - estilos base con `:focus-visible` y *mobile-first*.
 
   Repo: core-bancario-web · Capa: comun · Archivos: `src/comun/dinero.ts`, `src/comun/componentes/*.tsx`, `src/comun/estilos/*.css` · Cubre: RNF-08, CL-14, CL-15, CL-24, CA-18, CA-19, CA-35
 
-- [ ] T15 — Reloj, actividad y pestañas (puros):
+- [x] T15 — Reloj, actividad y pestañas (puros):
   - `aPlazosLocales` y `evaluarReloj`;
   - `crearRegistroDeActividad` (15 s, pendiente y `vaciar`) y `escucharInteraccionesDeliberadas` (solo `click` y `keydown`);
   - `crearCanalDeSesion` (`BroadcastChannel`).
@@ -203,7 +203,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Pantallas
 
-- [ ] T16 — Sesión en la interfaz:
+- [x] T16 — Sesión en la interfaz:
   - `ProveedorDeSesion`/`useSesion`, con el comportamiento de su resumen: consulta inicial, latidos por interacción y por cambio de ruta, un solo `setTimeout`, canal entre pestañas, `pageshow`, y en `cerrarSesion`, caché vacía antes de `location.replace`;
   - `AvisoDeSesion` (`alertdialog`, cuenta atrás, "Seguir conectado" solo por inactividad);
   - `AreaProtegida`, `PantallaDeInicio` (botón "Iniciar sesión" con `regreso` y avisos), `SinPermiso` y `OtraSesionAbierta`;
@@ -213,7 +213,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario-web · Capa: sesion · Archivos: `src/sesion/{ProveedorDeSesion,AvisoDeSesion,AreaProtegida,PantallaDeInicio,SinPermiso,OtraSesionAbierta}.tsx`, `src/sesion/avisos.ts`, `src/app/{rutas,proveedores}.tsx`, `src/main.tsx` · Cubre: RF-14, RN-19, RN-22, RN-25, RN-26, RNF-06, RNF-07, RNF-08, RNF-09, CL-01, CL-04, CL-05, CL-06, CL-07, CL-10, CL-11, CL-12, CL-13, CA-01, CA-02, CA-04, CA-07, CA-08, CA-09, CA-11, CA-12, CA-14, CA-15, CA-16, CA-35, CA-36
 
-- [ ] T17 — Área del cliente e inicio del backoffice:
+- [x] T17 — Área del cliente e inicio del backoffice:
   - `MisCuentas` (número, moneda, estado y saldo; carga, vacío y error con "Reintentar"; las Cerradas incluidas);
   - `DetalleDeCuenta` (con fechas; un 404 → "Cuenta no encontrada", igual para ajena e inexistente);
   - `BotonCambiarClave` (navegación a `/bff/cambiar-clave`; el aviso `clave-actualizada` se muestra y se limpia);
@@ -224,13 +224,13 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Operación y cierre
 
-- [ ] T18 — Imagen web con CSP:
+- [x] T18 — Imagen web con CSP:
   - `Dockerfile` multietapa (`node:24` → `nginxinc/nginx-unprivileged`, puerto 8080);
   - `infra/nginx/default.conf`: `try_files` a `index.html`; `index.html` con `Cache-Control: no-store`; *proxy* de `/bff/` y `/api/` a `http://bff:8080` con `proxy_set_header Host $http_host` y `X-Forwarded-Proto`/`For`; las cabeceras de RNF-03 (CSP, `nosniff`, `Referrer-Policy`); `log_format` con `$uri` en vez de `$request` (RNF-04).
 
   Repo: core-bancario-web · Capa: operación · Archivos: `Dockerfile`, `infra/nginx/default.conf`, `.dockerignore` · Cubre: RNF-03, RNF-04, RNF-16, CL-11
 
-- [ ] T19 — CI de los recorridos:
+- [x] T19 — CI de los recorridos:
   - en `.github/workflows/ci.yml`, job `e2e-simulado` (Chromium) y job `e2e-real`:
     - checkout de `core-bancario` en `../core-bancario` (`ref: ${{ vars.CORE_BANCARIO_REF || 'main' }}`);
     - `.env` con `KC_BOOTSTRAP_ADMIN_*`, `KC_CLIENTES_API_SECRET` y `KC_WEB_*` aleatorios y enmascarados;
@@ -242,7 +242,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario-web · Capa: operación · Archivos: `.github/workflows/ci.yml`, `playwright.config.ts` (solo la parte de CI) · Cubre: RNF-10, RNF-13, RNF-15, RNF-16, CA-01, CA-03, CA-05, CA-06, CA-17 · Pruebas en verde: los recorridos reales de 004a
 
-- [ ] T20 — Documentación y verificación del PR:
+- [x] T20 — Documentación y verificación del PR:
   - README del web: cómo levantar todo (comando único), `npm run dev` con el BFF en 5180, cómo sincronizar contratos, navegadores soportados (RNF-10), por qué no hay CSP en `dev` y enlace a la spec de este repositorio;
   - verificación: `lint`, `typecheck`, `test`, `e2e:simulado` y `e2e:real` en verde, CI en verde y `/sdd-review`;
   - comprobación manual con las herramientas del navegador: ninguna cookie legible, ni almacenamiento ni respuesta con un token.
