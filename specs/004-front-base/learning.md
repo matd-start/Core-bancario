@@ -116,3 +116,61 @@ La SPA lo envía cuando la persona hace clic, pulsa una tecla o cambia de pantal
 1. **Una regla pura nueva.** *Copiar* `RutaDeRegreso` y su teoría `F004_CL08_RutaDeRegreso_Normalizar`. *Modificar*: añade la regla "no se acepta una ruta que contenga `..`" escribiendo primero un caso en la teoría (verás cómo falla) y luego el cambio mínimo. *Recrear*: borra tu cambio y escríbelo de nuevo de memoria, empezando por la prueba.
 2. **Un código de error nuevo en el BFF.** *Copiar* cómo `CodigosDelBff.De(MotivoDeCierre)` traduce un motivo a un código. *Modificar*: imagina el motivo `Bloqueada` con el código `sesion-bloqueada`; sigue los errores del compilador hasta el contrato OpenAPI y observa cómo cambia `core-bancario-bff.json` y qué prueba lo exige. *Recrear*: explica con tus palabras por qué el *enum* del contrato es la fuente de los tipos de la SPA.
 3. **Seguir una petición con un log.** *Copiar* el recorrido B de este documento. *Modificar*: en `ServicioDeSesion.ObtenerAccessTokenAsync`, añade un log que diga si renovó o no (sin imprimir ningún token), y ejecuta `F004_CL12_ProxyConTokenPorVencer_RenuevaYReenviaElNuevo`. *Recrear*: dibuja de memoria el recorrido B y marca en qué punto una petición podría llegar a la API sin pasar por `ProteccionCsrf` (pista: no puede).
+
+---
+
+# Aprendizaje — 004 Front base, bloque 004b (PR 3: repo `core-bancario`, tareas T21 a T23)
+
+Este PR añade RF-16: que el backoffice pueda **preguntar** en qué estado está el acceso digital de un cliente. Es la primera operación de solo lectura sobre el acceso (las anteriores, habilitar y deshabilitar, escribían).
+
+## 1. Mapa del código
+
+| Archivo | Capa | Qué hace |
+|---|---|---|
+| `Application/AccesosDigitales/ObtenerEstadoDeAccesoConsulta.cs` | Application | El "pedido": solo trae el `ClienteId`. Se llama *Consulta* y no *Comando* porque no cambia nada. |
+| `Application/AccesosDigitales/EstadoDeAccesoDto.cs` | Application | La respuesta: `Estado` (texto) y `PrimerIngresoPendiente` (`bool?`, puede ser nulo). |
+| `Application/AccesosDigitales/ObtenerEstadoDeAccesoHandler.cs` | Application | El caso de uso: busca el cliente (404 si no existe), le pide el acceso a `LocalizadorDeAcceso` y arma el DTO. No guarda nada. |
+| `Application/AccesosDigitales/UsuarioDeIdentidad.cs` | Application | Gana el campo `PrimerIngresoPendiente` (por defecto `false`, así lo anterior no se rompe). |
+| `Application/DependencyInjection.cs` | Application | Registra el handler como *Scoped*. |
+| `Infrastructure/Identidad/ProveedorDeIdentidadKeycloak.cs` | Infrastructure | `ComoUsuario` traduce el JSON de Keycloak; ahora lee `requiredActions`. |
+| `Api/AccesosDigitales/EndpointsDeAccesoDigital.cs` | Api | El `GET /clientes/{id}/acceso-digital`. Delgado: solo llama al handler. |
+| `Api/openapi/core-bancario-api.json` | Contrato | Se regenera con `dotnet build`; el web genera sus tipos desde aquí. |
+
+## 2. Recorrido de una petición
+
+`GET /clientes/{id}/acceso-digital` con el token de un operador:
+
+1. La política `Operador` del grupo valida el token (sin esto, 401/403).
+2. El endpoint llama a `ObtenerEstadoDeAccesoHandler.EjecutarAsync`.
+3. El handler pide el cliente a `IClienteRepositorio`. Si no existe lanza `RecursoNoEncontradoException` (404) **antes** de hablar con Keycloak.
+4. `LocalizadorDeAcceso` busca el usuario en Keycloak (por el vínculo guardado, o por nombre de usuario si hay un habilitar interrumpido).
+5. `ProveedorDeIdentidadKeycloak.ComoUsuario` convierte el JSON en `UsuarioDeIdentidad`, mirando `enabled` y `requiredActions`.
+6. `AccesoLocalizado.Estado` decide `SinAcceso`, `Habilitado` o `Deshabilitado`.
+7. El handler pone `PrimerIngresoPendiente` solo si está `Habilitado`, y el endpoint responde `200`. Si Keycloak falla, el manejador global de errores lo convierte en 502 o 503.
+
+## 3. Conceptos clave
+
+### Consulta frente a comando
+**Problema:** habilitar y deshabilitar dejan rastro (solicitud y resultado en la base). Mirar el estado no debe dejar ninguno. **Dónde:** el handler no recibe repositorios de escritura ni unidad de trabajo; por eso es imposible que guarde algo por accidente. **Analogía:** preguntar el saldo en ventanilla frente a hacer un retiro.
+
+### Keycloak como fuente de la verdad (ADR-0017)
+**Problema:** la base local y Keycloak pueden discrepar. **Aquí:** el estado se lee de Keycloak, y la consulta *no reconcilia* (no cierra solicitudes pendientes aunque la marca coincida). Quien reconcilia es el siguiente habilitar o deshabilitar. **Analogía:** un fotógrafo que retrata la escena sin ordenar la habitación.
+
+### Dato que solo existe en ciertos estados (`bool?`)
+**Problema:** "primer ingreso pendiente" no significa nada si no hay acceso o está deshabilitado. `false` mentiría ("ya ingresó"). **Aquí:** `null` = "no aplica", `true`/`false` solo si `Habilitado`. **Analogía:** en un formulario, dejar en blanco una casilla que no te corresponde, en vez de marcar "No".
+
+### Filtro por endpoint, no por grupo
+**Problema:** `RegistroDeOperacionDelOperador` registra operaciones que escriben. Aplicado al grupo, también se ejecutaría en el `GET`. **Aquí:** se añade a cada `POST`. **Analogía:** el libro de visitas se firma al entrar a la bóveda, no en el vestíbulo.
+
+## 4. Decisiones no obvias
+
+- `PrimerIngresoPendiente = true` si `requiredActions` contiene `UPDATE_PASSWORD` o `CONFIGURE_TOTP`: son las acciones que `habilitar` deja puestas, y Keycloak las quita cuando el cliente las completa. Otras acciones (por ejemplo `VERIFY_EMAIL`) no cuentan.
+- Un valor de `requiredActions` que no es texto simplemente no cuenta; no se trata como error porque no afecta a la decisión.
+- El campo nuevo de `UsuarioDeIdentidad` tiene valor por defecto para no tocar las llamadas existentes (YAGNI).
+- `dotnet build` también reescribe `openapi/core-bancario-bff.json` con cambios solo de saltos de línea (ruido de Windows); no se versionó.
+
+## 5. Para practicar (Copiar → Modificar → Recrear)
+
+1. **Otra acción obligatoria.** *Copiar* `TieneAccionesObligatorias`. *Modificar*: haz que `VERIFY_EMAIL` también cuente (primero añade el caso a una prueba de Infrastructure y míralo fallar). *Recrear*: reescribe el método de memoria usando solo `JsonArray` y `Any`.
+2. **Una consulta nueva.** *Copiar* `ObtenerEstadoDeAccesoHandler` y su consulta. *Modificar*: crea `ObtenerUltimaSolicitudDeAccesoHandler` que devuelva la fecha de la última solicitud (necesitarás leer el repositorio de registro). *Recrear*: explica por qué ese handler tampoco debería recibir `IUnidadDeTrabajo`.
+3. **Seguir el contrato.** *Copiar* la entrada `ObtenerEstadoDeAccesoDigital` de `core-bancario-api.json`. *Modificar*: cambia el `WithSummary` del endpoint, ejecuta `dotnet build` y observa el diff del JSON. *Recrear*: dibuja qué parte del web depende de ese archivo y qué prueba falla si el contrato cambia sin versionarlo.

@@ -264,7 +264,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Application
 
-- [ ] T21 — Estado del acceso:
+- [x] T21 — Estado del acceso:
   - `UsuarioDeIdentidad` gana `bool PrimerIngresoPendiente = false`;
   - `ObtenerEstadoDeAccesoConsulta`, `EstadoDeAccesoDto` y `ObtenerEstadoDeAccesoHandler` (404 sin llamar al proveedor; `LocalizadorDeAcceso`; `PrimerIngresoPendiente` solo si Habilitado; sin escribir ni reconciliar);
   - `AddAplicacion` lo registra como Scoped.
@@ -273,11 +273,11 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 ### Infrastructure
 
-- [ ] T22 — `ProveedorDeIdentidadKeycloak.ComoUsuario` lee `requiredActions`: `UPDATE_PASSWORD` o `CONFIGURE_TOTP` → `PrimerIngresoPendiente = true`; ausente o vacío → `false` · Repo: core-bancario · Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Identidad/ProveedorDeIdentidadKeycloak.cs` · Cubre: RF-16, CA-29
+- [x] T22 — `ProveedorDeIdentidadKeycloak.ComoUsuario` lee `requiredActions`: `UPDATE_PASSWORD` o `CONFIGURE_TOTP` → `PrimerIngresoPendiente = true`; ausente o vacío → `false` · Repo: core-bancario · Capa: Infrastructure · Archivos: `src/CoreBancario.Infrastructure/Identidad/ProveedorDeIdentidadKeycloak.cs` · Cubre: RF-16, CA-29
 
 ### Api
 
-- [ ] T23 — Endpoint de RF-16 y cierre del PR:
+- [x] T23 — Endpoint de RF-16 y cierre del PR:
   - `EndpointsDeAccesoDigital`: el filtro `RegistroDeOperacionDelOperador` pasa a cada `POST`. Nuevo `GET` del grupo (`ObtenerEstadoDeAccesoDigital`, `ProducesProblem` 404, 502 y 503);
   - regenerar y versionar el contrato;
   - en el README, el endpoint nuevo en la sección de Keycloak;

@@ -157,8 +157,15 @@ public sealed class ProveedorDeIdentidadKeycloak(HttpClient http, IOptions<Opcio
         var textoDeLaMarca = LeerMarca(usuario);
         Guid? marca = Guid.TryParse(textoDeLaMarca, out var guid) ? guid : null;
 
-        return new UsuarioDeIdentidad(sub, habilitado, marca);
+        return new UsuarioDeIdentidad(sub, habilitado, marca, TieneAccionesObligatorias(usuario));
     }
+
+    // Mientras Keycloak conserve UPDATE_PASSWORD o CONFIGURE_TOTP, el cliente no terminó su primer ingreso (RF-16).
+    private static bool TieneAccionesObligatorias(JsonNode? usuario) =>
+        usuario?["requiredActions"] is JsonArray acciones
+        && acciones.Any(accion => accion is JsonValue valor
+            && valor.TryGetValue<string>(out var nombre)
+            && AccionesObligatorias.Contains(nombre));
 
     // Un valor que no es texto (número, objeto, booleano) es una respuesta inesperada de Keycloak: 502, no 500.
     private static string? LeerMarca(JsonNode? usuario)

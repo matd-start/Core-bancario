@@ -28,6 +28,7 @@ public static class DependencyInjection
         services.AddScoped<ReconciliadorDeSolicitudes>();
         services.AddScoped<HabilitarAccesoHandler>();
         services.AddScoped<DeshabilitarAccesoHandler>();
+        services.AddScoped<ObtenerEstadoDeAccesoHandler>();
 
         return services;
     }
