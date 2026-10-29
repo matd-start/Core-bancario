@@ -261,6 +261,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
 - Pruebas de Application, Infrastructure, Api y Keycloak.Tests de RF-16 (plan, sección 7), contra esqueletos de la sección 3.3 del plan.
 - La fila `ObtenerEstadoDeAccesoDigital` en `F002_RNF05_ContratoOpenApi_…`.
+- *(Añadido en el Build, sugerencias 3 y 4 de la revisión de 004a)* Regresiones del BFF que nacen en verde, en `tests/CoreBancario.Bff.Tests/InicioDeSesionConSesionPreviaTests.cs`: `F004_RN22_NuevoInicioDeSesionConElMismoSid_NoReiniciaElInicio` y `F004_RN26_RenewAsync_TicketDeOtroSidOOtraArea_NoReemplazaLaSesionGuardada`, con sus contrastes `F004_RN22_NuevoInicioDeSesionConOtroSid_EmpiezaUnaVidaMaximaNueva` y `F004_RN26_RenewAsync_TicketDeLaMismaIdentidad_SiReemplazaLaSesion`.
 
 ### Application
 

@@ -1,3 +1,89 @@
+# Revisión: 004-front-base, PR 3 de 004b (repo `core-bancario`, T21–T23)
+
+## Veredicto: APROBADO
+
+El GET de RF-16 cumple la spec, el plan y ADR-0017. No hay hallazgos obligatorios. La compilación y las 1205 pruebas pasan, y el formato está limpio.
+
+Rama `feature/004b-estado-de-acceso` frente a `main`. Solo se revisan los IDs de T21–T23 (RF-16, RN-19, RNF-14, CL-20, CA-29 y la parte de API de CA-32). Lo de la interfaz en CA-28 y CA-32 corresponde al PR 4, en `core-bancario-web`.
+
+## Trazabilidad
+
+| ID | Implementado | Test | Nota |
+|---|---|---|---|
+| RF-16 | Sí: `ObtenerEstadoDeAccesoHandler`, `EstadoDeAccesoDto`, `ObtenerEstadoDeAccesoConsulta`, `UsuarioDeIdentidad.PrimerIngresoPendiente`, `ProveedorDeIdentidadKeycloak.TieneAccionesObligatorias`, `GET /clientes/{id}/acceso-digital` | Application: `F004_RF16_HabilitadoConAccionesObligatorias_…`, `…SinAccionesObligatorias_…`, `…DeshabilitadoConAccionesObligatorias_…Null`, `…SinAcceso_…Null`, `F004_RF16_Consulta_NoEscribeNiGuarda…`, `F004_RF16_ConSolicitudPendiente_NoLaReconcilia`, `F004_RF16_VinculoSinUsuario…_LanzaInvalidOperation`. Infrastructure: `F004_RF16_UsuarioConAccionesObligatorias_PrimerIngresoPendiente` (teoría ×4), `…SinLasAccionesDelPrimerIngreso_NoPendiente`, `…SinRequiredActions_NoPendiente`, `…BuscarPorNombreDeUsuario_TambienLee…`. Api: `F004_RF16_ClienteHabilitadoQueYaCompleto…False`, `F004_RF16_ConsultarElEstado_NoRegistraSolicitudesNiVinculos`. Keycloak real: `F004_RF16_EstadoDeAcceso_ReflejaElPrimerIngresoReal` | Hay pruebas de que la consulta no escribe ni reconcilia, en Application y en Api. |
+| CA-29 | Sí | Application: `F004_CA29_ClienteSinUsuario…SinAcceso`, `…Habilitado`, `…Deshabilitado`, `…UsuarioSinVinculo…SeAdopta…`, `F004_CA29_ClienteInexistente_LanzaNoEncontradoSinLlamarAlProveedor`. Api: `F004_CA29_OperadorConsulta…` (×3), `F004_CA29_ClienteInexistente_Responde404ConSuCodigo`, `F004_CA29_RolCliente_Responde403`. Contrato: fila `ObtenerEstadoDeAccesoDigital` en `F002_RNF05_ContratoOpenApi_…` | El contrato documenta 200, 401, 403, 404, 500, 502 y 503. |
+| CL-20 | Sí: las excepciones del proveedor se propagan y el manejador global las convierte en 502/503 | `F004_CL20_ProveedorSinRespuesta_LanzaSinRespuesta`, `F004_CL20_ProveedorRespondeConError_…` (Application); `F004_CL20_IdentidadSinRespuesta_EstadoResponde503`, `F004_CL20_ErrorDeIdentidad_EstadoResponde502` (Api) | La pantalla "Estado del acceso no disponible" va en T27 (web). |
+| CA-32 (API) | Sí | Las mismas `F004_CL20_*` de Api | La parte de interfaz va en el PR 4. |
+| RN-19 | Sí: el grupo conserva `RequireAuthorization(Politicas.Operador)` | `F004_CA29_RolCliente_Responde403` | |
+| RNF-14 | Sí | El commit `a001d25 test(004): pruebas en rojo…` es anterior a `491f116 feat(004)`. El esqueleto del handler lanzaba `NotImplementedException`, y `ComoUsuario` no leía `requiredActions`. | Que la estructura obliga al rojo se ve en los commits. No vi la ejecución en rojo; eso es historial. |
+
+Todas las pruebas nuevas llevan el prefijo `F004_`. El único cambio a una prueba de otra feature es `F003_ADR0017_ObtenerAsync…` en `AdaptadorDeKeycloakTests.cs:126`. Era una prueba que ya existía, y el cambio es obligado porque la igualdad del *record* ahora incluye `PrimerIngresoPendiente`. Va en su propio commit `test(004)` (`4464f7a`), así que es correcto.
+
+## Hallazgos obligatorios
+
+Ninguno.
+
+Integridad de las pruebas: después de `a001d25`, el único cambio en `tests/` está en `4464f7a`, que es un commit `test(004)`. El commit `feat` (`491f116`) no toca `tests/`.
+
+Esqueletos: no queda ningún `// SDD: esqueleto creado por test-writer` en `src/`.
+
+Arquitectura:
+- **ADR-0002:** Application solo usa el enum de Domain.
+- **ADR-0009:** el endpoint llama al handler directamente.
+- **ADR-0011:** los 404, 403, 502 y 503 llevan su `codigo`, y las pruebas lo comprueban.
+- **ADR-0017:** el estado sale de `LocalizadorDeAcceso` y no se reconcilia.
+- **Regla "ningún GET cambia datos":** `RegistroDeOperacionDelOperador` está solo en los dos `POST`.
+
+## Sugerencias opcionales
+
+1. **`estado` en el contrato es un `string` libre** (`core-bancario-api.json`, esquema `EstadoDeAccesoDto`). El plan lo definió así, así que no es un hallazgo. Pero si se publicara como *enum* `SinAcceso | Habilitado | Deshabilitado`, la SPA recibiría una unión de literales en `api.d.ts`. Así `accionesDeAcceso` (T27) no tendría que volver a escribir los tres valores a mano. Haría falta, por ejemplo, un transformador como `CodigosDeErrorEnOpenApi` o serializar el enum como texto. Conviene decidirlo antes de T24 si se quiere.
+2. **Pruebas de BFF fuera de T21–T23.** `InicioDeSesionConSesionPreviaTests.cs` y `BffFixture.Servicios` resuelven las sugerencias 3 y 4 de la revisión de 004a (RN-22: el mismo `sid` no reinicia `Inicio`; RN-26: barrera de `RenewAsync`). Están bien justificadas en el mensaje del commit y nacen en verde, pero `tasks.md` no las menciona. Una línea en la sección del PR 3 dejaría la trazabilidad completa.
+3. **Ruido de saltos de línea.** Al ejecutar `dotnet build`, `src/CoreBancario.Bff/openapi/core-bancario-bff.json` vuelve a quedar modificado en la copia de trabajo. Solo cambian LF y CRLF, y `git diff --stat` sale vacío. `learning.md` ya lo anota. Una regla `*.json text eol=lf` en `.gitattributes` lo evitaría en Windows. Mi ejecución lo dejó así; no lo toqué.
+4. `ObtenerEstadoDeAccesoHandler.cs:24`: con `Estado == Habilitado`, `acceso.Usuario` nunca es null (lo garantiza `AccesoLocalizado.Estado`), así que el `?.` sobra. Es inocuo; se puede dejar.
+
+## Desviaciones entre spec/plan y código
+
+- **Nombres de pruebas frente a la tabla de la sección 7 del plan** (fila CA-29, línea ~1048):
+  - el plan cita `F004_CA29_EstadoDeAcceso_SinAccesoHabilitadoYDeshabilitado`, `F004_RF16_PrimerIngresoPendiente_SoloSiHabilitado`, `F004_CA29_OperadorConsultaElEstado_Responde200` y `F004_CA29_ClienteInexistente_Responde404`;
+  - en el código están repartidas en varias pruebas más específicas, con otros nombres (por ejemplo `…_Responde404ConSuCodigo`).
+
+  La cobertura es mayor que la del plan. Basta con actualizar la tabla para que la spec viva coincida.
+- **Plan 3.3:** `grupo.MapGet("", …)`; el código usa `MapGet("/", …)`. No tiene efecto: el contrato publica `/clientes/{clienteId}/acceso-digital` sin barra final.
+- **Spec, sección 4:** "Primer ingreso pendiente (propuesto; Design confirma si se puede obtener)". El plan lo confirmó y el código lo implementa, y la prueba contra Keycloak real lo demuestra. Se puede quitar el "propuesto" de la spec.
+- **CA-29 en la spec** menciona 401, 403, 404 y 500; el contrato añade 502 y 503, como pide el plan (CL-20). No hay contradicción.
+- `learning.md` existe y tiene la sección del PR 3.
+
+## Resultado de tests
+
+- `dotnet build`: correcto, 0 advertencias y 0 errores. El contrato de la API regenerado coincide con el versionado.
+- `dotnet format --verify-no-changes`: sin cambios (código de salida 0).
+- `dotnet test` (con Docker 29.9.2): **1205 de 1205 correctas**, 0 errores y 0 omitidas, en 10 min 09 s.
+
+| Proyecto | Duración |
+|---|---|
+| Domain.Tests | 4 s |
+| Application.Tests | 15 s |
+| Bff.Tests | 9 s |
+| Infrastructure.Tests | 1 min 57 s |
+| Api.Tests | 1 min 59 s |
+| Keycloak.Tests | 10 min 06 s |
+
+El CI no se puede verificar en local.
+
+## Preguntas de comprensión para el autor
+
+1. ¿Por qué el estado del acceso es un endpoint aparte y no un campo de `FichaClienteDto`? ¿Qué vería el operador durante una caída de Keycloak si fuera un campo de la ficha? ¿Qué criterio de la spec se rompería?
+2. Este GET encuentra una solicitud pendiente cuya marca coincide con la de Keycloak y, aun así, no la cierra como Completada. ¿Por qué es correcto dejarla abierta? ¿Qué regla de diseño violaría cerrarla, y quién la cierra después?
+3. ¿Por qué `primerIngresoPendiente` es `null`, y no `false`, cuando el acceso está Deshabilitado o no existe? ¿Por qué un usuario huérfano de Keycloak, sin vínculo en la base, aparece como "Habilitado" y hace que el botón diga "Restablecer"?
+
+Archivos principales:
+- `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Application\AccesosDigitales\ObtenerEstadoDeAccesoHandler.cs`
+- `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Infrastructure\Identidad\ProveedorDeIdentidadKeycloak.cs`
+- `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Api\AccesosDigitales\EndpointsDeAccesoDigital.cs`
+- `C:\Users\miguel\source\repos\core-bancario\src\CoreBancario.Api\openapi\core-bancario-api.json`
+- `C:\Users\miguel\source\repos\core-bancario\specs\004-front-base\plan.md`
+- `C:\Users\miguel\source\repos\core-bancario\specs\004-front-base\tasks.md`
+
 # Revisión — 004-front-base, PR 1 de 004a (repo `core-bancario`, T01–T11), segundo ciclo
 
 ## Veredicto: APROBADO
