@@ -25,6 +25,7 @@ public sealed class ProveedorDeIdentidadEnMemoria : IProveedorDeIdentidad
     private readonly List<CancellationToken> _tokens = [];
     private Modo _modo = Modo.Normal;
     private bool _fallanLasLecturas;
+    private bool _lecturasConError;
 
     /// <summary>Lo que el proveedor sabe de un usuario. NombreDeUsuario va en minúsculas, como lo guarda Keycloak.</summary>
     public sealed class UsuarioSimulado(string sub, string nombreDeUsuario)
@@ -61,7 +62,12 @@ public sealed class ProveedorDeIdentidadEnMemoria : IProveedorDeIdentidad
 
     public IReadOnlyCollection<UsuarioSimulado> Usuarios => _usuarios.Values;
 
-    public void ResponderConError() => _modo = Modo.ConError;
+    /// <summary>tambienAlLeer: true hace que las lecturas también respondan con error (ErrorDelProveedorDeIdentidadException).</summary>
+    public void ResponderConError(bool tambienAlLeer = false)
+    {
+        _modo = Modo.ConError;
+        _lecturasConError = tambienAlLeer;
+    }
 
     public void NoResponder(bool tambienAlLeer = false)
     {
@@ -75,11 +81,12 @@ public sealed class ProveedorDeIdentidadEnMemoria : IProveedorDeIdentidad
     {
         _modo = Modo.Normal;
         _fallanLasLecturas = false;
+        _lecturasConError = false;
     }
 
     /// <summary>Prepara un usuario que ya existía antes de la operación.</summary>
     public UsuarioSimulado Sembrar(string nombreDeUsuario, bool habilitado = true, bool otpInscrito = false,
-        Guid? marca = null, string? claveTemporal = null)
+        Guid? marca = null, string? claveTemporal = null, bool primerIngresoPendiente = false)
     {
         var usuario = new UsuarioSimulado(Guid.NewGuid().ToString(), nombreDeUsuario)
         {
@@ -88,6 +95,9 @@ public sealed class ProveedorDeIdentidadEnMemoria : IProveedorDeIdentidad
             Marca = marca,
             ClaveTemporal = claveTemporal,
         };
+        if (primerIngresoPendiente)
+            usuario.AccionesObligatorias.AddRange(["UPDATE_PASSWORD", "CONFIGURE_TOTP"]);
+
         _usuarios[usuario.Sub] = usuario;
         return usuario;
     }
@@ -174,8 +184,12 @@ public sealed class ProveedorDeIdentidadEnMemoria : IProveedorDeIdentidad
     {
         if (_fallanLasLecturas)
             throw new ProveedorDeIdentidadSinRespuestaException();
+
+        if (_lecturasConError)
+            throw new ErrorDelProveedorDeIdentidadException("HTTP 500 al leer");
     }
 
     private static UsuarioDeIdentidad? Representar(UsuarioSimulado? usuario) =>
-        usuario is null ? null : new UsuarioDeIdentidad(usuario.Sub, usuario.Habilitado, usuario.Marca);
+        usuario is null ? null : new UsuarioDeIdentidad(usuario.Sub, usuario.Habilitado, usuario.Marca,
+            usuario.AccionesObligatorias.Any(a => a is "UPDATE_PASSWORD" or "CONFIGURE_TOTP"));
 }

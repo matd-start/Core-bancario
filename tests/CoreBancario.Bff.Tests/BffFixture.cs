@@ -50,6 +50,9 @@ public sealed class BffFixture : IAsyncDisposable
     public HttpClient Cliente =>
         _cliente ??= _fabrica.Value.CreateClient(new WebApplicationFactoryClientOptions { AllowAutoRedirect = false, HandleCookies = false });
 
+    /// <summary>Los servicios del host real (singletons como AlmacenDeSesiones). Crea el host en el primer uso.</summary>
+    public IServiceProvider Servicios => _fabrica.Value.Services;
+
     public void Avanzar(TimeSpan tiempo) => Reloj.Advance(tiempo);
 
     private WebApplicationFactory<MarcadorDelBff> CrearFabrica() =>
