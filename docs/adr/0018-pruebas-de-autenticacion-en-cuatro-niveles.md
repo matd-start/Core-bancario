@@ -52,6 +52,7 @@ El motivo principal es que cada nivel responde a una pregunta que los otros no p
 - Un cambio en el realm JSON se prueba en dos sitios: la prueba de configuración (valores) y el punta a punta (comportamiento).
 - El fake de Application puede divergir del Keycloak real. Las pruebas del adaptador son las que lo detectan.
 - Hueco aceptado: ninguna prueba ejecuta `documento.js` **dentro** de un navegador real, ni la normalización ni el aviso del número de documento. Playwright lo cerraría a costa de descargar navegadores en el CI. Queda como mejora.
+  - *Actualización (2026-10-31, `fix/normalizacion-documento-login`):* el enganche de eventos ya se prueba con Jint sobre un DOM de mentira (`PaginaDelTema`), que simula la captura en `document` y el envío antes y después de `DOMContentLoaded`. Sigue sin probarse en un navegador real; el recorrido con red y navegador reales lo cubre el `e2e:real` de `core-bancario-web`, que fue el que encontró la carrera.
 
 ## Decisiones del autor
 

@@ -6,8 +6,15 @@
  *    "CC" + "1.234.567" -> "CC1234567".
  * 2. Pantalla de cambio de clave (CL-06): cancela el envio si la clave nueva contiene el numero de documento.
  *
+ * ENVIO DELEGADO: este script corre en el head (scripts= de theme.properties), cuando los formularios aun no existen,
+ * y DOMContentLoaded espera a los modulos de keycloak.v2 (authChecker.js). En ese hueco el formulario ya se ve y se
+ * puede enviar. Por eso el submit se escucha en document, en fase de captura, desde que el script corre: el evento
+ * pasa por document antes de llegar al formulario, exista este o no cuando se registro el listener. En
+ * DOMContentLoaded solo se agrega el selector; si el envio llega antes, se usa el tipo que el selector mostrara.
+ *
  * Las funciones normalizarUsuario y contieneNumeroDeDocumento son puras y globales a proposito: las pruebas
- * (Jint) las ejecutan sin navegador. Lo que toca el DOM (iniciar...) solo se comprueba a mano: hueco aceptado.
+ * (Jint) las ejecutan sin navegador. Lo que toca el DOM se prueba sobre un DOM de mentira (PaginaDelTema), no en
+ * un navegador real: hueco aceptado (ADR-0018).
  *
  * LIMITE ACEPTADO: el aviso del numero de documento se puede saltar (sin JavaScript, o con una peticion hecha a
  * mano). Se acepta porque esa regla protege al usuario de si mismo, no frente a un atacante. Lo que el servidor
@@ -82,13 +89,29 @@ function iniciarPantallaDeIngreso(formulario) {
         selector.value = anterior.tipo;
         campo.value = anterior.numero;
     }
-
-    formulario.addEventListener('submit', function () {
-        campo.value = normalizarUsuario(selector.value, campo.value);
-    });
 }
 
-function iniciarPantallaDeCambioDeClave(formulario) {
+function normalizarAlEnviar(formulario) {
+    var campo = formulario.querySelector('input[name="username"]');
+    if (!campo) {
+        return;
+    }
+
+    var selector = document.getElementById('tipo-documento');
+    if (selector) {
+        campo.value = normalizarUsuario(selector.value, campo.value);
+        return;
+    }
+
+    // Envio antes de DOMContentLoaded: si el campo ya trae el tipo (intento fallido, o la persona lo escribio) se usa
+    // ese; si no, el que el selector mostrara por defecto. Sin selector no hay otra forma de saber si era CE o PA.
+    var escrito = separarUsuario(campo.value);
+    campo.value = escrito
+        ? normalizarUsuario(escrito.tipo, escrito.numero)
+        : normalizarUsuario(TIPOS_DE_DOCUMENTO[0].codigo, campo.value);
+}
+
+function avisarSiContieneElNumero(formulario, evento) {
     var usuario = formulario.getAttribute('data-usuario');
     var mensaje = formulario.getAttribute('data-mensaje-documento');
     var claveNueva = formulario.querySelector('input[name="password-new"]');
@@ -96,32 +119,39 @@ function iniciarPantallaDeCambioDeClave(formulario) {
         return;
     }
 
-    formulario.addEventListener('submit', function (evento) {
-        var aviso = document.getElementById('aviso-numero-de-documento');
-        if (aviso) {
-            aviso.parentNode.removeChild(aviso);
-        }
+    var aviso = document.getElementById('aviso-numero-de-documento');
+    if (aviso) {
+        aviso.parentNode.removeChild(aviso);
+    }
 
-        if (!contieneNumeroDeDocumento(usuario, claveNueva.value)) {
-            return;
-        }
+    if (!contieneNumeroDeDocumento(usuario, claveNueva.value)) {
+        return;
+    }
 
-        evento.preventDefault();
-        evento.stopImmediatePropagation();
+    // Se cancela el envio y el evento no llega al formulario: asi el onsubmit de la plantilla no deshabilita el boton
+    // y la persona puede corregir la clave y volver a enviar.
+    evento.preventDefault();
+    evento.stopImmediatePropagation();
 
-        // El formulario deshabilita el boton al enviar (onsubmit en la plantilla); se vuelve a habilitar.
-        var boton = formulario.elements['login'];
-        if (boton) {
-            boton.disabled = false;
-        }
+    aviso = document.createElement('span');
+    aviso.id = 'aviso-numero-de-documento';
+    aviso.className = 'pf-v5-c-helper-text__item-text pf-m-error kc-feedback-text';
+    aviso.setAttribute('aria-live', 'polite');
+    aviso.textContent = mensaje || 'La clave no puede contener tu número de documento.';
+    claveNueva.closest('.pf-v5-c-form__group').appendChild(aviso);
+}
 
-        aviso = document.createElement('span');
-        aviso.id = 'aviso-numero-de-documento';
-        aviso.className = 'pf-v5-c-helper-text__item-text pf-m-error kc-feedback-text';
-        aviso.setAttribute('aria-live', 'polite');
-        aviso.textContent = mensaje || 'La clave no puede contener tu número de documento.';
-        claveNueva.closest('.pf-v5-c-form__group').appendChild(aviso);
-    });
+function alEnviar(evento) {
+    var formulario = evento.target;
+    if (!formulario) {
+        return;
+    }
+
+    if (formulario.id === 'kc-form-login') {
+        normalizarAlEnviar(formulario);
+    } else if (formulario.id === 'kc-passwd-update-form') {
+        avisarSiContieneElNumero(formulario, evento);
+    }
 }
 
 function iniciarDocumento() {
@@ -129,12 +159,9 @@ function iniciarDocumento() {
     if (ingreso) {
         iniciarPantallaDeIngreso(ingreso);
     }
-
-    var cambioDeClave = document.getElementById('kc-passwd-update-form');
-    if (cambioDeClave) {
-        iniciarPantallaDeCambioDeClave(cambioDeClave);
-    }
 }
+
+document.addEventListener('submit', alEnviar, true);
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', iniciarDocumento);

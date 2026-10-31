@@ -4,29 +4,18 @@ namespace CoreBancario.Keycloak.Tests;
 
 /// <summary>
 /// Ejecuta documento.js (tema core-bancario-clientes) con Jint, un intérprete de JavaScript, y llama a sus funciones
-/// puras (ADR-0018). Ninguna prueba lo ejecuta dentro de un navegador real: es un hueco aceptado. El script se carga
-/// con un "document" de mentira porque, en un navegador, engancha eventos al cargar.
+/// puras (ADR-0018). El script se carga con un "document" de mentira porque, en un navegador, engancha eventos al
+/// cargar. Lo que hace con esos eventos se prueba en PaginaDelTema; ninguna prueba lo ejecuta en un navegador real.
 /// </summary>
 internal static class ScriptDelTema
 {
-    private const string DocumentoDeMentira = """
-        var window = this;
-        var document = {
-            readyState: 'loading',
-            addEventListener: function () { },
-            querySelector: function () { return null; },
-            querySelectorAll: function () { return []; },
-            getElementById: function () { return null; }
-        };
-        """;
-
     public static string Ruta => Path.Combine(Ayudas.RaizDelRepositorio(), "infra", "keycloak", "themes",
         "core-bancario-clientes", "login", "resources", "js", "documento.js");
 
     private static Engine Cargar()
     {
         var motor = new Engine();
-        motor.Execute(DocumentoDeMentira);
+        motor.Execute(PaginaDelTema.DomDeMentira);
         motor.Execute(File.ReadAllText(Ruta));
         return motor;
     }
