@@ -22,18 +22,22 @@ public class EnvioTempranoDelTemaTests
         Assert.Equal("CC6237280", pagina.Valor("username"));
     }
 
-    [Fact]
-    public void F003_CL02_EnvioAntesDeCargar_UsuarioYaNormalizado_NoLoDuplica()
+    [Theory]
+    [InlineData("CE987654", "CE987654")]        // tras un intento fallido, Keycloak devuelve el usuario normalizado
+    [InlineData("cc 6.237.280", "CC6237280")]   // la persona escribe el tipo delante del número
+    [InlineData("pa-ab.12345", "PAAB12345")]
+    public void F003_CL02_EnvioAntesDeCargar_ConElTipoEscrito_UsaEseTipoSinDuplicarlo(string escrito, string esperado)
     {
-        // Arrange: tras un intento fallido, Keycloak devuelve el campo con el usuario ya normalizado.
+        // Arrange
         var pagina = PaginaDelTema.DeIngreso();
-        pagina.Escribir("username", "CE987654");
+        pagina.Escribir("username", escrito);
 
         // Act
-        pagina.Enviar();
+        var sale = pagina.Enviar();
 
         // Assert
-        Assert.Equal("CE987654", pagina.Valor("username"));
+        Assert.True(sale);
+        Assert.Equal(esperado, pagina.Valor("username"));
     }
 
     [Fact]

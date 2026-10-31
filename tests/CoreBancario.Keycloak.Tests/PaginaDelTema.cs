@@ -13,7 +13,11 @@ internal sealed class PaginaDelTema
     private const string IdDeIngreso = "kc-form-login";
     private const string IdDeCambioDeClave = "kc-passwd-update-form";
 
-    private const string DomDeMentira = """
+    /// <summary>
+    /// El document de mentira, con readyState "loading" y sin formularios. ScriptDelTema también lo usa para cargar
+    /// el script, así que hay un solo fake que mantener.
+    /// </summary>
+    internal const string DomDeMentira = """
         var window = this;
         var __elementos = [];
         var __oyentesDelDocumento = [];
