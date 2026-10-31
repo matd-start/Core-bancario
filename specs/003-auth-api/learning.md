@@ -288,3 +288,10 @@ El operador puede **habilitar** el acceso de un cliente (la API crea su usuario 
 - **Qué cambió:** el usuario de la cuenta de servicio en `clientes-realm.json` queda con `realmRoles: []` (antes heredaba `default-roles-clientes`, y con él el rol `cliente`).
 - **Por qué:** menor privilegio (ADR-0014). Con ese rol, el token de servicio habría parecido el de un cliente real. La Admin API se autoriza con los roles de `realm-management` (`manage-users`, `view-users`), que es lo único que necesita.
 - **Analogía:** la llave del buzón no debería además llevar el carné de socio del club.
+
+### 9.3 Una carrera en el tema de login (fix posterior, 2026-10-31)
+
+- **Qué pasaba:** `documento.js` corre en el `<head>` y enganchaba el `submit` en `DOMContentLoaded`, que en `keycloak.v2` espera a los módulos de la plantilla (`authChecker.js`). En ese hueco el formulario ya se veía: quien escribía rápido con una red lenta enviaba `6.237.280` en vez de `CC6237280` y Keycloak respondía "datos incorrectos". Lo encontró el `e2e:real` del web (CA-03), no las pruebas de aquí: Jint solo probaba las funciones puras.
+- **Arreglo:** **delegación de eventos**. Un único listener de `submit` en `document`, en fase de **captura**, registrado en cuanto corre el script. `document` existe desde el primer instante, y todo `submit` pasa por él antes de llegar al formulario, aunque el formulario no existiera al registrar el listener. Si el envío llega antes que el selector, se usa el tipo que traiga el campo (`cc 6.237.280` → `CC6237280`) o, si no trae ninguno, el tipo por defecto (`CC`). Sin selector no hay forma de saber si era CE o PA: ese límite se acepta, porque la ventana dura fracciones de segundo y antes fallaban todos. Lo mismo protege el aviso de CL-06.
+- **Analogía:** poner el control en la puerta del edificio, no en una oficina que todavía están construyendo.
+- **Lección:** un solo listener que decide por `evento.target.id`. Dos listeners (uno temprano y otro en el formulario) normalizarían dos veces: `CCCC6237280`. La prueba `…UsaElTipoElegidoUnaSolaVez` lo vigila.
