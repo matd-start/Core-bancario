@@ -1,6 +1,7 @@
+using System.Text.Json.Serialization;
+using CoreBancario.Bff.DocumentacionOpenApi;
 using CoreBancario.Bff.Endpoints;
 using CoreBancario.Bff.InicioDeSesion;
-using CoreBancario.Bff.OpenApi;
 using CoreBancario.Bff.Proxy;
 using CoreBancario.Bff.Seguridad;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -10,7 +11,14 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSesionDelNavegador(builder.Configuration, builder.Environment);
 builder.Services.AddAuthorization();
 builder.Services.AddHttpForwarder();
-builder.Services.AddOpenApi(opciones => opciones.AddDocumentTransformer<CodigosDelBffEnOpenApi>());
+builder.Services.AddOpenApi(opciones =>
+{
+    opciones.AddDocumentTransformer<CodigosDelBffEnOpenApi>();
+    opciones.AddDocumentTransformer<ExtensionesDeErrorDelBffEnOpenApi>();
+});
+
+// Como en la API: un entero es solo un número, en lo que se acepta y en lo que se documenta (RNF-13 de la 004).
+builder.Services.ConfigureHttpJsonOptions(opciones => opciones.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 builder.Services.AddProblemDetails();
 builder.Services.Configure<ForwardedHeadersOptions>(opciones =>
 {

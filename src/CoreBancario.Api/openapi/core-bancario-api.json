@@ -1398,6 +1398,10 @@
         }
       },
       "HttpValidationProblemDetails": {
+        "required": [
+          "codigo",
+          "traceId"
+        ],
         "type": "object",
         "properties": {
           "type": {
@@ -1413,11 +1417,9 @@
             ]
           },
           "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -1441,10 +1443,21 @@
                 "type": "string"
               }
             }
+          },
+          "codigo": {
+            "$ref": "#/components/schemas/CodigoDeError"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error."
           }
         }
       },
       "ProblemDetails": {
+        "required": [
+          "codigo",
+          "traceId"
+        ],
         "type": "object",
         "properties": {
           "type": {
@@ -1460,11 +1473,9 @@
             ]
           },
           "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -1479,6 +1490,13 @@
               "null",
               "string"
             ]
+          },
+          "codigo": {
+            "$ref": "#/components/schemas/CodigoDeError"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error."
           }
         }
       },

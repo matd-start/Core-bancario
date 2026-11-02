@@ -34,6 +34,21 @@ public class SesionHttpTests
     }
 
     [Fact]
+    public async Task F004_RNF12_ErrorDelBff_LlevaCodigoYTraceId()
+    {
+        // Arrange: el contrato los marca requeridos; todos los errores del BFF salen de RespuestasDelBff.
+        await using var bff = new BffFixture();
+
+        // Act
+        using var respuesta = await bff.GetAsync("/bff/sesion");
+
+        // Assert
+        var problema = await ProblemaAsync(respuesta);
+        Assert.False(string.IsNullOrEmpty(problema.Codigo));
+        Assert.False(string.IsNullOrEmpty(problema.TraceId));
+    }
+
+    [Fact]
     public async Task F004_RF14_ObtenerSesion_ConSesionDeCliente_DevuelveAreaUsuarioRolYPlazos()
     {
         // Arrange

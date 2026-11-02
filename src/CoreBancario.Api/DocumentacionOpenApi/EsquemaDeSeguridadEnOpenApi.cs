@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace CoreBancario.Api.OpenApi;
+namespace CoreBancario.Api.DocumentacionOpenApi;
 
 /// <summary>Documento: components.securitySchemes["Bearer"] = http/bearer/JWT con una descripción de los dos realms y la audiencia.</summary>
 public sealed class EsquemaDeSeguridadEnOpenApi : IOpenApiDocumentTransformer
