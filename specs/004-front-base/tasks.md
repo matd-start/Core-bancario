@@ -294,9 +294,9 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 - Simuladas de CA-30 y CA-35/CA-36 de las pantallas nuevas.
 - Real `F004_CA33_…`.
 
-- [ ] T24 — `npm run contratos:sincronizar` y `npm run tipos` con el contrato de 004b (`EstadoDeAccesoDto`, `ObtenerEstadoDeAccesoDigital`) · Repo: core-bancario-web · Capa: contratos · Archivos: `contratos/core-bancario-api.json`, `src/api/generado/api.d.ts` · Cubre: RNF-13, RF-16
+- [x] T24 — `npm run contratos:sincronizar` y `npm run tipos` con el contrato de 004b (`EstadoDeAccesoDto`, `ObtenerEstadoDeAccesoDigital`) · Repo: core-bancario-web · Capa: contratos · Archivos: `contratos/core-bancario-api.json`, `src/api/generado/api.d.ts` · Cubre: RNF-13, RF-16
 
-- [ ] T25 — Buscar y registrar:
+- [x] T25 — Buscar y registrar:
   - `BuscarCliente` en `/backoffice`, que sustituye a `InicioDelBackoffice`: tipo y número, con o sin puntos, y el número solo en el estado del componente. Con éxito → `/backoffice/clientes/{id}`. Con 404 → CL-22 con "Registrarlo";
   - instalar `react-hook-form` y `zod` con versiones exactas (ADR-0022; 004a no los instaló por YAGNI, plan 3.4, desviación 5);
   - `FormularioDeRegistro` con `esquemaDeRegistro` (RHF + Zod): un 400 `errors` → `setError` en cada campo; 409 `documento-duplicado` → "Ir a la ficha"; con éxito → ficha nueva;
@@ -304,7 +304,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Uso desde 1280 px · Repo: core-bancario-web · Capa: pantallas · Archivos: `src/backoffice/{BuscarCliente,FormularioDeRegistro}.tsx`, `src/backoffice/{esquemaDeRegistro,consultas}.ts`, `src/app/rutas.tsx`, `package.json`, `package-lock.json` · Cubre: RF-01, RF-12, RNF-04, RNF-08, RNF-09, CL-22, CL-23, CL-24, CA-22, CA-23, CA-33, CA-35, CA-36
 
-- [ ] T26 — Ficha y cuentas:
+- [x] T26 — Ficha y cuentas:
   - `accionesDeCuenta` (RN-14);
   - `FichaDeCliente`: datos, cuentas con `formatearDinero` y estado del acceso en su propia consulta (T27);
   - `AccionesDeCuenta`: solo las permitidas. "Cerrar" pide confirmación; 409 → mensaje + `invalidateQueries`; 422 → mensaje de negocio;
@@ -312,7 +312,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario-web · Capa: pantallas · Archivos: `src/backoffice/{FichaDeCliente,AccionesDeCuenta,AbrirCuenta}.tsx`, `src/backoffice/acciones.ts` · Cubre: RF-02, RF-03, RN-14, RNF-08, RNF-09, CL-15, CL-16, CL-18, CL-24, CA-24, CA-25, CA-26, CA-27, CA-33, CA-35, CA-36
 
-- [ ] T27 — Acceso digital:
+- [x] T27 — Acceso digital:
   - `accionesDeAcceso`;
   - `AccesoDigital`: estado, "primer ingreso pendiente", y 502/503 → "Estado del acceso no disponible" sin acciones;
   - confirmaciones: "Habilitar" avisa de qué pasa si ya tuviera acceso; "Restablecer" explica clave nueva, segundo factor borrado y sesiones cerradas; "Deshabilitar";
@@ -322,7 +322,7 @@ Cada tarea compila por sí sola. El coder marca `[x]` al terminar cada una.
 
   Repo: core-bancario-web · Capa: pantallas · Archivos: `src/backoffice/{AccesoDigital,DialogoDeClaveTemporal}.tsx`, `src/backoffice/acciones.ts` · Cubre: RF-13, RF-16, RN-20, RNF-04, RNF-08, CL-17, CL-19, CL-20, CL-21, CL-24, CA-28, CA-30, CA-31, CA-32, CA-35, CA-36
 
-- [ ] T28 — Cierre del bloque:
+- [x] T28 — Cierre del bloque:
   - el recorrido real del operador (CA-33) en el job `e2e-real`;
   - README del web: pantallas del backoffice y el límite conocido de CL-15;
   - verificación: `lint`, `typecheck`, `test`, `e2e:simulado` y `e2e:real` en verde, CI y `/sdd-review`;
