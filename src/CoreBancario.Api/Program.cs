@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using CoreBancario.Api.AccesosDigitales;
 using CoreBancario.Api.Autenticacion;
 using CoreBancario.Api.Clientes;
@@ -15,8 +16,13 @@ builder.Services.AddOpenApi(opciones =>
 {
     opciones.AddDocumentTransformer<EsquemaDeSeguridadEnOpenApi>();
     opciones.AddDocumentTransformer<CodigosDeErrorEnOpenApi>();
+    opciones.AddDocumentTransformer<ExtensionesDeErrorEnOpenApi>();
     opciones.AddOperationTransformer<RequisitoDeSeguridadEnOpenApi>();
 });
+
+// Por defecto ASP.NET acepta "5" (texto) donde va un número, y el contrato lo publica como number | string. Estricto:
+// un entero es solo un número, en lo que se acepta y en lo que se documenta (RNF-13 de la 004).
+builder.Services.ConfigureHttpJsonOptions(opciones => opciones.SerializerOptions.NumberHandling = JsonNumberHandling.Strict);
 builder.Services.AddHealthChecks();
 
 builder.Services.AddProblemDetails();

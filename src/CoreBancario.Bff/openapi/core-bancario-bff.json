@@ -140,6 +140,10 @@
         "description": "Identificadores estables de los errores del BFF (campo codigo de sus respuestas). Nunca se renombran."
       },
       "ProblemDetails": {
+        "required": [
+          "codigo",
+          "traceId"
+        ],
         "type": "object",
         "properties": {
           "type": {
@@ -155,11 +159,9 @@
             ]
           },
           "status": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
             "type": [
               "null",
-              "integer",
-              "string"
+              "integer"
             ],
             "format": "int32"
           },
@@ -174,6 +176,13 @@
               "null",
               "string"
             ]
+          },
+          "codigo": {
+            "$ref": "#/components/schemas/CodigoDeErrorDelBff"
+          },
+          "traceId": {
+            "type": "string",
+            "description": "Identificador de correlación de la petición: es el que se pide al usuario para buscar el error en los logs."
           }
         }
       },
@@ -200,19 +209,11 @@
             ]
           },
           "segundosHastaInactividad": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           },
           "segundosHastaVidaMaxima": {
-            "pattern": "^-?(?:0|[1-9]\\d*)$",
-            "type": [
-              "integer",
-              "string"
-            ],
+            "type": "integer",
             "format": "int32"
           }
         }
