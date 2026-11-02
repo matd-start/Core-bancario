@@ -1,25 +1,24 @@
 using System.Reflection;
 using System.Text.Json.Nodes;
-using CoreBancario.Bff.Errores;
+using CoreBancario.Api.Errores;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace CoreBancario.Bff.OpenApi;
+namespace CoreBancario.Api.DocumentacionOpenApi;
 
 /// <summary>
-/// components.schemas["CodigoDeErrorDelBff"] = string con enum de TODAS las constantes public const string de CodigosDelBff
-/// (por reflexión, en orden alfabético). Fuente del tipo de los códigos del BFF en la SPA (RNF-12). Gemelo de
-/// CodigosDeErrorEnOpenApi de la API: son dos clases pequeñas en dos hosts que no se referencian (DRY a la tercera).
+/// components.schemas["CodigoDeError"] = string con enum de TODAS las constantes public const string de CodigosDeError
+/// (por reflexión, en orden alfabético). Fuente del tipo CodigoDeError de la SPA (RNF-12).
 /// </summary>
-public sealed class CodigosDelBffEnOpenApi : IOpenApiDocumentTransformer
+public sealed class CodigosDeErrorEnOpenApi : IOpenApiDocumentTransformer
 {
-    public const string NombreDelEsquema = "CodigoDeErrorDelBff";
+    public const string NombreDelEsquema = "CodigoDeError";
 
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        var codigos = typeof(CodigosDelBff)
+        var codigos = typeof(CodigosDeError)
             .GetFields(BindingFlags.Public | BindingFlags.Static)
             .Where(campo => campo.IsLiteral && campo.FieldType == typeof(string))
             .Select(campo => (string)campo.GetRawConstantValue()!)
@@ -30,7 +29,7 @@ public sealed class CodigosDelBffEnOpenApi : IOpenApiDocumentTransformer
         document.Components.Schemas[NombreDelEsquema] = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
-            Description = "Identificadores estables de los errores del BFF (campo codigo de sus respuestas). Nunca se renombran.",
+            Description = "Identificadores estables del contrato de errores (ADR-0011). Nunca se renombran.",
             Enum = [.. codigos.Select(codigo => (JsonNode)JsonValue.Create(codigo)!)],
         };
 

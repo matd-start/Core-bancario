@@ -1,6 +1,6 @@
 using CoreBancario.Api.Autenticacion;
+using CoreBancario.Api.DocumentacionOpenApi;
 using CoreBancario.Api.Errores;
-using CoreBancario.Api.OpenApi;
 using CoreBancario.Application.Cuentas;
 using Microsoft.AspNetCore.Http.HttpResults;
 

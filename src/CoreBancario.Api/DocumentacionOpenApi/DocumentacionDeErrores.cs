@@ -1,4 +1,4 @@
-namespace CoreBancario.Api.OpenApi;
+namespace CoreBancario.Api.DocumentacionOpenApi;
 
 public static class DocumentacionDeErrores
 {

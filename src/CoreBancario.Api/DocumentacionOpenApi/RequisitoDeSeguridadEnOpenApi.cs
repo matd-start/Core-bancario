@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.OpenApi;
 using Microsoft.OpenApi;
 
-namespace CoreBancario.Api.OpenApi;
+namespace CoreBancario.Api.DocumentacionOpenApi;
 
 /// <summary>Operación: añade el requisito "Bearer" a toda operación con metadatos de autorización y sin AllowAnonymous.</summary>
 public sealed class RequisitoDeSeguridadEnOpenApi : IOpenApiOperationTransformer

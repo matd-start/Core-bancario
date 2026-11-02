@@ -1,6 +1,6 @@
+using CoreBancario.Bff.DocumentacionOpenApi;
 using CoreBancario.Bff.Endpoints;
 using CoreBancario.Bff.InicioDeSesion;
-using CoreBancario.Bff.OpenApi;
 using CoreBancario.Bff.Proxy;
 using CoreBancario.Bff.Seguridad;
 using Microsoft.AspNetCore.HttpOverrides;
