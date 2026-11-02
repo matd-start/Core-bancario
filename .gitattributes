@@ -1,3 +1,6 @@
 # Normaliza saltos de línea: LF en el repositorio, el nativo de cada sistema al hacer checkout.
 * text=auto
 *.sh text eol=lf
+# JSON siempre en LF, también en Windows: el build regenera los contratos OpenAPI (ADR-0019) con LF, y con el
+# CRLF de checkout Git los marcaba como modificados en cada build sin que cambiara su contenido.
+*.json text eol=lf
