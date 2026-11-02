@@ -869,6 +869,21 @@ export function DialogoDeClaveTemporal(props: { accion: 'Habilitar' | 'Restablec
 6. **`aPlazosLocales` acepta `number | string` en los segundos del `SesionDto`.** .NET 10 declara así los enteros del contrato. Un valor que no es un número finito cuenta como 0, es decir, la sesión se da por vencida: si no se entiende el plazo, cerrar es lo seguro.
 7. **RNF-13 en el CI del web:** el paso "Contratos y tipos al día" (`contratos:sincronizar` + `tipos` + `git diff --exit-code`) va en el job de verificación existente, no en `e2e-real`. Cumple T19.
 
+**Añadidos y desviaciones del Build (004b, PR 4 del web)** (las de `construccion/004-front-base/review.md` en `core-bancario-web#3`; el código manda sobre las firmas de arriba):
+
+1. **`@hookform/resolvers` 7.0.0** en lugar de la 6.0.0, y **Zod con `z.config({ jitless: true })`** para no violar la CSP (RNF-03). Los dos se explican en ADR-0022, "Cambios en el Build".
+2. **Las acciones de acceso se ocultan, no se desactivan**, cuando el estado no está disponible: `accionesDeAcceso('no-disponible') = []`. La spec (CL-20, CA-32) se unificó con esta redacción.
+3. **Estados desconocidos sin acciones.** `CuentaDto.estado` y `EstadoDeAccesoDto.estado` llegan como texto libre (decisión 11 de la sección 8), y la app los convierte en tipos cerrados en la frontera ("parsear en la frontera"):
+   - `comoEstadoDeCuenta(texto): EstadoDeCuenta | null`: un estado desconocido se muestra tal cual y sin acciones (RN-14: no se adivinan transiciones);
+   - `comoEstadoDelAcceso(texto): EstadoDelAcceso`: un valor desconocido es `'no-disponible'`, sin acciones (CL-20).
+4. **La búsqueda por documento es una `useMutation`**, no una `useQuery`: así el número de documento no entra en una clave de caché de TanStack Query (RNF-04).
+5. **`/backoffice` tiene su propia ruta `*`**, que lleva a la búsqueda. Sin ella, una ruta mal escrita caía en la `*` del área del cliente y el operador veía "otra sesión abierta".
+6. **`location = /api/clientes/por-documento` en `infra/nginx/default.conf`** (archivo que T28 no listaba), con `error_log … crit`. Con el BFF caído, el `error_log` de nginx escribía la línea de la petición con el número de documento. El 502 sigue en el `access_log` (sin la consulta) y en los logs del BFF. Es un refuerzo de RNF-04.
+7. **Otras piezas que el plan no nombraba:**
+   - `comun/componentes/Campo.tsx`: etiqueta, control y error asociados por `id` y `aria-describedby` (RNF-08). Sirve con RHF y sin él;
+   - el tipo de documento es un `<select>` nativo, que ya es accesible con teclado.
+8. **T24 se hizo en el commit en rojo** (`d7ee980`): las pruebas necesitaban los contratos y tipos de 004b para compilar.
+
 ## 4. Modelo de datos y persistencia
 
 - **Base de datos:** sin cambios, sin migraciones. RF-16 lee lo que ya existe (`accesos_digitales`) y Keycloak.
@@ -1084,6 +1099,9 @@ Decisiones del plan sin ADR (locales y fáciles de cambiar):
 8. **Un 403 del anti-CSRF y no un 400**: la petición está bien formada, pero no es de confianza.
 9. **El *proxy* responde `no-store`** a todo, aunque la API no lo pida, por CL-11.
 10. **Recorridos reales en Chromium solamente** (RNF-10 lo permite). La matriz de navegadores se documenta.
+11. **`EstadoDeAccesoDto.estado` sigue como `string` y no como *enum* en el OpenAPI** (decidido el 2026-10-31, antes del PR 4; sugerencia 1 del review del PR 3).
+    - **Por qué:** es coherente con el resto del contrato, donde `CuentaDto.estado`, `moneda`, `accion` y `tipoDocumento` también son `string`. Solo `CodigoDeError` es *enum*, a propósito (decisión 3, CA-34). Y el web se defiende solo: un valor desconocido pasa a `no-disponible` y no muestra acciones (CL-20, probado con Vitest).
+    - **Idea para el futuro** (ADR + `chore`, fuera de la 004): publicar como *enum* **todos** los campos de valores cerrados del contrato. Tocaría `MisCuentas` y `formatearSaldo` en el web.
 
 ## 9. Trazabilidad
 
