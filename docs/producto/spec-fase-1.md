@@ -35,6 +35,7 @@ La fase 1 cubre cuentas multimoneda, transferencias internas con idempotencia y 
 - Tasas de cambio en tiempo real de un proveedor externo.
 - Intereses, préstamos, tarjetas y sobregiros.
 - Asistente de normativa con RAG (proyecto aparte).
+- Editar el correo y el teléfono de un cliente ya registrado. Es candidato a RF nuevo cuando se planifique.
 
 **Hoja de ruta**
 
