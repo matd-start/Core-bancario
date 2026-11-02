@@ -1449,7 +1449,7 @@
           },
           "traceId": {
             "type": "string",
-            "description": "Identificador de correlación de la petición: es el que se pide al usuario para buscar el error en los logs."
+            "description": "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error."
           }
         }
       },
@@ -1496,7 +1496,7 @@
           },
           "traceId": {
             "type": "string",
-            "description": "Identificador de correlación de la petición: es el que se pide al usuario para buscar el error en los logs."
+            "description": "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error."
           }
         }
       },

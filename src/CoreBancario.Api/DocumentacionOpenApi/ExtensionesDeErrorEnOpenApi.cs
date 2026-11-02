@@ -11,6 +11,9 @@ namespace CoreBancario.Api.DocumentacionOpenApi;
 /// </summary>
 public sealed class ExtensionesDeErrorEnOpenApi : IOpenApiDocumentTransformer
 {
+    private const string DescripcionDelTraceId =
+        "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error.";
+
     private static readonly string[] EsquemasDeError = ["ProblemDetails", "HttpValidationProblemDetails"];
 
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
@@ -19,16 +22,14 @@ public sealed class ExtensionesDeErrorEnOpenApi : IOpenApiDocumentTransformer
 
         foreach (var nombre in EsquemasDeError)
         {
+            // Falla al generar el contrato en vez de publicarlo sin las extensiones (por ejemplo, si una versión nueva
+            // de Microsoft.AspNetCore.OpenApi cambia el nombre del esquema).
             if (document.Components?.Schemas?.TryGetValue(nombre, out var encontrado) != true || encontrado is not OpenApiSchema esquema)
-                continue;
+                throw new InvalidOperationException($"El contrato no tiene el esquema {nombre}: no se le pueden declarar codigo y traceId.");
 
             esquema.Properties ??= new Dictionary<string, IOpenApiSchema>();
             esquema.Properties["codigo"] = new OpenApiSchemaReference(CodigosDeErrorEnOpenApi.NombreDelEsquema, document);
-            esquema.Properties["traceId"] = new OpenApiSchema
-            {
-                Type = JsonSchemaType.String,
-                Description = "Identificador de correlación de la petición: es el que se pide al usuario para buscar el error en los logs.",
-            };
+            esquema.Properties["traceId"] = new OpenApiSchema { Type = JsonSchemaType.String, Description = DescripcionDelTraceId };
             esquema.Required ??= new HashSet<string>();
             esquema.Required.Add("codigo");
             esquema.Required.Add("traceId");

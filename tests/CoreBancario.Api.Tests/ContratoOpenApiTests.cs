@@ -182,26 +182,26 @@ public class ContratoOpenApiTests(ApiFixture api)
         Assert.Contains("traceId", requeridos);
     }
 
-    // ---- 004: RNF-13, los tipos del web son estrictos: un entero del contrato no puede llegar como texto ----
+    // ---- 004: RNF-13, los tipos del web son estrictos: un número del contrato no puede llegar como texto ----
 
     [Fact]
-    public void F004_RNF13_ContratoOpenApi_NingunEnteroAceptaTexto()
+    public void F004_RNF13_ContratoOpenApi_NingunNumeroAceptaTexto()
     {
         // Arrange
         var contrato = ContratoVersionado();
 
         // Act
-        var enterosQueAceptanTexto = EnterosQueAceptanTexto(contrato, "#").ToList();
+        var numerosQueAceptanTexto = NumerosQueAceptanTexto(contrato, "#").ToList();
 
         // Assert
-        Assert.Empty(enterosQueAceptanTexto);
+        Assert.Empty(numerosQueAceptanTexto);
     }
 
-    /// <summary>Rutas del documento donde un entero también admite texto: type [integer, string] o un pattern numérico.</summary>
-    private static IEnumerable<string> EnterosQueAceptanTexto(JsonNode? nodo, string ruta)
+    /// <summary>Rutas del documento donde un número (integer o number) también admite texto: type [integer, string] o un pattern numérico.</summary>
+    private static IEnumerable<string> NumerosQueAceptanTexto(JsonNode? nodo, string ruta)
     {
         if (nodo is JsonArray arreglo)
-            return arreglo.SelectMany((hijo, i) => EnterosQueAceptanTexto(hijo, $"{ruta}/{i}"));
+            return arreglo.SelectMany((hijo, i) => NumerosQueAceptanTexto(hijo, $"{ruta}/{i}"));
         if (nodo is not JsonObject objeto)
             return [];
 
@@ -211,8 +211,9 @@ public class ContratoOpenApiTests(ApiFixture api)
             JsonValue valor => [(string?)valor],
             _ => [],
         };
-        var aceptaTexto = tipos.Contains("integer") && (tipos.Contains("string") || objeto["pattern"] is not null);
-        var deLosHijos = objeto.SelectMany(propiedad => EnterosQueAceptanTexto(propiedad.Value, $"{ruta}/{propiedad.Key}"));
+        var esNumero = tipos.Contains("integer") || tipos.Contains("number");
+        var aceptaTexto = esNumero && (tipos.Contains("string") || objeto["pattern"] is not null);
+        var deLosHijos = objeto.SelectMany(propiedad => NumerosQueAceptanTexto(propiedad.Value, $"{ruta}/{propiedad.Key}"));
 
         return aceptaTexto ? deLosHijos.Prepend(ruta) : deLosHijos;
     }

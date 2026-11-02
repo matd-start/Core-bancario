@@ -10,19 +10,22 @@ namespace CoreBancario.Bff.DocumentacionOpenApi;
 /// </summary>
 public sealed class ExtensionesDeErrorDelBffEnOpenApi : IOpenApiDocumentTransformer
 {
+    private const string NombreDelEsquema = "ProblemDetails";
+
     public Task TransformAsync(OpenApiDocument document, OpenApiDocumentTransformerContext context, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(document);
 
-        if (document.Components?.Schemas?.TryGetValue("ProblemDetails", out var encontrado) != true || encontrado is not OpenApiSchema esquema)
-            return Task.CompletedTask;
+        // Falla al generar el contrato en vez de publicarlo sin las extensiones.
+        if (document.Components?.Schemas?.TryGetValue(NombreDelEsquema, out var encontrado) != true || encontrado is not OpenApiSchema esquema)
+            throw new InvalidOperationException($"El contrato del BFF no tiene el esquema {NombreDelEsquema}: no se le pueden declarar codigo y traceId.");
 
         esquema.Properties ??= new Dictionary<string, IOpenApiSchema>();
         esquema.Properties["codigo"] = new OpenApiSchemaReference(CodigosDelBffEnOpenApi.NombreDelEsquema, document);
         esquema.Properties["traceId"] = new OpenApiSchema
         {
             Type = JsonSchemaType.String,
-            Description = "Identificador de correlación de la petición: es el que se pide al usuario para buscar el error en los logs.",
+            Description = "Identificador de correlación de la petición (W3C trace context): el que el usuario da a soporte al reportar un error.",
         };
         esquema.Required ??= new HashSet<string>();
         esquema.Required.Add("codigo");
