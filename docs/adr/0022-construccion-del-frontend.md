@@ -31,7 +31,7 @@ Conceptos para leer esta ADR:
 | Lenguaje | TypeScript 5.9 · 6.0 · 7.0 (compilador nativo) | **TypeScript 5.9.3** en modo `strict`, más `noUncheckedIndexedAccess` y `exactOptionalPropertyTypes`. `openapi-typescript` 7.13.0 declara `typescript ^5.x` como *peer*, y TS 7 aún no tiene una API programática estable para esas herramientas. Se revisa cuando el generador amplíe su rango |
 | Ruteo | **React Router** · TanStack Router | **React Router 8.5.0**, en modo de librería, sin *framework mode* ni SSR. Es el estándar más extendido y basta para siete rutas. TanStack Router (1.170.x) da rutas tipadas, pero añade otra API que aprender sin un requisito que lo pida |
 | Estado del servidor | **TanStack Query** · SWR · `useEffect` a mano | **TanStack Query 5.105.0** (roadmap). Consultas con 1 reintento salvo en 401/403/404, y **mutaciones con `retry: 0`** (CL-15: nunca reintenta sola una acción que cambia datos) |
-| Formularios | **React Hook Form + Zod** · Formik · a mano | **React Hook Form 7.91.0 + `@hookform/resolvers` 6.0.0 + Zod 4.6.7** (roadmap S6). Los errores 400 de la API (`errors` por campo) se vuelcan con `setError` en el mismo campo (CA-23) |
+| Formularios | **React Hook Form + Zod** · Formik · a mano | **React Hook Form 7.91.0 + `@hookform/resolvers` 7.0.0 + Zod 4.6.7** (roadmap S6; la versión de `resolvers` cambió en el Build, ver "Cambios en el Build"). Los errores 400 de la API (`errors` por campo) se vuelcan con `setError` en el mismo campo (CA-23) |
 | Cliente OpenAPI | **openapi-typescript + openapi-fetch** · `@hey-api/openapi-ts` (0.99, aún sin 1.0) · Orval | **openapi-typescript 7.13.0** (solo tipos) **+ openapi-fetch 0.17.0** (un `fetch` tipado de pocos KB, con *middleware*). El *middleware* pone `X-CSRF: 1` (ADR-0020) y convierte cada 401 en "sesión terminada". Se generan tipos de dos contratos: el de la API y el del BFF |
 | Componentes | **React Aria Components** · Radix UI · MUI | **React Aria Components 1.22.1** (Adobe). Es *headless* y con accesibilidad probada. Su `Modal` tiene `isDismissable` (por defecto `false`) e `isKeyboardDismissDisabled`, justo lo que pide el diálogo de la clave temporal (CL-17). Estilos con CSS Modules de Vite, sin framework de CSS |
 | Dinero | `Intl.NumberFormat` con **texto** · librería decimal | **`Intl.NumberFormat('es-CO', …).format(monto)` pasando el texto de `DineroDto.monto`.** Desde ES2023 (Intl.NumberFormat v3), `format` acepta una cadena decimal y la formatea **sin convertirla a `number`**, así que `12345678901234.56` sale exacto. COP con 0 decimales y USD con 2. Nunca se usa `Number`, `parseFloat` ni el `+` unario |
@@ -47,6 +47,7 @@ La tabla anterior, con estas reglas de uso:
 
 - **Contratos:** `contratos/core-bancario-api.json` y `contratos/core-bancario-bff.json` son copias versionadas en el repositorio web de los archivos de ADR-0019 y ADR-0020. Un script (`npm run contratos:sincronizar`) las copia desde `../core-bancario`, y `npm run tipos` genera `src/api/generado/*.d.ts`, que también se versionan. El CI falla si los tipos no corresponden al contrato o si el contrato copiado difiere del de `core-bancario` en `main`.
 - **Ningún dato sensible en el navegador:** nada en `localStorage` ni en `sessionStorage`. El número de documento no aparece en las rutas. La clave temporal vive solo en el estado del diálogo, y su mutación se borra (`reset()`) al cerrarlo.
+- **CSP estricta (RNF-03):** cada librería nueva se prueba también contra la CSP de nginx (`script-src 'self'`, sin `unsafe-eval`). Los recorridos reales (`F004_RNF03_*`) exigen cero violaciones, así que una librería que evalúa código en tiempo de ejecución se configura para no hacerlo o no entra. Ver "Cambios en el Build".
 - **Errores (RNF-12):** un único `interpretarError(estado, cuerpo)` traduce `codigo` → mensaje con un `Record<CodigoDeError, string>`, donde `CodigoDeError` es el *enum* que publica el contrato. Si falta un mensaje, **no compila**. Nunca se muestra `detail`.
 
 El motivo principal es usar las piezas más estándar de cada categoría que cumplen los requisitos de accesibilidad, exactitud y seguridad, sin añadir capas (SSR, librería OIDC, framework de CSS) que la arquitectura no necesita.
@@ -58,6 +59,17 @@ El motivo principal es usar las piezas más estándar de cada categoría que cum
 - Las versiones quedan fijadas en `package.json` y `package-lock.json`. Actualizarlas es un `chore` que vuelve a pasar todas las pruebas.
 - TypeScript queda en la línea 5.9 hasta que `openapi-typescript` acepte 6 o 7. Es un riesgo de obsolescencia, vigilado en el plan.
 
+## Cambios en el Build (2026-11-02, `core-bancario-web#3`)
+
+La decisión no cambia; cambian dos detalles que salieron al instalar los formularios en T25:
+
+1. **`@hookform/resolvers` 7.0.0 en lugar de la 6.0.0.** `resolvers` es la pieza que une RHF con Zod. La 6.0.0 declara `effect@^4` como *peer* opcional y `npm` no la resuelve junto al resto (ERESOLVE). La 7.0.0 instala limpio con RHF 7.91.0 y Zod 4.6.7. Se descartó forzar la 6.0.0 con `--legacy-peer-deps`: solo esconde el conflicto y obligaría a repetirlo en cada `npm ci`.
+2. **Zod con `z.config({ jitless: true })`**, en `esquemaDeRegistro.ts` y antes de crear el primer esquema. Zod 4 intenta `new Function('')` para compilar sus validadores. Si falla, lo atrapa y sigue, pero con la CSP sin `unsafe-eval` el navegador anota una violación en cada carga y `F004_RNF03_*` falla. Sin JIT, Zod valida igual, solo que algo más lento, lo que no se nota en un formulario.
+
+**Lección:** la CSP estricta tiene un costo. Una librería puede pasar todas las pruebas de Vitest (jsdom no aplica CSP) y fallar solo en el navegador real. Por eso se añadió la regla "CSP estricta" en "Decisión".
+
 ## Decisiones del autor
 
 El roadmap ya había nombrado TanStack Query y React Hook Form. **Enrutador: React Router** (2026-10-26), elegido frente a TanStack Router porque es el más extendido y basta para unas siete rutas. Las rutas tipadas de TanStack Router no responden a ningún requisito. El resto lo confirma al aprobar el plan.
+
+**`@hookform/resolvers` 7.0.0** (2026-11-02): aceptada como desviación (opción a) frente a forzar la 6.0.0 con `--legacy-peer-deps`.
