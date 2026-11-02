@@ -155,6 +155,84 @@ public class ErroresApiTests(ApiFixture api)
         // Assert
         Assert.Equal(codigosEsperados.Split(','), codigos);
     }
+
+    // ---- 004: RNF-12, el contrato marca codigo y traceId como requeridos: cada camino que escribe un error los pone ----
+
+    [Theory]
+    [InlineData("validacion", 400)]
+    [InlineData("json-mal-formado", 400)]
+    [InlineData("sin-token", 401)]
+    [InlineData("rol-equivocado", 403)]
+    [InlineData("no-encontrado", 404)]
+    [InlineData("documento-duplicado", 409)]
+    [InlineData("inesperado", 500)]
+    public async Task F004_RNF12_CadaCaminoDeError_LlevaCodigoYTraceId(string camino, int estadoEsperado)
+    {
+        // Arrange / Act
+        var (estado, cuerpo) = await ProvocarErrorAsync(camino);
+
+        // Assert
+        Assert.Equal(estadoEsperado, estado);
+        using var problema = JsonDocument.Parse(cuerpo);
+        Assert.True(problema.RootElement.TryGetProperty("codigo", out var codigo) && !string.IsNullOrEmpty(codigo.GetString()),
+            $"Sin codigo: {cuerpo}");
+        Assert.True(problema.RootElement.TryGetProperty("traceId", out var traceId) && !string.IsNullOrEmpty(traceId.GetString()),
+            $"Sin traceId: {cuerpo}");
+    }
+
+    private async Task<(int Estado, string Cuerpo)> ProvocarErrorAsync(string camino)
+    {
+        using var operador = api.CrearCliente();
+        using var respuesta = camino switch
+        {
+            "validacion" => await operador.PostAsJsonAsync("/clientes", SolicitudDeRegistro() with { Correo = "no-es-correo" }, Ct),
+            "json-mal-formado" => await JsonMalFormadoAsync(operador),
+            "sin-token" => await AnonimoAsync(),
+            "rol-equivocado" => await ComoClienteAsync(),
+            "no-encontrado" => await operador.GetAsync($"/clientes/{Guid.NewGuid()}", Ct),
+            "documento-duplicado" => await DuplicadoAsync(operador),
+            "inesperado" => await InesperadoAsync(),
+            _ => throw new ArgumentOutOfRangeException(nameof(camino), camino, "Camino de error desconocido."),
+        };
+
+        return ((int)respuesta.StatusCode, await respuesta.Content.ReadAsStringAsync(Ct));
+
+        static async Task<HttpResponseMessage> JsonMalFormadoAsync(HttpClient http)
+        {
+            using var contenido = new StringContent("{ esto no es json", Encoding.UTF8, "application/json");
+            return await http.PostAsync("/clientes", contenido, Ct);
+        }
+
+        async Task<HttpResponseMessage> AnonimoAsync()
+        {
+            using var anonimo = api.CrearClienteAnonimo();
+            return await anonimo.GetAsync($"/clientes/{Guid.NewGuid()}", Ct);
+        }
+
+        async Task<HttpResponseMessage> ComoClienteAsync()
+        {
+            using var cliente = api.CrearClienteComoCliente(Guid.NewGuid().ToString());
+            return await cliente.GetAsync($"/clientes/{Guid.NewGuid()}", Ct);
+        }
+
+        static async Task<HttpResponseMessage> DuplicadoAsync(HttpClient http)
+        {
+            var documento = NumeroDeDocumentoUnico();
+            await RegistrarClienteAsync(http, numeroDocumento: documento);
+            return await http.PostAsJsonAsync("/clientes", SolicitudDeRegistro(numeroDocumento: documento), Ct);
+        }
+
+        async Task<HttpResponseMessage> InesperadoAsync()
+        {
+            using var fabrica = api.ConServicios(servicios =>
+            {
+                servicios.RemoveAll<TimeProvider>();
+                servicios.AddSingleton<TimeProvider>(new RelojQueLanza("boom"));
+            });
+            using var http = api.CrearClienteDe(fabrica);
+            return await http.PostAsJsonAsync("/clientes", SolicitudDeRegistro(), Ct);
+        }
+    }
 }
 
 /// <summary>Reloj que falla al leer la hora: simula un error inesperado dentro de un caso de uso.</summary>

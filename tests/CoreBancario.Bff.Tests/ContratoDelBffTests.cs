@@ -85,4 +85,59 @@ public class ContratoDelBffTests
         // Assert
         Assert.Equal(new[] { "CambiarClave", "IniciarSesion", "ObtenerSesion" }.Order(), getters);
     }
+
+    [Fact]
+    public void F004_RNF12_ContratoDelBff_LosErroresDeclaranCodigoYTraceId()
+    {
+        // Arrange
+        var contrato = Contrato();
+
+        // Act
+        var esquema = contrato["components"]?["schemas"]?["ProblemDetails"];
+        var propiedades = esquema?["properties"];
+        var requeridos = esquema?["required"]?.AsArray().Select(r => (string?)r).ToList() ?? [];
+
+        // Assert
+        Assert.NotNull(esquema);
+        Assert.Equal("#/components/schemas/CodigoDeErrorDelBff", (string?)propiedades?["codigo"]?["$ref"]);
+        Assert.Equal("string", (string?)propiedades?["traceId"]?["type"]);
+        Assert.Contains("codigo", requeridos);
+        Assert.Contains("traceId", requeridos);
+    }
+
+    [Fact]
+    public void F004_RNF13_ContratoDelBff_NingunEnteroAceptaTexto()
+    {
+        // Arrange
+        var contrato = Contrato();
+
+        // Act
+        var enterosQueAceptanTexto = EnterosQueAceptanTexto(contrato, "#").ToList();
+
+        // Assert
+        Assert.Empty(enterosQueAceptanTexto);
+    }
+
+    /// <summary>
+    /// Rutas del documento donde un entero también admite texto: type [integer, string] o un pattern numérico.
+    /// Gemela de la de ContratoOpenApiTests: dos proyectos de pruebas que no se referencian.
+    /// </summary>
+    private static IEnumerable<string> EnterosQueAceptanTexto(JsonNode? nodo, string ruta)
+    {
+        if (nodo is JsonArray arreglo)
+            return arreglo.SelectMany((hijo, i) => EnterosQueAceptanTexto(hijo, $"{ruta}/{i}"));
+        if (nodo is not JsonObject objeto)
+            return [];
+
+        List<string?> tipos = objeto["type"] switch
+        {
+            JsonArray lista => [.. lista.Select(t => (string?)t)],
+            JsonValue valor => [(string?)valor],
+            _ => [],
+        };
+        var aceptaTexto = tipos.Contains("integer") && (tipos.Contains("string") || objeto["pattern"] is not null);
+        var deLosHijos = objeto.SelectMany(propiedad => EnterosQueAceptanTexto(propiedad.Value, $"{ruta}/{propiedad.Key}"));
+
+        return aceptaTexto ? deLosHijos.Prepend(ruta) : deLosHijos;
+    }
 }
