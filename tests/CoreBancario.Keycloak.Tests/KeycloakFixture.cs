@@ -28,6 +28,9 @@ namespace CoreBancario.Keycloak.Tests;
 /// </summary>
 public sealed class KeycloakFixture : IAsyncLifetime
 {
+    // Al subir de versión (chore, ADR-0014): la misma en docker-compose.yml; pasar estas pruebas; revisar el
+    // login-update-password.ftl que sobrescribe el tema (003 plan.md, riesgo 8); y comprobar que el login de keycloak.v2
+    // sigue deshabilitando el botón al enviar (onsubmit) y con no-store, o vuelve el CCCC… (003 learning.md §9.4).
     public const string Imagen = "quay.io/keycloak/keycloak:26.3.3";
     public const string RealmDeClientes = "clientes";
     public const string RealmDeEmpleados = "empleados";

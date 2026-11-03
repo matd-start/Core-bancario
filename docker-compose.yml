@@ -19,6 +19,9 @@ services:
 
   # Keycloak (ADR-0014): emite los tokens. start-dev es solo para desarrollo local; el despliegue lo decide D-11.
   # Importa los dos realms al crear el volumen: si cambias un realm, borra el volumen (README, "Recargar un realm").
+  # Al subir de versión (chore, ADR-0014): la misma en KeycloakFixture.Imagen; pasar Keycloak.Tests; revisar el
+  # login-update-password.ftl que sobrescribe el tema (003 plan.md, riesgo 8); y comprobar que el login de keycloak.v2
+  # sigue deshabilitando el botón al enviar (onsubmit) y con no-store, o vuelve el CCCC… (003 learning.md §9.4).
   keycloak:
     image: quay.io/keycloak/keycloak:26.3.3
     container_name: core-bancario-keycloak
