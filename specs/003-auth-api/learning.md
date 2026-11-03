@@ -295,3 +295,18 @@ El operador puede **habilitar** el acceso de un cliente (la API crea su usuario 
 - **Arreglo:** **delegación de eventos**. Un único listener de `submit` en `document`, en fase de **captura**, registrado en cuanto corre el script. `document` existe desde el primer instante, y todo `submit` pasa por él antes de llegar al formulario, aunque el formulario no existiera al registrar el listener. Si el envío llega antes que el selector, se usa el tipo que traiga el campo (`cc 6.237.280` → `CC6237280`) o, si no trae ninguno, el tipo por defecto (`CC`). Sin selector no hay forma de saber si era CE o PA: ese límite se acepta, porque la ventana dura fracciones de segundo y antes fallaban todos. Lo mismo protege el aviso de CL-06.
 - **Analogía:** poner el control en la puerta del edificio, no en una oficina que todavía están construyendo.
 - **Lección:** un solo listener que decide por `evento.target.id`. Dos listeners (uno temprano y otro en el formulario) normalizarían dos veces: `CCCC6237280`. La prueba `…UsaElTipoElegidoUnaSolaVez` lo vigila.
+
+### 9.4 ¿Duplican el prefijo la bfcache o el autocompletado? (investigación, 2026-11-02)
+
+El review de 004 dejó dos sospechas de `CCCC…` en el login. Las dos se investigaron y **ninguna tiene camino real para CC**. No se cambió código.
+
+- **bfcache (descartada).** Sospecha: el navegador restaura la página del login con el campo ya normalizado (`CC6237280`), y el reenvío añade otra vez el prefijo. Se escribió un arreglo (`fix/bfcache-login`, rojo y verde) y el `/code-review` lo tumbó. Al leer la plantilla heredada (`keycloak.v2/login/login.ftl`, Keycloak 26.3.3) se vio que el formulario lleva `onsubmit="login.disabled = true; return true;"`: la página restaurada trae el botón **deshabilitado** y no se puede reenviar ni con clic ni con Enter. Además, Keycloak sirve el login con `Cache-Control: no-store`, y con eso Chrome casi nunca lo guarda en la bfcache. Las pruebas del arreglo pasaban porque el DOM de mentira (`PaginaDelTema`) no ejecuta el `onsubmit` de la plantilla.
+- **Dependencia que hay que vigilar:** la defensa es de Keycloak, no nuestra. **Al subir de versión**, comprobar que `login.ftl` conserva ese `onsubmit` y que el login sigue con `no-store`. Si alguno cambia, el caso vuelve.
+- **Autocompletado (medido en Microsoft Edge, cliente CC).** Sospecha: el gestor de contraseñas guarda el usuario ya normalizado y lo devuelve la siguiente vez. Resultado:
+  - el globo de guardar mostró lo que se **tecleó** (`52.468.013.01`), no lo que dejó el JavaScript;
+  - al volver, Edge rellenó solo número y clave al cargar, con el selector en CC por defecto;
+  - las dos veces se entró bien.
+- **Sin probar:** la credencial guardada no incluye el tipo de documento. Un cliente CE o PA tendría el número autocompletado con el selector en CC, y fallaría hasta cambiarlo a mano. Es una molestia y no corrompe datos. Queda para el S8, junto a "normalizar en el servidor".
+- **Único camino conocido hacia `CCCC…`:** escribir el tipo dentro del campo (`cc 6.237.280`) con el selector ya visible. Es real y anterior a esta investigación, pero poco probable.
+- **Analogía:** antes de poner una segunda cerradura, comprobar si la puerta ya tiene una. La tenía, pero la instaló el casero: si cambia la puerta, hay que volver a mirar.
+- **Lección:** antes de planear un arreglo en el tema, **leer la plantilla heredada** de `keycloak.v2`. Un DOM de mentira solo modela lo que le pusimos. Y una hipótesis se cierra con un experimento, no con una prueba que pasa.
